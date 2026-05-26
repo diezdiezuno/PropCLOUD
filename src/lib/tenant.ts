@@ -3,12 +3,24 @@ import type { Tenant, TenantConfig } from '@/types'
 
 export async function getTenantByDomain(domain: string): Promise<Tenant | null> {
   const supabase = await createServerSupabaseClient()
+
+  // Try exact domain match first
   const { data } = await supabase
     .from('tenants')
     .select('*')
     .eq('domain', domain)
     .single()
-  return data
+
+  if (data) return data
+
+  // Fallback: return first tenant (useful for preview/dev domains)
+  const { data: fallback } = await supabase
+    .from('tenants')
+    .select('*')
+    .limit(1)
+    .single()
+
+  return fallback ?? null
 }
 
 export async function getTenantConfig(tenantId: string): Promise<TenantConfig | null> {

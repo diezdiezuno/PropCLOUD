@@ -11,15 +11,24 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
   const domain = request.headers.get('x-tenant-domain') ?? 'localhost'
 
-  // Get tenant
-  const { data: tenant } = await supabase
+  // Get tenant — fallback to first tenant for preview/dev domains
+  let { data: tenant } = await supabase
     .from('tenants')
     .select('id, slug')
     .eq('domain', domain)
     .single()
 
   if (!tenant) {
-    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+    const { data: fallback } = await supabase
+      .from('tenants')
+      .select('id, slug')
+      .limit(1)
+      .single()
+    tenant = fallback
+  }
+
+  if (!tenant) {
+    return NextResponse.json({ error: 'No tenant found' }, { status: 404 })
   }
 
   // Get property sources for this tenant

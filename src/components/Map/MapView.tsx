@@ -38,7 +38,6 @@ export default function MapView({ mapStyle, mapboxToken }: MapViewProps) {
 
     async function initMap() {
       const mapboxgl = (await import('mapbox-gl')).default
-      await import('mapbox-gl/dist/mapbox-gl.css')
 
       if (!mapContainerRef.current || mapRef.current) return
 
