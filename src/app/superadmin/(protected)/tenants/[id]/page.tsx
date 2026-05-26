@@ -168,7 +168,7 @@ export default function TenantDetailPage() {
               <span style={{ fontSize: 12, color: '#555' }}>…</span>
             ) : !domainResult ? (
               <span style={{ fontSize: 12, color: '#555' }}>—</span>
-            ) : status === null ? (
+            ) : !status ? (
               <span style={{ fontSize: 12, color: '#f59e0b' }}>⚠ No agregado</span>
             ) : status.error ? (
               <span style={{ fontSize: 12, color: '#f87171' }} title={status.error.message}>✗ Error: {status.error.message}</span>
