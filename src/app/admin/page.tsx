@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function AdminIndex() {
-  redirect('/admin/branding')
+  redirect('/admin/general')
 }
