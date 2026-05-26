@@ -1,38 +1,29 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase'
 import AdminShell from './AdminShell'
 
-const serviceClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
-  // Check session via cookie-aware server client
   const supabase = await createServerSupabaseClient()
-  const { data: { session } } = await supabase.auth.getSession()
 
-  if (!session) {
-    redirect('/admin/login')
-  }
+  // Verify token with Supabase server (more secure than getSession)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/admin/login')
 
-  // Get the tenant this user administers (service role bypasses RLS)
-  const { data: adminRecord } = await serviceClient
+  // RLS "Admins read own" policy lets the authenticated user read their own record
+  // "Public read tenants" policy lets the join work without service role
+  const { data: adminRecord } = await supabase
     .from('tenant_admins')
     .select('tenant_id, role, tenants(id, name, slug, logo_url, theme)')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .single()
 
-  if (!adminRecord) {
-    redirect('/admin/login?error=no_tenant')
-  }
+  if (!adminRecord) redirect('/admin/login?error=no_tenant')
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tenant = (adminRecord as any).tenants
 
   return (
-    <AdminShell tenant={tenant} userEmail={session.user.email ?? ''}>
+    <AdminShell tenant={tenant} userEmail={user.email ?? ''}>
       {children}
     </AdminShell>
   )
