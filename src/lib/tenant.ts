@@ -1,5 +1,14 @@
+import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from './supabase'
 import type { Tenant, TenantConfig } from '@/types'
+
+/** Simple anon client — no cookies needed, safe to call anywhere */
+function publicClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 /** The root domain of the platform (e.g. propcloud.app).
  *  Set APP_DOMAIN in env vars. Defaults to propcloud.app. */
@@ -14,7 +23,8 @@ const APP_DOMAIN = process.env.APP_DOMAIN ?? 'propcloud.app'
  *  4. localhost / *.localhost (dev)     → fallback to first tenant
  */
 export async function getTenantByDomain(domain: string): Promise<Tenant | null> {
-  const supabase = await createServerSupabaseClient()
+  // Use a simple client (no cookies) — tenant lookup is public, no auth needed
+  const supabase = publicClient()
 
   // 1. Root app domain → no tenant, show landing page
   if (domain === APP_DOMAIN || domain === `www.${APP_DOMAIN}`) {
