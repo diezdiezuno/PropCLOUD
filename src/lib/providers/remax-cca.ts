@@ -34,9 +34,9 @@ export async function fetchRemaxCCAProperties(
   const raw: CCAProperty[] = await res.json()
 
   return raw.map((p) => ({
-    id: p.ListingId,
+    id: String(p.ListingId),
     tenant_id: tenantId,
-    external_id: p.ListingId,
+    external_id: String(p.ListingId),
     source: 'remax_cca' as const,
     type: p.PropertyType ?? 'Residential',
     transaction: p.TransactionType?.toLowerCase().includes('rent') ? 'rent' : 'sale',
