@@ -3,39 +3,47 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
   const domain = request.headers.get('x-tenant-domain')
 
-  let tenantResult = null
-  let supabaseError = null
+  let serviceResult = null
+  let serviceError = null
+  let anonResult = null
+  let anonError = null
 
   if (supabaseUrl && serviceKey) {
     try {
       const supabase = createClient(supabaseUrl, serviceKey)
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('id, slug, domain')
-        .limit(5)
-      tenantResult = data
-      supabaseError = error?.message
-    } catch (e: any) {
-      supabaseError = e.message
+      const { data, error } = await supabase.from('tenants').select('id, slug, domain').limit(5)
+      serviceResult = data
+      serviceError = error?.message
+    } catch (e: unknown) {
+      serviceError = (e as Error).message
+    }
+  }
+
+  if (supabaseUrl && anonKey) {
+    try {
+      const supabase = createClient(supabaseUrl, anonKey)
+      const { data, error } = await supabase.from('tenants').select('id, slug').limit(1)
+      anonResult = data
+      anonError = error?.message
+    } catch (e: unknown) {
+      anonError = (e as Error).message
     }
   }
 
   return NextResponse.json({
     env: {
-      supabaseUrl: supabaseUrl ? '✓ set' : '✗ missing',
+      supabaseUrl: supabaseUrl ? `✓ set` : '✗ missing',
+      anonKey: anonKey ? `✓ set (${anonKey.length} chars, starts: ${anonKey.slice(0, 20)}...)` : '✗ missing',
       serviceKey: serviceKey ? `✓ set (${serviceKey.length} chars)` : '✗ missing',
       mapboxToken: mapboxToken ? `✓ set (${mapboxToken.slice(0, 10)}...)` : '✗ missing',
     },
-    headers: {
-      'x-tenant-domain': domain ?? 'not set',
-    },
-    supabase: {
-      tenants: tenantResult,
-      error: supabaseError,
-    },
+    headers: { 'x-tenant-domain': domain ?? 'not set' },
+    supabaseServiceRole: { tenants: serviceResult, error: serviceError },
+    supabaseAnon: { tenants: anonResult, error: anonError },
   })
 }
