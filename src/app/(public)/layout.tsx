@@ -20,8 +20,12 @@ export default async function PublicLayout({ children }: { children: React.React
     if (tenant) config = await getTenantConfig(tenant.id)
   } catch {}
 
-  const theme = tenant?.theme ?? DEFAULT_THEME
+  // No tenant → plain wrapper, landing page handles its own layout
+  if (!tenant) {
+    return <>{children}</>
+  }
 
+  const theme = tenant.theme ?? DEFAULT_THEME
   const cssVars = {
     '--primary': theme.primaryColor,
     '--accent': theme.accentColor,
@@ -33,16 +37,12 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <div style={{ ...cssVars, fontFamily: 'var(--font-body)' }} className="flex flex-col min-h-screen">
-      {/* Google Fonts */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link href={fontsUrl} rel="stylesheet" />
-
       <Nav tenant={tenant} />
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
       <Footer config={config} tenant={tenant} />
     </div>
   )

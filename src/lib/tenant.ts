@@ -1,26 +1,45 @@
 import { createServerSupabaseClient } from './supabase'
 import type { Tenant, TenantConfig } from '@/types'
 
+/** The root domain of the platform (e.g. propcloud.app).
+ *  Set APP_DOMAIN in env vars. Defaults to propcloud.app. */
+const APP_DOMAIN = process.env.APP_DOMAIN ?? 'propcloud.app'
+
+/** Resolve a request host to a tenant.
+ *
+ *  Rules (in order):
+ *  1. propcloud.app / www.propcloud.app  → null  (landing page)
+ *  2. {slug}.propcloud.app              → lookup by slug
+ *  3. any other domain                  → lookup by domain (custom domain)
+ *  4. localhost / *.localhost (dev)     → fallback to first tenant
+ */
 export async function getTenantByDomain(domain: string): Promise<Tenant | null> {
   const supabase = await createServerSupabaseClient()
 
-  // Try exact domain match first
+  // 1. Root app domain → no tenant, show landing page
+  if (domain === APP_DOMAIN || domain === `www.${APP_DOMAIN}`) {
+    return null
+  }
+
+  // 2. Subdomain of app domain → lookup by slug
+  if (domain.endsWith(`.${APP_DOMAIN}`)) {
+    const slug = domain.slice(0, domain.length - APP_DOMAIN.length - 1)
+    const { data } = await supabase
+      .from('tenants').select('*').eq('slug', slug).single()
+    return data ?? null
+  }
+
+  // 3. Custom domain → lookup by exact domain match
+  if (!domain.includes('localhost') && !domain.endsWith('.localhost')) {
+    const { data } = await supabase
+      .from('tenants').select('*').eq('domain', domain).single()
+    return data ?? null
+  }
+
+  // 4. localhost (dev) → fallback to first tenant so local dev works
   const { data } = await supabase
-    .from('tenants')
-    .select('*')
-    .eq('domain', domain)
-    .single()
-
-  if (data) return data
-
-  // Fallback: return first tenant (useful for preview/dev domains)
-  const { data: fallback } = await supabase
-    .from('tenants')
-    .select('*')
-    .limit(1)
-    .single()
-
-  return fallback ?? null
+    .from('tenants').select('*').limit(1).single()
+  return data ?? null
 }
 
 export async function getTenantConfig(tenantId: string): Promise<TenantConfig | null> {
