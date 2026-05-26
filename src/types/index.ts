@@ -18,15 +18,27 @@ export interface TenantTheme {
 
 export interface TenantConfig {
   tenant_id: string
+  // Content
   hero_title: string | null
   hero_subtitle: string | null
   about_html: string | null
+  // Contact
   whatsapp: string | null
   contact_email: string | null
   address: string | null
   instagram: string | null
   facebook: string | null
   linkedin: string | null
+  // Map
+  map_center_lat: number | null
+  map_center_lng: number | null
+  map_zoom: number | null
+  // Listing
+  listing_view: 'grid' | 'list' | null
+  listing_cols: number | null
+  listing_sort: 'price_asc' | 'price_desc' | 'newest' | null
+  // Detail
+  detail_sections: string[] | null
 }
 
 export interface PropertySource {

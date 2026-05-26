@@ -6,6 +6,8 @@ import type { Property } from '@/types'
 interface MapViewProps {
   mapStyle: string
   mapboxToken: string
+  mapCenter?: [number, number]
+  mapZoom?: number
 }
 
 function getMapLightPreset(): string {
@@ -27,7 +29,7 @@ function fmtPrice(price: number, currency: string): string {
     : (price / 1_000).toFixed(0) + 'K')
 }
 
-export default function MapView({ mapStyle, mapboxToken }: MapViewProps) {
+export default function MapView({ mapStyle, mapboxToken, mapCenter, mapZoom }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -51,8 +53,8 @@ export default function MapView({ mapStyle, mapboxToken }: MapViewProps) {
         map = new mapboxgl.Map({
           container: mapContainerRef.current!,
           style: mapStyle,
-          center: [-84.0, 9.9],
-          zoom: 7,
+          center: mapCenter ?? [-84.0, 9.9],
+          zoom: mapZoom ?? 7,
         })
 
         mapRef.current = map
