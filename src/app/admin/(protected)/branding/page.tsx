@@ -20,6 +20,8 @@ export default function BrandingPage() {
   const [saved, setSaved] = useState(false)
   const [tenantId, setTenantId] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
+  const [footerLogoMode, setFooterLogoMode] = useState<'same' | 'custom'>('same')
+  const [footerLogoUrl, setFooterLogoUrl] = useState('')
   const [primaryColor, setPrimaryColor] = useState('#6b2fa0')
   const [accentColor, setAccentColor] = useState('#f59e0b')
   const [fontHeading, setFontHeading] = useState('Playfair Display')
@@ -44,6 +46,13 @@ export default function BrandingPage() {
         setFontBody(tenant.theme?.fontBody ?? 'Outfit')
         setMapStyle(tenant.theme?.mapStyle ?? 'mapbox://styles/mapbox/streets-v12')
       }
+      const { data: cfg } = await supabase
+        .from('tenant_config').select('footer_logo_url')
+        .eq('tenant_id', adminRec.tenant_id).single()
+      if (cfg?.footer_logo_url) {
+        setFooterLogoMode('custom')
+        setFooterLogoUrl(cfg.footer_logo_url)
+      }
       setLoading(false)
     })
   }, [])
@@ -56,6 +65,10 @@ export default function BrandingPage() {
       logo_url: logoUrl || null,
       theme: { primaryColor, accentColor, fontHeading, fontBody, mapStyle },
     }).eq('id', tenantId)
+    await supabase.from('tenant_config').upsert({
+      tenant_id: tenantId,
+      footer_logo_url: footerLogoMode === 'custom' ? (footerLogoUrl || null) : null,
+    }, { onConflict: 'tenant_id' })
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
@@ -68,19 +81,52 @@ export default function BrandingPage() {
       <PageHeader title="Branding" desc="Colores, logo y tipografía de tu inmobiliaria" />
       <form onSubmit={save}>
 
-        <Section title="Logo">
+        <Section title="Logo principal (Nav)">
           <Field label="URL del logo">
             <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)}
               placeholder="https://..." style={inputStyle} />
           </Field>
           {logoUrl && (
             <img src={logoUrl} alt="Logo preview"
-              style={{ height: 48, objectFit: 'contain', marginTop: 8, borderRadius: 6, border: '1px solid #e5e5e5', padding: 6 }} />
+              style={{ height: 48, objectFit: 'contain', marginTop: 8, borderRadius: 6, border: '1px solid #e5e5e5', padding: 6, background: '#fff' }} />
+          )}
+        </Section>
+
+        <Section title="Logo del footer">
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            {([['same', 'Usar el mismo logo'] , ['custom', 'Logo diferente']] as const).map(([v, label]) => (
+              <label key={v} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: '#333' }}>
+                <input type="radio" name="footerLogoMode" value={v}
+                  checked={footerLogoMode === v} onChange={() => setFooterLogoMode(v)}
+                  style={{ accentColor: '#111' }} />
+                {label}
+              </label>
+            ))}
+          </div>
+          {footerLogoMode === 'custom' && (
+            <>
+              <Field label="URL del logo para footer (se muestra en blanco sobre fondo oscuro)">
+                <input value={footerLogoUrl} onChange={e => setFooterLogoUrl(e.target.value)}
+                  placeholder="https://..." style={inputStyle} />
+              </Field>
+              {footerLogoUrl && (
+                <div style={{ marginTop: 8, background: '#111', borderRadius: 8, padding: 12, display: 'inline-block' }}>
+                  <img src={footerLogoUrl} alt="Footer logo preview"
+                    style={{ height: 36, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.85 }} />
+                </div>
+              )}
+            </>
+          )}
+          {footerLogoMode === 'same' && logoUrl && (
+            <div style={{ marginTop: 4, background: '#111', borderRadius: 8, padding: 12, display: 'inline-block' }}>
+              <img src={logoUrl} alt="Footer logo preview"
+                style={{ height: 36, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.85 }} />
+            </div>
           )}
         </Section>
 
         <Section title="Colores">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 16 }}>
             <Field label="Color primario">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)}
@@ -99,6 +145,40 @@ export default function BrandingPage() {
               </div>
               <div style={{ marginTop: 8, height: 6, borderRadius: 3, background: accentColor }} />
             </Field>
+          </div>
+          {/* Preview how colors look in the UI */}
+          <div style={{ background: '#f8f8f8', borderRadius: 10, padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>
+              Vista previa de colores en el sitio
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+              {/* Slider preview */}
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <div style={{ fontSize: 11, color: '#999', marginBottom: 4 }}>Slider de precio</div>
+                <div style={{ position: 'relative', height: 6, background: '#e0e0e0', borderRadius: 3 }}>
+                  <div style={{ position: 'absolute', left: '20%', width: '60%', height: '100%', background: `linear-gradient(90deg, ${accentColor}, ${primaryColor})`, borderRadius: 3 }} />
+                  <div style={{ position: 'absolute', left: '20%', top: '50%', transform: 'translate(-50%,-50%)', width: 14, height: 14, borderRadius: '50%', background: '#1a1a1a', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+                  <div style={{ position: 'absolute', left: '80%', top: '50%', transform: 'translate(-50%,-50%)', width: 14, height: 14, borderRadius: '50%', background: '#1a1a1a', border: '2px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+                </div>
+              </div>
+              {/* Loading ring preview */}
+              <div>
+                <div style={{ fontSize: 11, color: '#999', marginBottom: 6 }}>Ícono de carga</div>
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: `conic-gradient(from 0deg, ${primaryColor} 0%, ${accentColor} 60%, transparent 85%)`,
+                  WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px))',
+                  mask: 'radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px))',
+                }} />
+              </div>
+              {/* Badge preview */}
+              <div>
+                <div style={{ fontSize: 11, color: '#999', marginBottom: 6 }}>Badge tipo</div>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: accentColor }}>
+                  Portafolio
+                </span>
+              </div>
+            </div>
           </div>
         </Section>
 

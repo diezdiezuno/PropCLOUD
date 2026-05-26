@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import type { Property } from '@/types'
 
-interface Props { id: string }
+interface Props {
+  id: string
+  contactMode?: 'agent' | 'office'
+  officeWhatsapp?: string | null
+  officeEmail?: string | null
+}
 
 function fmtFull(price: number, currency: string): string {
   if (!price) return 'Precio a consultar'
@@ -13,7 +18,7 @@ function fmtFull(price: number, currency: string): string {
   return '$' + Number(price).toLocaleString('en-US')
 }
 
-export default function PropertyDetailClient({ id }: Props) {
+export default function PropertyDetailClient({ id, contactMode = 'agent', officeWhatsapp, officeEmail }: Props) {
   const router = useRouter()
   const isMobile = useIsMobile()
   const [property, setProperty] = useState<Property | null>(null)
@@ -79,8 +84,14 @@ export default function PropertyDetailClient({ id }: Props) {
   const location = [p.city, p.country].filter(Boolean).join(', ')
   const address = p.address ?? ''
   const whatsappMsg = encodeURIComponent(`Hola, me interesa la propiedad: ${p.title}`)
-  const whatsappUrl = p.agent_phone
-    ? `https://wa.me/${p.agent_phone.replace(/\D/g, '')}?text=${whatsappMsg}`
+  const contactPhone = contactMode === 'office'
+    ? officeWhatsapp ?? null
+    : (p.agent_phone ?? null)
+  const contactEmail = contactMode === 'office'
+    ? officeEmail ?? null
+    : (p.agent_email ?? null)
+  const whatsappUrl = contactPhone
+    ? `https://wa.me/${contactPhone.replace(/\D/g, '')}?text=${whatsappMsg}`
     : null
 
   const openLb = (i: number) => { setLbIdx(i); setLbOpen(true) }
@@ -232,9 +243,9 @@ export default function PropertyDetailClient({ id }: Props) {
                   Consultar por WhatsApp
                 </a>
               )}
-              {p.agent_email && (
+              {contactEmail && (
                 <a
-                  href={`mailto:${p.agent_email}?subject=Consulta: ${encodeURIComponent(p.title)}&body=${whatsappMsg}`}
+                  href={`mailto:${contactEmail}?subject=Consulta: ${encodeURIComponent(p.title)}&body=${whatsappMsg}`}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                     background: '#fff', color: '#333', borderRadius: 8,

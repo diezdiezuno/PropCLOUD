@@ -14,6 +14,9 @@ export default function ContactoPage() {
   const [instagram, setInstagram] = useState('')
   const [facebook, setFacebook] = useState('')
   const [linkedin, setLinkedin] = useState('')
+  const [youtube, setYoutube] = useState('')
+  const [tiktok, setTiktok] = useState('')
+  const [twitter, setTwitter] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -25,7 +28,7 @@ export default function ContactoPage() {
       setTenantId(adminRec.tenant_id)
       const { data: cfg } = await supabase
         .from('tenant_config')
-        .select('whatsapp, contact_email, address, instagram, facebook, linkedin')
+        .select('whatsapp, contact_email, address, instagram, facebook, linkedin, youtube, tiktok, twitter')
         .eq('tenant_id', adminRec.tenant_id).single()
       if (cfg) {
         setWhatsapp(cfg.whatsapp ?? '')
@@ -34,6 +37,9 @@ export default function ContactoPage() {
         setInstagram(cfg.instagram ?? '')
         setFacebook(cfg.facebook ?? '')
         setLinkedin(cfg.linkedin ?? '')
+        setYoutube(cfg.youtube ?? '')
+        setTiktok(cfg.tiktok ?? '')
+        setTwitter(cfg.twitter ?? '')
       }
       setLoading(false)
     })
@@ -51,6 +57,9 @@ export default function ContactoPage() {
       instagram: instagram || null,
       facebook: facebook || null,
       linkedin: linkedin || null,
+      youtube: youtube || null,
+      tiktok: tiktok || null,
+      twitter: twitter || null,
     }, { onConflict: 'tenant_id' })
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000)
   }
@@ -79,11 +88,14 @@ export default function ContactoPage() {
 
         <Section title="Redes sociales">
           {([
-            ['Instagram', instagram, setInstagram, 'https://instagram.com/tuinmobiliaria'],
-            ['Facebook',  facebook,  setFacebook,  'https://facebook.com/tuinmobiliaria'],
-            ['LinkedIn',  linkedin,  setLinkedin,  'https://linkedin.com/company/tuinmobiliaria'],
-          ] as const).map(([label, value, setter, placeholder]) => (
-            <Field key={label} label={label}>
+            ['Instagram', instagram, setInstagram, 'https://instagram.com/tuinmobiliaria',   '📸'],
+            ['Facebook',  facebook,  setFacebook,  'https://facebook.com/tuinmobiliaria',    '👥'],
+            ['LinkedIn',  linkedin,  setLinkedin,  'https://linkedin.com/company/tu',         '💼'],
+            ['YouTube',   youtube,   setYoutube,   'https://youtube.com/@tuinmobiliaria',     '▶️'],
+            ['TikTok',    tiktok,    setTiktok,    'https://tiktok.com/@tuinmobiliaria',      '🎵'],
+            ['X / Twitter', twitter, setTwitter,  'https://x.com/tuinmobiliaria',            '𝕏'],
+          ] as const).map(([label, value, setter, placeholder, icon]) => (
+            <Field key={label} label={`${icon} ${label}`}>
               <input value={value} onChange={e => setter(e.target.value)}
                 placeholder={placeholder} style={inputStyle} />
             </Field>

@@ -13,6 +13,7 @@ interface Props {
   defaultView?: 'grid' | 'list'
   defaultCols?: number
   defaultSort?: Sort
+  enabledViews?: string[]
 }
 
 function fmtPrice(price: number, currency: string) {
@@ -21,7 +22,7 @@ function fmtPrice(price: number, currency: string) {
   return sym + (price >= 1e6 ? (price / 1e6).toFixed(1).replace('.0', '') + 'M' : Math.round(price / 1000) + 'K')
 }
 
-export default function ListingsClient({ defaultView = 'grid', defaultSort = 'price_asc' }: Props) {
+export default function ListingsClient({ defaultView = 'grid', defaultSort = 'price_asc', enabledViews = ['grid', 'hover', 'dual', 'list'] }: Props) {
   const router = useRouter()
   const isMobile = useIsMobile()
   const [allProperties, setAllProperties] = useState<Property[]>([])
@@ -72,7 +73,7 @@ export default function ListingsClient({ defaultView = 'grid', defaultSort = 'pr
               { mode: 'hover' as ViewMode, title: 'Grid hover', icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg> },
               { mode: 'dual' as ViewMode, title: 'Grid dual', icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="14" rx="1"/><rect x="9" y="1" width="6" height="14" rx="1"/></svg> },
               { mode: 'list' as ViewMode, title: 'Lista', icon: <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="3" rx="1"/><rect x="1" y="7" width="14" height="3" rx="1"/><rect x="1" y="12" width="14" height="3" rx="1"/></svg> },
-            ].map(({ mode, title, icon }) => (
+            ].filter(({ mode }) => enabledViews.includes(mode)).map(({ mode, title, icon }) => (
               <button key={mode} onClick={() => setView(mode)} title={title} style={{
                 background: view === mode ? '#fff' : 'none', border: 'none',
                 padding: '6px 10px', borderRadius: 6, cursor: 'pointer',

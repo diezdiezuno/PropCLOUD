@@ -29,6 +29,11 @@ export interface TenantConfig {
   instagram: string | null
   facebook: string | null
   linkedin: string | null
+  youtube: string | null
+  tiktok: string | null
+  twitter: string | null
+  // Branding extras
+  footer_logo_url: string | null
   // Map
   map_center_lat: number | null
   map_center_lng: number | null
@@ -37,8 +42,10 @@ export interface TenantConfig {
   listing_view: 'grid' | 'list' | null
   listing_cols: number | null
   listing_sort: 'price_asc' | 'price_desc' | 'newest' | null
+  listing_views: string[] | null          // which view modes to show in the toggle
   // Detail
   detail_sections: string[] | null
+  detail_contact_mode: 'agent' | 'office' | null
 }
 
 export interface PropertySource {

@@ -13,6 +13,7 @@ export default async function ListingsPage() {
       defaultView={(config?.listing_view) ?? 'grid'}
       defaultCols={config?.listing_cols ?? 3}
       defaultSort={config?.listing_sort ?? 'price_asc'}
+      enabledViews={(config?.listing_views as string[] | null) ?? ['grid', 'hover', 'dual', 'list']}
     />
   )
 }

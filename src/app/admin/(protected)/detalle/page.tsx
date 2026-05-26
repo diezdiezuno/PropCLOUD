@@ -12,12 +12,15 @@ const ALL_SECTIONS = [
   { key: 'agent',       label: 'Tarjeta del agente' },
 ]
 
+type ContactMode = 'agent' | 'office'
+
 export default function DetallePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [tenantId, setTenantId] = useState('')
   const [sections, setSections] = useState<string[]>(['gallery', 'info', 'stats', 'description', 'agent'])
+  const [contactMode, setContactMode] = useState<ContactMode>('agent')
 
   useEffect(() => {
     const supabase = createClient()
@@ -28,9 +31,10 @@ export default function DetallePage() {
       if (!adminRec) return
       setTenantId(adminRec.tenant_id)
       const { data: cfg } = await supabase
-        .from('tenant_config').select('detail_sections')
+        .from('tenant_config').select('detail_sections, detail_contact_mode')
         .eq('tenant_id', adminRec.tenant_id).single()
       if (cfg?.detail_sections) setSections(cfg.detail_sections)
+      if (cfg?.detail_contact_mode) setContactMode(cfg.detail_contact_mode as ContactMode)
       setLoading(false)
     })
   }, [])
@@ -48,6 +52,7 @@ export default function DetallePage() {
     await supabase.from('tenant_config').upsert({
       tenant_id: tenantId,
       detail_sections: sections,
+      detail_contact_mode: contactMode,
     }, { onConflict: 'tenant_id' })
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000)
   }
@@ -58,6 +63,40 @@ export default function DetallePage() {
     <div>
       <PageHeader title="Secciones del detalle" desc="Qué secciones se muestran en la página de cada propiedad" />
       <form onSubmit={save}>
+
+        <Section title="Modo de contacto">
+          <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
+            Elegí cómo se muestra el CTA de contacto en cada propiedad.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {([
+              ['agent', 'Agente', 'Se muestra el nombre, foto y contacto del agente asignado a cada propiedad'],
+              ['office', 'Oficina', 'Se muestra el WhatsApp y email de la oficina (configurados en Contacto)'],
+            ] as const).map(([value, label, desc]) => {
+              const active = contactMode === value
+              return (
+                <label key={value} onClick={() => setContactMode(value)} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 14,
+                  padding: '14px 16px', borderRadius: 10, cursor: 'pointer',
+                  border: `2px solid ${active ? '#111' : '#e5e5e5'}`,
+                  background: active ? '#111' : '#fff',
+                }}>
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%', border: `2px solid ${active ? '#fff' : '#ccc'}`,
+                    flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {active && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: active ? '#fff' : '#111', marginBottom: 3 }}>{label}</div>
+                    <div style={{ fontSize: 12, color: active ? 'rgba(255,255,255,0.6)' : '#aaa' }}>{desc}</div>
+                  </div>
+                </label>
+              )
+            })}
+          </div>
+        </Section>
+
         <Section title="Secciones visibles">
           <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
             Activá o desactivá cada sección. El orden de arriba hacia abajo refleja el orden en la página.
