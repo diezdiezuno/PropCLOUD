@@ -8,6 +8,7 @@ interface Source { id: string; type: string; config: Record<string, string>; is_
 interface Tenant { id: string; name: string; slug: string; domain: string; logo_url: string | null }
 interface DomainVerification { type: string; domain: string; value: string }
 interface DomainStatus { verified: boolean; misconfigured?: boolean; verification: DomainVerification[]; error?: { message: string } | null }
+interface DomainResult { domain: string; apex: DomainStatus | null; www: DomainStatus | null }
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -19,7 +20,7 @@ export default function TenantDetailPage() {
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [admins, setAdmins] = useState<Admin[]>([])
   const [sources, setSources] = useState<Source[]>([])
-  const [domainStatus, setDomainStatus] = useState<DomainStatus | null>(null)
+  const [domainResult, setDomainResult] = useState<DomainResult | null>(null)
   const [domainLoading, setDomainLoading] = useState(false)
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
@@ -46,21 +47,21 @@ export default function TenantDetailPage() {
   async function loadDomainStatus() {
     setDomainLoading(true)
     const res = await fetch(`/api/superadmin/tenants/${id}/domain`)
-    if (res.ok) { const d = await res.json(); setDomainStatus(d.status) }
+    if (res.ok) setDomainResult(await res.json())
     setDomainLoading(false)
   }
 
   async function addToVercel() {
     setDomainLoading(true)
     const res = await fetch(`/api/superadmin/tenants/${id}/domain`, { method: 'POST' })
-    if (res.ok) { const d = await res.json(); setDomainStatus(d.status) }
+    if (res.ok) setDomainResult(await res.json())
     setDomainLoading(false)
   }
 
   async function recheckVercel() {
     setDomainLoading(true)
     const res = await fetch(`/api/superadmin/tenants/${id}/domain`, { method: 'PUT' })
-    if (res.ok) { const d = await res.json(); setDomainStatus(d.status) }
+    if (res.ok) setDomainResult(await res.json())
     setDomainLoading(false)
   }
 
@@ -154,69 +155,60 @@ export default function TenantDetailPage() {
 
       {/* Domain / Vercel */}
       <Section title="Dominio en Vercel">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <code style={{ fontSize: 14, color: '#e2e8f0', background: '#0f0f0f', padding: '4px 10px', borderRadius: 6 }}>
-              {tenant?.domain}
+        {/* Row per domain */}
+        {[
+          { label: tenant?.domain ?? '', status: domainResult?.apex },
+          { label: `www.${tenant?.domain ?? ''}`, status: domainResult?.www },
+        ].map(({ label, status }) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <code style={{ fontSize: 13, color: '#e2e8f0', background: '#0f0f0f', padding: '4px 10px', borderRadius: 6, minWidth: 200 }}>
+              {label}
             </code>
             {domainLoading ? (
-              <span style={{ fontSize: 12, color: '#555' }}>Verificando…</span>
-            ) : domainStatus === null ? (
-              <span style={{ fontSize: 12, color: '#f59e0b' }}>⚠ No agregado a Vercel</span>
-            ) : domainStatus.verified ? (
+              <span style={{ fontSize: 12, color: '#555' }}>…</span>
+            ) : !domainResult ? (
+              <span style={{ fontSize: 12, color: '#555' }}>—</span>
+            ) : status === null ? (
+              <span style={{ fontSize: 12, color: '#f59e0b' }}>⚠ No agregado</span>
+            ) : status.verified ? (
               <span style={{ fontSize: 12, color: '#4ade80' }}>✓ Verificado</span>
             ) : (
               <span style={{ fontSize: 12, color: '#f87171' }}>✗ Pendiente de DNS</span>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {domainStatus === null && (
-              <button onClick={addToVercel} disabled={domainLoading} style={btnStyle}>
-                Agregar a Vercel
-              </button>
-            )}
-            {domainStatus && !domainStatus.verified && (
-              <button onClick={recheckVercel} disabled={domainLoading} style={btnStyle}>
-                Reverificar
-              </button>
-            )}
-          </div>
+        ))}
+
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 14, marginBottom: 16 }}>
+          <button onClick={addToVercel} disabled={domainLoading} style={btnStyle}>
+            {domainResult ? 'Re-agregar a Vercel' : 'Agregar a Vercel'}
+          </button>
+          {domainResult && (
+            <button onClick={recheckVercel} disabled={domainLoading} style={{ ...btnStyle, background: 'transparent', color: '#aaa', border: '1px solid #333' }}>
+              Reverificar
+            </button>
+          )}
         </div>
 
-        {/* DNS instructions */}
-        {domainStatus && !domainStatus.verified && domainStatus.verification?.length > 0 && (
-          <div style={{ background: '#0f0f0f', borderRadius: 8, padding: '14px 16px', marginBottom: 12 }}>
-            <div style={{ fontSize: 12, color: '#888', marginBottom: 10 }}>
-              Agregá estos registros DNS en el panel de tu registrar (GoDaddy, Cloudflare, etc.):
-            </div>
-            {domainStatus.verification.map((v, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr', gap: 8, marginBottom: 6, fontSize: 12 }}>
-                <span style={{ color: '#60a5fa', fontWeight: 600 }}>{v.type}</span>
-                <span style={{ color: '#aaa', fontFamily: 'monospace' }}>{v.domain}</span>
-                <span style={{ color: '#e2e8f0', fontFamily: 'monospace', wordBreak: 'break-all' }}>{v.value}</span>
-              </div>
-            ))}
+        {/* DNS records — show standard records + any TXT verification records */}
+        <div style={{ background: '#0f0f0f', borderRadius: 8, padding: '14px 16px', fontSize: 12 }}>
+          <div style={{ color: '#666', marginBottom: 10 }}>
+            Registros DNS a configurar en el registrar del cliente:
           </div>
-        )}
+          <DnsRow type="A" name={tenant?.domain ?? ''} value="76.76.21.21" />
+          <DnsRow type="CNAME" name="www" value="cname.vercel-dns.com" />
+          {/* Extra TXT verification records from Vercel if needed */}
+          {[domainResult?.apex, domainResult?.www].flatMap(s =>
+            (s?.verification ?? []).filter(v => v.type === 'TXT')
+          ).map((v, i) => (
+            <DnsRow key={i} type="TXT" name={v.domain} value={v.value} />
+          ))}
+        </div>
 
-        {domainStatus && !domainStatus.verified && (domainStatus.verification?.length === 0 || !domainStatus.verification) && (
-          <div style={{ background: '#0f0f0f', borderRadius: 8, padding: '14px 16px', fontSize: 12, color: '#aaa' }}>
-            <div style={{ marginBottom: 8 }}>Apuntá el dominio a Vercel con estos registros DNS:</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '60px 80px 1fr', gap: 8, marginBottom: 6 }}>
-              <span style={{ color: '#60a5fa', fontWeight: 600 }}>A</span>
-              <span style={{ color: '#aaa', fontFamily: 'monospace' }}>{tenant?.domain}</span>
-              <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>76.76.21.21</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '60px 80px 1fr', gap: 8 }}>
-              <span style={{ color: '#60a5fa', fontWeight: 600 }}>CNAME</span>
-              <span style={{ color: '#aaa', fontFamily: 'monospace' }}>www</span>
-              <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>cname.vercel-dns.com</span>
-            </div>
+        {(domainResult?.apex?.error || domainResult?.www?.error) && (
+          <div style={{ fontSize: 12, color: '#f87171', marginTop: 8 }}>
+            {domainResult?.apex?.error?.message ?? domainResult?.www?.error?.message}
           </div>
-        )}
-
-        {domainStatus?.error && (
-          <div style={{ fontSize: 12, color: '#f87171', marginTop: 8 }}>{domainStatus.error.message}</div>
         )}
       </Section>
 
@@ -303,6 +295,16 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div style={{ marginBottom: 14 }}><label style={labelStyle}>{label}</label>{children}</div>
 }
+function DnsRow({ type, name, value }: { type: string; name: string; value: string }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 1fr', gap: 10, marginBottom: 6, alignItems: 'start' }}>
+      <span style={{ color: '#60a5fa', fontWeight: 700, fontFamily: 'monospace' }}>{type}</span>
+      <span style={{ color: '#aaa', fontFamily: 'monospace', wordBreak: 'break-all' }}>{name}</span>
+      <span style={{ color: '#e2e8f0', fontFamily: 'monospace', wordBreak: 'break-all' }}>{value}</span>
+    </div>
+  )
+}
+
 const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#888', display: 'block', marginBottom: 6 }
 const inputStyle: React.CSSProperties = { width: '100%', background: '#111', border: '1px solid #333', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }
 const btnStyle: React.CSSProperties = { background: '#fff', color: '#111', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }

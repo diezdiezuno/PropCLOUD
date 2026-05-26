@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifySuperAdmin, serviceClient } from '@/lib/superadmin'
 import { addDomain, getDomainStatus, verifyDomain, removeDomain } from '@/lib/vercel-api'
 
-/** GET — current Vercel status for the tenant's domain */
+/** GET — current Vercel status for both apex and www */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await verifySuperAdmin(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -12,11 +12,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .from('tenants').select('domain').eq('id', id).single()
   if (!tenant) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const status = await getDomainStatus(tenant.domain)
-  return NextResponse.json({ domain: tenant.domain, status })
+  const [apex, www] = await Promise.all([
+    getDomainStatus(tenant.domain),
+    getDomainStatus(`www.${tenant.domain}`),
+  ])
+  return NextResponse.json({ domain: tenant.domain, apex, www })
 }
 
-/** POST — add tenant domain to Vercel (or re-add if changed) */
+/** POST — add both apex and www to Vercel */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await verifySuperAdmin(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -26,11 +29,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .from('tenants').select('domain').eq('id', id).single()
   if (!tenant) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const status = await addDomain(tenant.domain)
-  return NextResponse.json({ domain: tenant.domain, status })
+  const [apex, www] = await Promise.all([
+    addDomain(tenant.domain),
+    addDomain(`www.${tenant.domain}`),
+  ])
+  return NextResponse.json({ domain: tenant.domain, apex, www })
 }
 
-/** PUT — trigger re-verification */
+/** PUT — re-verify both apex and www */
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await verifySuperAdmin(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -40,8 +46,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     .from('tenants').select('domain').eq('id', id).single()
   if (!tenant) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const status = await verifyDomain(tenant.domain)
-  return NextResponse.json({ domain: tenant.domain, status })
+  const [apex, www] = await Promise.all([
+    verifyDomain(tenant.domain),
+    verifyDomain(`www.${tenant.domain}`),
+  ])
+  return NextResponse.json({ domain: tenant.domain, apex, www })
 }
 
 /** DELETE — remove domain from Vercel */
