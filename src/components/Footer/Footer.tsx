@@ -1,3 +1,5 @@
+'use client'
+
 import type { Tenant, TenantConfig } from '@/types'
 
 interface Props {

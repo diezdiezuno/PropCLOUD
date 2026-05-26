@@ -21,9 +21,10 @@ export default async function PublicLayout({ children }: { children: React.React
     if (tenant) config = await getTenantConfig(tenant.id)
   } catch {}
 
-  // No tenant → plain wrapper, landing page handles its own layout
+  // No tenant → wrap with FilterProvider so client pages don't crash,
+  // but skip Nav/Footer (LandingPage has its own layout)
   if (!tenant) {
-    return <>{children}</>
+    return <FilterProvider>{children}</FilterProvider>
   }
 
   const theme = tenant.theme ?? DEFAULT_THEME
