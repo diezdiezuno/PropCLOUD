@@ -5,9 +5,13 @@ export function proxy(request: NextRequest) {
   // Strip port for local dev
   const domain = host.split(':')[0]
 
-  const response = NextResponse.next()
-  response.headers.set('x-tenant-domain', domain)
-  return response
+  // Forward as a REQUEST header so server components can read it via headers()
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-tenant-domain', domain)
+
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  })
 }
 
 export const config = {
