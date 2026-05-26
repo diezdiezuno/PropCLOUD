@@ -19,108 +19,136 @@ function getMapLightPreset(): string {
 function fmtPrice(price: number, currency: string): string {
   if (currency === 'CRC') {
     return '₡' + (price >= 1_000_000
-      ? (price / 1_000_000).toFixed(price % 1_000_000 === 0 ? 0 : 1) + 'M'
+      ? (price / 1_000_000).toFixed(1).replace('.0', '') + 'M'
       : (price / 1_000).toFixed(0) + 'K')
   }
   return '$' + (price >= 1_000_000
-    ? (price / 1_000_000).toFixed(price % 1_000_000 === 0 ? 0 : 1) + 'M'
+    ? (price / 1_000_000).toFixed(1).replace('.0', '') + 'M'
     : (price / 1_000).toFixed(0) + 'K')
 }
 
 export default function MapView({ mapStyle, mapboxToken }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
-  const markersRef = useRef<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
-    let map: any
-
-    async function initMap() {
-      const mapboxgl = (await import('mapbox-gl')).default
-
-      if (!mapContainerRef.current || mapRef.current) return
-
-      mapboxgl.accessToken = mapboxToken
-
-      map = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: mapStyle,
-        center: [-84.0, 9.9],
-        zoom: 7,
-      })
-
-      mapRef.current = map
-
-      map.addControl(new mapboxgl.NavigationControl(), 'top-right')
-      map.addControl(new mapboxgl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: false, maximumAge: 60000 },
-        trackUserLocation: true,
-        showUserHeading: false,
-      }), 'top-right')
-
-      map.on('load', async () => {
-        try {
-          map.setConfigProperty('basemap', 'lightPreset', getMapLightPreset())
-        } catch {}
-
-        // Fetch properties
-        const res = await fetch('/api/properties')
-        if (!res.ok) { setLoading(false); return }
-        const properties: Property[] = await res.json()
-        setLoading(false)
-
-        // Add markers
-        markersRef.current.forEach(m => m.remove())
-        markersRef.current = []
-
-        properties.forEach(p => {
-          if (!p.lat || !p.lng) return
-
-          const pinEl = document.createElement('div')
-          pinEl.className = 'map-pin'
-          const loc = p.city?.split(',')[0].trim() ?? ''
-          pinEl.innerHTML = `<div class="mp-price">${fmtPrice(p.price, p.currency)}</div>${loc ? `<div class="mp-loc">${loc}</div>` : ''}`
-
-          const popup = new mapboxgl.Popup({ maxWidth: '240px', offset: 10 })
-            .setHTML(`
-              <div style="font-family:'Outfit',sans-serif;min-width:200px">
-                ${p.images[0] ? `<img src="${p.images[0]}" style="width:100%;height:110px;object-fit:cover;display:block" />` : ''}
-                <div style="padding:10px 12px 12px">
-                  <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:3px">${p.type}</div>
-                  <div style="font-size:14px;font-weight:600;color:#111;margin-bottom:4px">${p.title}</div>
-                  <div style="font-size:16px;font-weight:700;color:#111">${fmtPrice(p.price, p.currency)}</div>
-                </div>
-              </div>
-            `)
-
-          const marker = new mapboxgl.Marker({ element: pinEl, anchor: 'center' })
-            .setLngLat([p.lng, p.lat])
-            .setPopup(popup)
-            .addTo(map)
-
-          markersRef.current.push(marker)
-        })
-      })
+    if (!mapContainerRef.current || mapRef.current) return
+    if (!mapboxToken) {
+      setErrorMsg('Mapbox token missing')
+      setStatus('error')
+      return
     }
 
-    initMap()
+    let map: any
+
+    ;(async () => {
+      try {
+        const mapboxgl = (await import('mapbox-gl')).default
+        mapboxgl.accessToken = mapboxToken
+
+        map = new mapboxgl.Map({
+          container: mapContainerRef.current!,
+          style: mapStyle,
+          center: [-84.0, 9.9],
+          zoom: 7,
+        })
+
+        mapRef.current = map
+
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right')
+        map.addControl(new mapboxgl.GeolocateControl({
+          positionOptions: { enableHighAccuracy: false, maximumAge: 60000 },
+          trackUserLocation: true,
+          showUserHeading: false,
+        }), 'top-right')
+
+        map.on('load', async () => {
+          try { map.setConfigProperty('basemap', 'lightPreset', getMapLightPreset()) } catch {}
+          setStatus('ready')
+
+          try {
+            const res = await fetch('/api/properties')
+            if (!res.ok) return
+            const properties: Property[] = await res.json()
+
+            properties.forEach(p => {
+              if (!p.lat || !p.lng) return
+              const pinEl = document.createElement('div')
+              pinEl.className = 'map-pin'
+              const loc = p.city?.split(',')[0].trim() ?? ''
+              pinEl.innerHTML = `<div class="mp-price">${fmtPrice(p.price, p.currency)}</div>${loc ? `<div class="mp-loc">${loc}</div>` : ''}`
+
+              const popup = new mapboxgl.Popup({ maxWidth: '240px', offset: 10 })
+                .setHTML(`
+                  <div style="font-family:sans-serif;min-width:200px">
+                    ${p.images[0] ? `<img src="${p.images[0]}" style="width:100%;height:110px;object-fit:cover;display:block" />` : ''}
+                    <div style="padding:10px 12px 12px">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:3px">${p.type}</div>
+                      <div style="font-size:14px;font-weight:600;color:#111;margin-bottom:4px">${p.title}</div>
+                      <div style="font-size:16px;font-weight:700;color:#111">${fmtPrice(p.price, p.currency)}</div>
+                    </div>
+                  </div>
+                `)
+
+              new mapboxgl.Marker({ element: pinEl, anchor: 'center' })
+                .setLngLat([p.lng, p.lat])
+                .setPopup(popup)
+                .addTo(map)
+            })
+          } catch (e) {
+            console.error('[MapView] error loading properties:', e)
+          }
+        })
+
+        map.on('error', (e: any) => {
+          console.error('[MapView] map error:', e)
+          setErrorMsg(e?.error?.message ?? 'Map error')
+          setStatus('error')
+        })
+
+      } catch (e: any) {
+        console.error('[MapView] init error:', e)
+        setErrorMsg(e?.message ?? 'Failed to load map')
+        setStatus('error')
+      }
+    })()
 
     return () => {
-      mapRef.current?.remove()
+      map?.remove()
       mapRef.current = null
     }
   }, [mapStyle, mapboxToken])
 
   return (
-    <div className="relative w-full" style={{ height: 'calc(100vh - 68px)', minHeight: '400px' }}>
-      <div ref={mapContainerRef} className="absolute inset-0" />
-      {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 pointer-events-none z-10">
-          <div className="w-10 h-10 rounded-full border-2 border-stone-200 border-t-stone-600 animate-spin mb-3" />
-          <span className="text-sm text-stone-400">Cargando propiedades...</span>
+    <div style={{ position: 'relative', width: '100%', height: 'calc(100vh - 68px)', minHeight: '400px' }}>
+      <div ref={mapContainerRef} style={{ position: 'absolute', inset: 0 }} />
+
+      {status === 'loading' && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.8)', zIndex: 10
+        }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            border: '3px solid #e5e5e5', borderTopColor: '#555',
+            animation: 'spin 0.8s linear infinite', marginBottom: 12
+          }} />
+          <span style={{ fontSize: 14, color: '#888' }}>Cargando mapa...</span>
         </div>
       )}
+
+      {status === 'error' && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', background: '#fff', zIndex: 10
+        }}>
+          <p style={{ color: '#e00', fontSize: 14 }}>Error: {errorMsg}</p>
+        </div>
+      )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
