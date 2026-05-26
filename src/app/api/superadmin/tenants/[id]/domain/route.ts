@@ -33,6 +33,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     addDomain(tenant.domain),
     addDomain(`www.${tenant.domain}`),
   ])
+
+  // Log raw responses to help diagnose issues
+  console.log('[domain] apex response:', JSON.stringify(apex))
+  console.log('[domain] www response:', JSON.stringify(www))
+
   return NextResponse.json({ domain: tenant.domain, apex, www })
 }
 

@@ -14,14 +14,21 @@ export interface DomainStatus {
   error?: { code: string; message: string } | null
 }
 
-/** Add a domain to the Vercel project. Returns status including DNS records needed. */
+/** Add a domain to the Vercel project. Returns status including DNS records needed.
+ *  If the domain already exists in this project, fetches and returns its current status. */
 export async function addDomain(domain: string): Promise<DomainStatus> {
   const res = await fetch(`${BASE}/v9/projects/${PROJECT_ID}/domains`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({ name: domain }),
   })
-  return res.json()
+  const body = await res.json()
+  // Vercel returns 409 with error.code === 'domain_already_in_use' when the domain
+  // belongs to another project, or just returns the existing domain object when it's
+  // already in this project (200/201). In both cases we return the body as-is so the
+  // caller can inspect it. If it's a 409 conflict we still return it — the UI shows the
+  // error message to the operator.
+  return body
 }
 
 /** Get current verification status of a domain in the project. */

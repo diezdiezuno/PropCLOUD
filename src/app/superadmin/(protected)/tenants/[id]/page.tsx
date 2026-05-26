@@ -170,6 +170,8 @@ export default function TenantDetailPage() {
               <span style={{ fontSize: 12, color: '#555' }}>—</span>
             ) : status === null ? (
               <span style={{ fontSize: 12, color: '#f59e0b' }}>⚠ No agregado</span>
+            ) : status.error ? (
+              <span style={{ fontSize: 12, color: '#f87171' }} title={status.error.message}>✗ Error: {status.error.message}</span>
             ) : status.verified ? (
               <span style={{ fontSize: 12, color: '#4ade80' }}>✓ Verificado</span>
             ) : (
@@ -205,11 +207,6 @@ export default function TenantDetailPage() {
           ))}
         </div>
 
-        {(domainResult?.apex?.error || domainResult?.www?.error) && (
-          <div style={{ fontSize: 12, color: '#f87171', marginTop: 8 }}>
-            {domainResult?.apex?.error?.message ?? domainResult?.www?.error?.message}
-          </div>
-        )}
       </Section>
 
       {/* Admins */}
