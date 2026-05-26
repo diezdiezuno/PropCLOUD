@@ -35,6 +35,20 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Test exactly what getTenantByDomain does for the current domain
+  let domainLookupService = null
+  let domainLookupAnon = null
+  if (domain && supabaseUrl && serviceKey && anonKey) {
+    const svc = createClient(supabaseUrl, serviceKey)
+    const anon = createClient(supabaseUrl, anonKey)
+    const [sr, ar] = await Promise.all([
+      svc.from('tenants').select('*').eq('domain', domain).single(),
+      anon.from('tenants').select('*').eq('domain', domain).single(),
+    ])
+    domainLookupService = { data: sr.data, error: sr.error?.message ?? null }
+    domainLookupAnon = { data: ar.data, error: ar.error?.message ?? null }
+  }
+
   return NextResponse.json({
     env: {
       supabaseUrl: supabaseUrl ? `✓ set` : '✗ missing',
@@ -45,5 +59,6 @@ export async function GET(request: NextRequest) {
     headers: { 'x-tenant-domain': domain ?? 'not set' },
     supabaseServiceRole: { tenants: serviceResult, error: serviceError },
     supabaseAnon: { tenants: anonResult, error: anonError },
+    domainLookup: { domain, service: domainLookupService, anon: domainLookupAnon },
   })
 }
