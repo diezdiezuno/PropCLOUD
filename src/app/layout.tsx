@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import './globals.css'
-import 'mapbox-gl/dist/mapbox-gl.css'
 import { getTenantByDomain, DEFAULT_THEME } from '@/lib/tenant'
 import Nav from '@/components/Nav/Nav'
 import type { Tenant } from '@/types'
@@ -29,6 +28,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="es" className="h-full">
+      <head>
+        <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
+      </head>
       <body className="min-h-full flex flex-col" style={cssVars}>
         <Nav tenant={tenant} />
         <main className="flex-1">

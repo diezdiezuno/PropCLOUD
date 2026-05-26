@@ -113,8 +113,8 @@ export default function MapView({ mapStyle, mapboxToken }: MapViewProps) {
   }, [mapStyle, mapboxToken])
 
   return (
-    <div className="relative w-full" style={{ height: 'calc(100vh - var(--nav-h))' }}>
-      <div ref={mapContainerRef} id="main-map" className="absolute inset-0" />
+    <div className="relative w-full" style={{ height: 'calc(100vh - 68px)', minHeight: '400px' }}>
+      <div ref={mapContainerRef} className="absolute inset-0" />
       {loading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 pointer-events-none z-10">
           <div className="w-10 h-10 rounded-full border-2 border-stone-200 border-t-stone-600 animate-spin mb-3" />
