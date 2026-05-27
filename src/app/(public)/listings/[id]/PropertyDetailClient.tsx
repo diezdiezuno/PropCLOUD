@@ -82,6 +82,11 @@ export default function PropertyDetailClient({
     else { navigator.clipboard?.writeText(window.location.href); showToast(t.linkCopied) }
   }
   function scrollToForm() { formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
+  function openWhatsApp() {
+    if (!officeWhatsapp) return
+    const msg = encodeURIComponent(`Hola, me interesa esta propiedad: ${property?.title ?? ''}\n${window.location.href}`)
+    window.open(`https://wa.me/${officeWhatsapp.replace(/\D/g,'')}?text=${msg}`, '_blank')
+  }
 
   function submitInquiry() {
     if (!formName.trim() || !formEmail.trim()) { showToast(t.fillNameEmail); return }
@@ -223,6 +228,11 @@ export default function PropertyDetailClient({
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
               <button onClick={shareProperty} style={actionBtn}>{t.share}</button>
+              {officeWhatsapp && (
+                <button onClick={openWhatsApp} style={{ ...actionBtn, background: '#25D366', color: '#fff', borderColor: '#25D366' }}>
+                  <WAIcon /> WhatsApp
+                </button>
+              )}
               <button onClick={scrollToForm} style={{ ...actionBtn, background: '#111', color: '#fff', borderColor: '#111' }}>{t.contact} →</button>
             </div>
             <Divider />
@@ -290,6 +300,11 @@ export default function PropertyDetailClient({
               <button onClick={shareProperty} style={actionBtn}>
                 <ShareIcon /> {t.share}
               </button>
+              {officeWhatsapp && (
+                <button onClick={openWhatsApp} style={{ ...actionBtn, background: '#25D366', color: '#fff', borderColor: '#25D366' }}>
+                  <WAIcon /> WhatsApp
+                </button>
+              )}
               <button onClick={scrollToForm} style={{ ...actionBtn, background: '#111', color: '#fff', borderColor: '#111' }}>
                 {ctaLabel} →
               </button>
@@ -377,6 +392,11 @@ export default function PropertyDetailClient({
           {/* Action row */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
             <button onClick={shareProperty} style={actionBtn}><ShareIcon /> {t.share}</button>
+            {officeWhatsapp && (
+              <button onClick={openWhatsApp} style={{ ...actionBtn, background: '#25D366', color: '#fff', borderColor: '#25D366' }}>
+                <WAIcon /> WhatsApp
+              </button>
+            )}
             <button onClick={scrollToForm} style={{ ...actionBtn, background: '#111', color: '#fff', borderColor: '#111' }}>{ctaLabel} →</button>
           </div>
 
@@ -458,11 +478,17 @@ export default function PropertyDetailClient({
               {p.transaction === 'rent' && <span style={{ fontSize: 14, marginLeft: 10, opacity: 0.7 }}>{t.perMonth}</span>}
             </div>
           </div>
-          <div style={{ position: 'absolute', bottom: 24, right: 24 }}>
+          <div style={{ position: 'absolute', bottom: 24, right: 24, display: 'flex', gap: 8 }}>
             <button onClick={shareProperty}
-              style={{ background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,.3)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '8px 18px', borderRadius: 24, cursor: 'pointer', fontFamily: 'inherit', marginRight: 8 }}>
+              style={{ background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,.3)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '8px 18px', borderRadius: 24, cursor: 'pointer', fontFamily: 'inherit' }}>
               {t.share}
             </button>
+            {officeWhatsapp && (
+              <button onClick={openWhatsApp}
+                style={{ background: '#25D366', border: 'none', color: '#fff', fontSize: 12, fontWeight: 600, padding: '8px 18px', borderRadius: 24, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <WAIcon /> WhatsApp
+              </button>
+            )}
             <button onClick={scrollToForm}
               style={{ background: 'rgba(255,255,255,.9)', border: 'none', color: '#111', fontSize: 12, fontWeight: 600, padding: '8px 18px', borderRadius: 24, cursor: 'pointer', fontFamily: 'inherit' }}>
               {ctaLabel} →
@@ -584,6 +610,11 @@ export default function PropertyDetailClient({
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
               <button onClick={shareProperty} style={actionBtn}><ShareIcon /> {t.share}</button>
+              {officeWhatsapp && (
+                <button onClick={openWhatsApp} style={{ ...actionBtn, background: '#25D366', color: '#fff', borderColor: '#25D366' }}>
+                  <WAIcon /> WhatsApp
+                </button>
+              )}
               <button onClick={scrollToForm} style={{ ...actionBtn, background: '#111', color: '#fff', borderColor: '#111' }}>{ctaLabel} →</button>
             </div>
             <Divider />
@@ -668,6 +699,13 @@ function ShareIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
       <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  )
+}
+function WAIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
     </svg>
   )
 }

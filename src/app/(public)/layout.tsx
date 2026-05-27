@@ -52,6 +52,7 @@ export default async function PublicLayout({ children }: { children: React.React
   } as React.CSSProperties
 
   const fontsUrl = googleFontsUrl(theme.fontHeading, theme.fontBody)
+  const gaId = (config as TenantConfig & { ga_id?: string | null })?.ga_id ?? null
 
   return (
     <div style={{ ...cssVars, fontFamily: 'var(--font-body)' }} className="flex flex-col min-h-screen">
@@ -59,6 +60,12 @@ export default async function PublicLayout({ children }: { children: React.React
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link href={fontsUrl} rel="stylesheet" />
+      {gaId && (
+        <>
+          <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+          <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${gaId}');` }} />
+        </>
+      )}
       <LanguageProvider defaultLang={(config?.default_language ?? 'es') as Lang}>
         <FilterProvider>
           <Nav tenant={tenant} zones={config?.zone_config ?? null} pagesConfig={config?.pages_config ?? null} />

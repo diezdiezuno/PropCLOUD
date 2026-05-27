@@ -22,7 +22,7 @@ const FONT_BODIES = [
 ]
 
 
-type Tab = 'identidad' | 'branding' | 'contacto'
+type Tab = 'identidad' | 'branding' | 'contacto' | 'analiticas'
 
 export default function GeneralPage() {
   const [tab, setTab] = useState<Tab>('identidad')
@@ -48,6 +48,9 @@ export default function GeneralPage() {
   const [fontHeading, setFontHeading] = useState('Playfair Display')
   const [fontBody, setFontBody] = useState('Outfit')
   const [uploading, setUploading] = useState<{ nav: boolean; footer: boolean; favicon: boolean }>({ nav: false, footer: false, favicon: false })
+
+  // Analíticas
+  const [gaId, setGaId] = useState('')
 
   // Contacto
   const [whatsapp, setWhatsapp] = useState('')
@@ -107,7 +110,7 @@ export default function GeneralPage() {
 
       const [{ data: tenant }, { data: cfg }] = await Promise.all([
         supabase.from('tenants').select('name, domain, tagline, logo_url, favicon_url, theme').eq('id', adminRec.tenant_id).single(),
-        supabase.from('tenant_config').select('footer_logo_url, default_language, whatsapp, contact_email, address, instagram, facebook, linkedin, youtube, tiktok, twitter').eq('tenant_id', adminRec.tenant_id).single(),
+        supabase.from('tenant_config').select('footer_logo_url, default_language, whatsapp, contact_email, address, instagram, facebook, linkedin, youtube, tiktok, twitter, ga_id').eq('tenant_id', adminRec.tenant_id).single(),
       ])
 
       if (tenant) {
@@ -136,6 +139,7 @@ export default function GeneralPage() {
         setYoutube(cfg.youtube ?? '')
         setTiktok(cfg.tiktok ?? '')
         setTwitter(cfg.twitter ?? '')
+        setGaId((cfg as Record<string, unknown>).ga_id as string ?? '')
       }
       setLoading(false)
     })
@@ -173,8 +177,7 @@ export default function GeneralPage() {
         tenant_id: tenantId,
         footer_logo_url: footerLogoMode === 'custom' ? (footerLogoUrl || null) : null,
       }, { onConflict: 'tenant_id' })
-    } else {
-      // contacto
+    } else if (tab === 'contacto') {
       await supabase.from('tenant_config').upsert({
         tenant_id: tenantId,
         whatsapp: whatsapp.trim() || null,
@@ -186,6 +189,12 @@ export default function GeneralPage() {
         youtube: youtube.trim() || null,
         tiktok: tiktok.trim() || null,
         twitter: twitter.trim() || null,
+      }, { onConflict: 'tenant_id' })
+    } else {
+      // analiticas
+      await supabase.from('tenant_config').upsert({
+        tenant_id: tenantId,
+        ga_id: gaId.trim() || null,
       }, { onConflict: 'tenant_id' })
     }
 
@@ -205,7 +214,7 @@ export default function GeneralPage() {
 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e8e8e8', marginBottom: 24 }}>
-        {([['identidad', 'Identidad'], ['branding', 'Branding'], ['contacto', 'Contacto']] as [Tab, string][]).map(([id, label]) => (
+        {([['identidad', 'Identidad'], ['branding', 'Branding'], ['contacto', 'Contacto'], ['analiticas', 'Analíticas']] as [Tab, string][]).map(([id, label]) => (
           <button key={id} onClick={() => { setTab(id); setError(''); setSaved(false) }} style={{
             padding: '10px 20px', background: 'none', border: 'none', cursor: 'pointer',
             fontSize: 13, fontWeight: tab === id ? 600 : 400,
@@ -521,6 +530,49 @@ export default function GeneralPage() {
                     placeholder={placeholder} style={{ ...inputStyle, marginBottom: 10 }} />
                 </Field>
               ))}
+            </Section>
+          </>
+        )}
+
+        {/* ══ TAB: ANALÍTICAS ══ */}
+        {tab === 'analiticas' && (
+          <>
+            <Section title="Google Analytics">
+              <Field label="Measurement ID">
+                <input
+                  value={gaId}
+                  onChange={e => setGaId(e.target.value)}
+                  placeholder="G-XXXXXXXXXX"
+                  style={{ ...inputStyle, fontFamily: 'monospace' }}
+                />
+                <p style={hintStyle}>
+                  Encontralo en Google Analytics → Admin → Data Streams → tu stream → Measurement ID.
+                  El script se inyecta automáticamente en todas las páginas del sitio.
+                </p>
+              </Field>
+              {gaId.trim() && (
+                <div style={{ marginTop: 16, padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 16 }}>✅</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>Google Analytics activo</div>
+                    <div style={{ fontSize: 12, color: '#4ade80' }}>{gaId.trim()}</div>
+                  </div>
+                  <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer"
+                    style={{ marginLeft: 'auto', fontSize: 12, color: '#166534', textDecoration: 'none', fontWeight: 500, padding: '5px 12px', border: '1px solid #86efac', borderRadius: 6 }}>
+                    Abrir Analytics →
+                  </a>
+                </div>
+              )}
+            </Section>
+
+            <Section title="Dashboard de métricas">
+              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 12 }}>
+                Visualizá leads y actividad interna del sitio.
+              </p>
+              <a href="/admin/metricas"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: '#111', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>
+                📊 Ver métricas →
+              </a>
             </Section>
           </>
         )}

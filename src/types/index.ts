@@ -89,6 +89,8 @@ export interface TenantConfig {
   detail_contact_mode: 'agent' | 'office' | null
   // Pages
   pages_config: PageConfig[] | null       // static pages visibility config
+  // Analytics
+  ga_id: string | null                    // Google Analytics Measurement ID (G-XXXXXXXXXX)
 }
 
 export interface PropertySource {
