@@ -67,12 +67,12 @@ export default function Footer({ tenant, config }: Props) {
         padding: isMobile ? '36px 16px 16px' : '44px 40px 24px',
         display: 'grid',
         gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr 1fr 1fr',
-        gap: isMobile ? 28 : 36,
+        gap: isMobile ? 28 : '36px 56px',
         alignItems: 'start',
       }}>
 
-        {/* Col 1 — Logo */}
-        <div>
+        {/* Col 1 — Logo + tagline */}
+        <div style={{ maxWidth: 220 }}>
           {logoUrl ? (
             <img
               src={logoUrl}
@@ -83,6 +83,11 @@ export default function Footer({ tenant, config }: Props) {
             <div style={{ fontFamily: 'var(--font-heading,serif)', fontSize: 18, fontWeight: 700, color: '#111' }}>
               {tenant.name}
             </div>
+          )}
+          {tenant.tagline && (
+            <p style={{ fontSize: 13, color: '#777', margin: '12px 0 0', lineHeight: 1.6 }}>
+              {tenant.tagline}
+            </p>
           )}
         </div>
 

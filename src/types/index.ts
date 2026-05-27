@@ -3,6 +3,7 @@ export interface Tenant {
   slug: string
   name: string
   domain: string
+  tagline: string | null
   logo_url: string | null
   theme: TenantTheme
   created_at: string

@@ -35,6 +35,7 @@ export default function GeneralPage() {
   // Identidad
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
+  const [tagline, setTagline] = useState('')
 
   // Branding
   const [logoUrl, setLogoUrl] = useState('')
@@ -91,13 +92,14 @@ export default function GeneralPage() {
       setTenantId(adminRec.tenant_id)
 
       const [{ data: tenant }, { data: cfg }] = await Promise.all([
-        supabase.from('tenants').select('name, domain, logo_url, theme').eq('id', adminRec.tenant_id).single(),
+        supabase.from('tenants').select('name, domain, tagline, logo_url, theme').eq('id', adminRec.tenant_id).single(),
         supabase.from('tenant_config').select('footer_logo_url').eq('tenant_id', adminRec.tenant_id).single(),
       ])
 
       if (tenant) {
         setName(tenant.name ?? '')
         setDomain(tenant.domain ?? '')
+        setTagline(tenant.tagline ?? '')
         setLogoUrl(tenant.logo_url ?? '')
         setPrimaryColor(tenant.theme?.primaryColor ?? '#6b2fa0')
         setAccentColor(tenant.theme?.accentColor ?? '#f59e0b')
@@ -121,7 +123,7 @@ export default function GeneralPage() {
     if (tab === 'identidad') {
       const { error: err } = await supabase
         .from('tenants')
-        .update({ name, domain: domain.toLowerCase().trim() })
+        .update({ name, domain: domain.toLowerCase().trim(), tagline: tagline.trim() || null })
         .eq('id', tenantId)
       if (err) {
         setError(err.message.includes('unique') ? 'Ese dominio ya está registrado en otro tenant.' : err.message)
@@ -179,6 +181,21 @@ export default function GeneralPage() {
             <Field label="Nombre de la inmobiliaria">
               <input value={name} onChange={e => setName(e.target.value)} required style={inputStyle} />
               <p style={hintStyle}>Aparece en el título del browser, el footer y el panel.</p>
+            </Field>
+            <div style={{ height: 16 }} />
+            <Field label="Slogan / descripción corta">
+              <textarea
+                value={tagline}
+                onChange={e => setTagline(e.target.value)}
+                placeholder="Ej: Especialistas en propiedades residenciales en el Valle Central desde 2008."
+                maxLength={180}
+                rows={3}
+                style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
+              />
+              <p style={hintStyle}>
+                Aparece debajo del logo en el footer. Máximo 180 caracteres.
+                {tagline.length > 0 && <span style={{ float: 'right', color: tagline.length > 160 ? '#e53e3e' : '#bbb' }}>{tagline.length}/180</span>}
+              </p>
             </Field>
             <div style={{ height: 16 }} />
             <Field label="Dominio">
