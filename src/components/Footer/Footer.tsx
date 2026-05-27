@@ -116,8 +116,8 @@ export default function Footer({ tenant, config }: Props) {
               <FooterLink href={`mailto:${config.contact_email}`}>{config.contact_email}</FooterLink>
             )}
             {config?.whatsapp && (
-              <FooterLink href={`https://wa.me/${config.whatsapp}`} external>
-                +{config.whatsapp}
+              <FooterLink href={`https://wa.me/${config.whatsapp.replace(/\D/g, '')}`} external>
+                +{config.whatsapp.replace(/^\+/, '')}
               </FooterLink>
             )}
             {config?.address && (
