@@ -13,12 +13,92 @@ const ALL_SECTIONS = [
 ]
 
 type ContactMode = 'agent' | 'office'
+type DetailLayout = 'A' | 'B' | 'C' | 'D'
+
+const LAYOUTS: { id: DetailLayout; label: string; desc: string; thumb: React.ReactNode }[] = [
+  {
+    id: 'A',
+    label: 'Hero + Sidebar',
+    desc: 'Hero a pantalla completa con overlay. Contenido izquierda, formulario sticky derecha.',
+    thumb: (
+      <div style={{ width: '100%', height: 64, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {/* hero bar */}
+        <div style={{ height: 22, borderRadius: 3, background: 'linear-gradient(90deg,#c9b99a,#7a6050)', flexShrink: 0 }} />
+        {/* body: left+right */}
+        <div style={{ flex: 1, display: 'flex', gap: 4 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ height: 4, borderRadius: 2, background: '#ddd' }} />
+            <div style={{ height: 4, borderRadius: 2, background: '#ddd', width: '80%' }} />
+            <div style={{ height: 4, borderRadius: 2, background: '#eee', width: '60%' }} />
+            <div style={{ flex: 1, borderRadius: 2, background: '#f0f0f0', marginTop: 2 }} />
+          </div>
+          <div style={{ width: 28, background: '#f5f5f5', borderRadius: 3, flexShrink: 0 }} />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'B',
+    label: 'Editorial',
+    desc: 'Hero superior. Columna centrada con galería horizontal, texto y formulario al final.',
+    thumb: (
+      <div style={{ width: '100%', height: 64, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ height: 20, borderRadius: 3, background: 'linear-gradient(90deg,#c9b99a,#7a6050)', flexShrink: 0 }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '0 16px' }}>
+          <div style={{ height: 3, borderRadius: 2, background: '#ddd', width: '70%' }} />
+          <div style={{ height: 3, borderRadius: 2, background: '#ddd', width: '90%' }} />
+          <div style={{ height: 3, borderRadius: 2, background: '#eee', width: '50%' }} />
+          <div style={{ display: 'flex', gap: 3, width: '100%', flex: 1, marginTop: 2 }}>
+            {[0,1,2].map(i => <div key={i} style={{ flex: 1, borderRadius: 2, background: '#f0f0f0' }} />)}
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'C',
+    label: 'Split screen',
+    desc: 'Fotos a la izquierda con scroll. Información y formulario a la derecha fija. (actual)',
+    thumb: (
+      <div style={{ width: '100%', height: 64, display: 'flex', gap: 4 }}>
+        <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div style={{ flex: 2, borderRadius: 3, background: 'linear-gradient(160deg,#c9b99a,#7a6050)' }} />
+          <div style={{ flex: 1, borderRadius: 3, background: 'linear-gradient(160deg,#b8c8d4,#809aaa)' }} />
+        </div>
+        <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 3, padding: 4, background: '#f8f8f8', borderRadius: 3 }}>
+          <div style={{ height: 3, borderRadius: 2, background: '#ddd', width: '80%' }} />
+          <div style={{ height: 3, borderRadius: 2, background: '#ddd', width: '60%' }} />
+          <div style={{ flex: 1, borderRadius: 2, background: '#eee', marginTop: 4 }} />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'D',
+    label: 'Inmersivo',
+    desc: 'Secciones a ancho completo apiladas. Hero centrado, stats grandes, galería filmstrip.',
+    thumb: (
+      <div style={{ width: '100%', height: 64, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ height: 20, borderRadius: 3, background: 'linear-gradient(90deg,#c9b99a,#6a5040)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 30, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.6)' }} />
+        </div>
+        <div style={{ height: 10, borderRadius: 3, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          {[0,1,2,3].map(i => <div key={i} style={{ width: 8, height: 4, borderRadius: 1, background: '#ddd' }} />)}
+        </div>
+        <div style={{ flex: 1, display: 'flex', gap: 3 }}>
+          {[0,1,2,3].map(i => <div key={i} style={{ flex: 1, borderRadius: 2, background: '#f0f0f0' }} />)}
+        </div>
+      </div>
+    ),
+  },
+]
 
 export default function DetallePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [tenantId, setTenantId] = useState('')
+  const [detailLayout, setDetailLayout] = useState<DetailLayout>('C')
   const [sections, setSections] = useState<string[]>(['gallery', 'info', 'stats', 'description', 'agent'])
   const [contactMode, setContactMode] = useState<ContactMode>('agent')
 
@@ -31,8 +111,9 @@ export default function DetallePage() {
       if (!adminRec) return
       setTenantId(adminRec.tenant_id)
       const { data: cfg } = await supabase
-        .from('tenant_config').select('detail_sections, detail_contact_mode')
+        .from('tenant_config').select('detail_layout, detail_sections, detail_contact_mode')
         .eq('tenant_id', adminRec.tenant_id).single()
+      if (cfg?.detail_layout) setDetailLayout(cfg.detail_layout as DetailLayout)
       if (cfg?.detail_sections) setSections(cfg.detail_sections)
       if (cfg?.detail_contact_mode) setContactMode(cfg.detail_contact_mode as ContactMode)
       setLoading(false)
@@ -51,6 +132,7 @@ export default function DetallePage() {
     const supabase = createClient()
     await supabase.from('tenant_config').upsert({
       tenant_id: tenantId,
+      detail_layout: detailLayout,
       detail_sections: sections,
       detail_contact_mode: contactMode,
     }, { onConflict: 'tenant_id' })
@@ -61,9 +143,54 @@ export default function DetallePage() {
 
   return (
     <div>
-      <PageHeader title="Secciones del detalle" desc="Qué secciones se muestran en la página de cada propiedad" />
+      <PageHeader title="Ficha de propiedad" desc="Layout y secciones que se muestran al ver una propiedad" />
       <form onSubmit={save}>
 
+        {/* ── Layout selector ── */}
+        <Section title="Layout de la ficha">
+          <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 20 }}>
+            Elegí cómo se organiza visualmente la información de cada propiedad.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {LAYOUTS.map(({ id, label, desc, thumb }) => {
+              const active = detailLayout === id
+              return (
+                <div
+                  key={id}
+                  onClick={() => setDetailLayout(id)}
+                  style={{
+                    border: `2px solid ${active ? '#111' : '#e5e5e5'}`,
+                    borderRadius: 12, padding: 14, cursor: 'pointer',
+                    background: active ? '#111' : '#fff',
+                    transition: 'border-color .15s, background .15s',
+                  }}
+                >
+                  {/* Thumbnail */}
+                  <div style={{
+                    borderRadius: 8, overflow: 'hidden', marginBottom: 12,
+                    border: '1px solid #eee', padding: 10, background: '#fff',
+                  }}>
+                    {thumb}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                      background: active ? 'rgba(255,255,255,0.2)' : '#f0f0f0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 700, color: active ? '#fff' : '#999',
+                    }}>{id}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: active ? '#fff' : '#111' }}>{label}</span>
+                  </div>
+                  <p style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.55)' : '#aaa', margin: 0, lineHeight: 1.5, paddingLeft: 30 }}>
+                    {desc}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </Section>
+
+        {/* ── Contact mode ── */}
         <Section title="Modo de contacto">
           <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
             Elegí cómo se muestra el CTA de contacto en cada propiedad.
@@ -97,6 +224,7 @@ export default function DetallePage() {
           </div>
         </Section>
 
+        {/* ── Visible sections ── */}
         <Section title="Secciones visibles">
           <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
             Activá o desactivá cada sección. El orden de arriba hacia abajo refleja el orden en la página.

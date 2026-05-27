@@ -16,6 +16,7 @@ export default async function PropertyDetailPage({ params }: Props) {
   return (
     <PropertyDetailClient
       id={id}
+      layout={(config?.detail_layout ?? 'C') as 'A' | 'B' | 'C' | 'D'}
       contactMode={config?.detail_contact_mode ?? 'agent'}
       officeWhatsapp={config?.whatsapp ?? null}
       officeEmail={config?.contact_email ?? null}

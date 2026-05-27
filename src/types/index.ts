@@ -62,6 +62,7 @@ export interface TenantConfig {
   listing_sort: 'price_asc' | 'price_desc' | 'newest' | null
   listing_views: string[] | null          // which view modes to show in the toggle
   // Detail
+  detail_layout: 'A' | 'B' | 'C' | 'D' | null
   detail_sections: string[] | null
   detail_contact_mode: 'agent' | 'office' | null
   // Pages
