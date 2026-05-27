@@ -139,7 +139,7 @@ export default function GeneralPage() {
         setYoutube(cfg.youtube ?? '')
         setTiktok(cfg.tiktok ?? '')
         setTwitter(cfg.twitter ?? '')
-        setGaId((cfg as Record<string, unknown>).ga_id as string ?? '')
+        setGaId((cfg as unknown as { ga_id?: string | null }).ga_id ?? '')
       }
       setLoading(false)
     })

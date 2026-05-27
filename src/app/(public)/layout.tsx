@@ -52,7 +52,7 @@ export default async function PublicLayout({ children }: { children: React.React
   } as React.CSSProperties
 
   const fontsUrl = googleFontsUrl(theme.fontHeading, theme.fontBody)
-  const gaId = (config as TenantConfig & { ga_id?: string | null })?.ga_id ?? null
+  const gaId = (config as unknown as { ga_id?: string | null })?.ga_id ?? null
 
   return (
     <div style={{ ...cssVars, fontFamily: 'var(--font-body)' }} className="flex flex-col min-h-screen">

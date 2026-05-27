@@ -83,7 +83,7 @@ export default function MetricasPage() {
       ])
 
       setLeads((leadData as Lead[]) ?? [])
-      setGaId((cfg as Record<string, string | null> | null)?.ga_id ?? null)
+      setGaId((cfg as unknown as { ga_id?: string | null } | null)?.ga_id ?? null)
       setLoading(false)
     })
   }, [])
