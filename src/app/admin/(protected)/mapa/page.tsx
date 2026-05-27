@@ -4,14 +4,14 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import type { ZoneConfigItem } from '@/types'
 
-const MAP_STYLES = [
-  { value: 'mapbox://styles/ssolorzano/cmp04iyh7000t01rw07qhd7eh', label: 'Default', color: '#dde8f0', desc: 'Estilo personalizado con objetos 3D, POI, iluminación dinámica y todas las capas activas. ✦ Recomendado', default: true },
-  { value: 'mapbox://styles/mapbox/streets-v12',         label: 'Streets',  color: '#e8ddd0', desc: 'Estilo estándar de Mapbox. Los toggles de capas pueden no aplicar.' },
-  { value: 'mapbox://styles/mapbox/light-v11',           label: 'Light',    color: '#f2f0ec', desc: 'Fondo claro y minimalista.' },
-  { value: 'mapbox://styles/mapbox/dark-v11',            label: 'Dark',     color: '#1a1c23', desc: 'Fondo oscuro elegante.' },
-  { value: 'mapbox://styles/mapbox/satellite-streets-v12', label: 'Satélite', color: '#3a5a3a', desc: 'Fotografía aérea real con calles superpuestas.' },
-  { value: 'mapbox://styles/mapbox/outdoors-v12',        label: 'Outdoors', color: '#d6e8cc', desc: 'Topografía y terreno natural.' },
+const PRESET_STYLES = [
+  { value: 'mapbox://styles/mapbox/streets-v12',           label: 'Streets',  color: '#e8ddd0', desc: 'Calles, edificios y puntos de interés. El más completo para propiedades urbanas.' },
+  { value: 'mapbox://styles/mapbox/light-v11',             label: 'Light',    color: '#f2f0ec', desc: 'Fondo claro y minimalista. Los markers de propiedades destacan sin distracción.' },
+  { value: 'mapbox://styles/mapbox/dark-v11',              label: 'Dark',     color: '#1a1c23', desc: 'Fondo oscuro elegante. Perfecto para inmobiliarias premium o de nicho.' },
+  { value: 'mapbox://styles/mapbox/satellite-streets-v12', label: 'Satélite', color: '#3a5a3a', desc: 'Fotografía aérea real con calles superpuestas. Ideal para lotes y propiedades grandes.' },
+  { value: 'mapbox://styles/mapbox/outdoors-v12',          label: 'Outdoors', color: '#d6e8cc', desc: 'Topografía y terreno natural. Para propiedades rurales, de playa o de montaña.' },
 ]
+const PRESET_VALUES = new Set(PRESET_STYLES.map(s => s.value))
 
 // Predefined zones included in every install
 const PREDEFINED: ZoneConfigItem[] = [
@@ -311,7 +311,8 @@ export default function MapaPage() {
   const [lat, setLat] = useState('9.9281')
   const [lng, setLng] = useState('-84.0907')
   const [zoom, setZoom] = useState(12)
-  const [mapStyle, setMapStyle] = useState('mapbox://styles/ssolorzano/cmp04iyh7000t01rw07qhd7eh')
+  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/streets-v12')
+  const [customStyleUrl, setCustomStyleUrl] = useState('')
   const [autoLightPreset, setAutoLightPreset] = useState(false)
   // Layer visibility
   const [show3dObjects, setShow3dObjects] = useState(true)
@@ -348,7 +349,15 @@ export default function MapaPage() {
       } else {
         setZones(mergeZones(null))
       }
-      if (tenantRow?.theme?.mapStyle) setMapStyle(tenantRow.theme.mapStyle)
+      if (tenantRow?.theme?.mapStyle) {
+        const saved = tenantRow.theme.mapStyle
+        if (PRESET_VALUES.has(saved)) {
+          setMapStyle(saved)
+        } else {
+          // Custom Studio URL — keep preset at streets, populate custom field
+          setCustomStyleUrl(saved)
+        }
+      }
       if (tenantRow?.theme?.autoLightPreset) setAutoLightPreset(true)
       if (tenantRow?.theme?.show3dObjects === false) setShow3dObjects(false)
       if (tenantRow?.theme?.showPoiLabels === false) setShowPoiLabels(false)
@@ -379,7 +388,7 @@ export default function MapaPage() {
     // Merge mapStyle into existing theme (don't wipe other branding fields)
     const { data: tenantRow } = await supabase.from('tenants').select('theme').eq('id', tenantId).single()
     await supabase.from('tenants').update({
-      theme: { ...(tenantRow?.theme ?? {}), mapStyle, autoLightPreset, show3dObjects, showPoiLabels, showTransitLabels, showPlaceLabels, showRoadLabels },
+      theme: { ...(tenantRow?.theme ?? {}), mapStyle: customStyleUrl.trim() || mapStyle, autoLightPreset, show3dObjects, showPoiLabels, showTransitLabels, showPlaceLabels, showRoadLabels },
     }).eq('id', tenantId)
     await supabase.from('tenant_config').upsert({
       tenant_id: tenantId,
@@ -482,10 +491,10 @@ export default function MapaPage() {
                 Define la apariencia visual del mapa. No afecta qué propiedades se muestran ni su ubicación.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {MAP_STYLES.map(s => {
-                  const active = mapStyle === s.value
+                {PRESET_STYLES.map(s => {
+                  const active = !customStyleUrl.trim() && mapStyle === s.value
                   return (
-                    <button key={s.value} type="button" onClick={() => setMapStyle(s.value)} style={{
+                    <button key={s.value} type="button" onClick={() => { setMapStyle(s.value); setCustomStyleUrl('') }} style={{
                       display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px',
                       borderRadius: 10, border: `2px solid ${active ? '#111' : '#eee'}`,
                       background: active ? '#111' : '#fff', cursor: 'pointer', textAlign: 'left',
@@ -500,7 +509,40 @@ export default function MapaPage() {
                 })}
               </div>
 
-              <StylePreview mapboxToken={mapboxToken} mapStyle={mapStyle} />
+              <StylePreview mapboxToken={mapboxToken} mapStyle={customStyleUrl.trim() || mapStyle} />
+            </Section>
+
+            <Section title="Estilo personalizado (Mapbox Studio)">
+              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 14, lineHeight: 1.6 }}>
+                Si tenés un estilo propio publicado en Mapbox Studio, pegá la URL aquí. Sobreescribe el estilo predefinido seleccionado arriba.
+                Los estilos Studio soportan capas 3D, iluminación automática y todas las opciones de capas visibles.
+              </p>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={customStyleUrl}
+                  onChange={e => setCustomStyleUrl(e.target.value)}
+                  placeholder="mapbox://styles/tu-usuario/xxxxxxxxxxxxxxxxxx"
+                  style={{ ...inputStyle, flex: 1, fontFamily: 'monospace', fontSize: 12 }}
+                />
+                {customStyleUrl.trim() && (
+                  <button type="button" onClick={() => setCustomStyleUrl('')} style={{
+                    flexShrink: 0, padding: '9px 14px', borderRadius: 8, fontSize: 13,
+                    border: '1px solid #e0e0e0', background: '#fff', color: '#888',
+                    cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+                  }}>
+                    × Quitar
+                  </button>
+                )}
+              </div>
+              {customStyleUrl.trim() && (
+                <p style={{ fontSize: 11, color: '#38a169', marginTop: 8, marginBottom: 0 }}>
+                  ✓ Se usará el estilo personalizado — los presets de arriba están desactivados
+                </p>
+              )}
+              <p style={{ fontSize: 11, color: '#bbb', marginTop: 10, marginBottom: 0 }}>
+                Obtené la URL en Mapbox Studio → Share → Style URL (comienza con <code style={{ fontFamily: 'monospace' }}>mapbox://styles/</code>)
+              </p>
             </Section>
 
             <Section title="Iluminación automática">
