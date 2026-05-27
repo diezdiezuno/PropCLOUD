@@ -61,46 +61,16 @@ export default function Footer({ tenant, config }: Props) {
 
   return (
     <>
-      {/* ── Main footer — matches reference: 2fr 1fr 1fr grid ── */}
+      {/* ── Main footer — 1fr 1fr 1fr grid ── */}
       <footer style={{
         background: '#f7f7f7',
         padding: isMobile ? '36px 16px 16px' : '44px 40px 24px',
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr',
+        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
         gap: 36,
       }}>
 
-        {/* Col 1 — Brand */}
-        <div>
-          {logoUrl ? (
-            <img src={logoUrl} alt={tenant.name}
-              style={{ height: 36, objectFit: 'contain', marginBottom: 10, display: 'block' }} />
-          ) : (
-            <div style={{ fontFamily: 'var(--font-heading,serif)', fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 10 }}>
-              {tenant.name}
-            </div>
-          )}
-
-          {config?.hero_subtitle && (
-            <p style={{ fontSize: 13, color: '#717171', lineHeight: 1.7, maxWidth: 260, margin: '0 0 14px' }}>
-              {config.hero_subtitle}
-            </p>
-          )}
-
-          {/* Social icons */}
-          {hasSocial && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {config?.instagram && <SocialLink href={config.instagram} label="Instagram"><InstagramIcon /></SocialLink>}
-              {config?.facebook  && <SocialLink href={config.facebook}  label="Facebook"><FacebookIcon /></SocialLink>}
-              {config?.linkedin  && <SocialLink href={config.linkedin}  label="LinkedIn"><LinkedInIcon /></SocialLink>}
-              {config?.youtube   && <SocialLink href={config.youtube}   label="YouTube"><YouTubeIcon /></SocialLink>}
-              {config?.tiktok    && <SocialLink href={config.tiktok}    label="TikTok"><TikTokIcon /></SocialLink>}
-              {config?.twitter   && <SocialLink href={config.twitter}   label="X / Twitter"><XIcon /></SocialLink>}
-            </div>
-          )}
-        </div>
-
-        {/* Col 2 — Navigation */}
+        {/* Col 1 — Navigation */}
         <div>
           <h5 style={colTitle}>Navegación</h5>
           {navLinks.map(l => (
@@ -108,7 +78,7 @@ export default function Footer({ tenant, config }: Props) {
           ))}
         </div>
 
-        {/* Col 3 — Contact */}
+        {/* Col 2 — Contact */}
         {hasContact && (
           <div>
             <h5 style={colTitle}>Contacto</h5>
@@ -128,6 +98,30 @@ export default function Footer({ tenant, config }: Props) {
           </div>
         )}
 
+        {/* Col 3 — Brand + Social */}
+        <div>
+          {logoUrl ? (
+            <img src={logoUrl} alt={tenant.name}
+              style={{ height: 36, objectFit: 'contain', marginBottom: 14, display: 'block' }} />
+          ) : (
+            <div style={{ fontFamily: 'var(--font-heading,serif)', fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 14 }}>
+              {tenant.name}
+            </div>
+          )}
+
+          {/* Social icons */}
+          {hasSocial && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {config?.instagram && <SocialLink href={config.instagram} label="Instagram"><InstagramIcon /></SocialLink>}
+              {config?.facebook  && <SocialLink href={config.facebook}  label="Facebook"><FacebookIcon /></SocialLink>}
+              {config?.linkedin  && <SocialLink href={config.linkedin}  label="LinkedIn"><LinkedInIcon /></SocialLink>}
+              {config?.youtube   && <SocialLink href={config.youtube}   label="YouTube"><YouTubeIcon /></SocialLink>}
+              {config?.tiktok    && <SocialLink href={config.tiktok}    label="TikTok"><TikTokIcon /></SocialLink>}
+              {config?.twitter   && <SocialLink href={config.twitter}   label="X / Twitter"><XIcon /></SocialLink>}
+            </div>
+          )}
+        </div>
+
       </footer>
 
       {/* ── Footer bottom ── */}
@@ -137,14 +131,18 @@ export default function Footer({ tenant, config }: Props) {
         padding: isMobile ? '13px 16px' : '13px 40px',
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
         gap: 4,
       }}>
         <p style={{ fontSize: 11, color: '#aaa', margin: 0 }}>
           © {year} {tenant.name}. Todos los derechos reservados.
         </p>
-        <p style={{ fontSize: 11, color: '#ccc', margin: 0 }}>
-          {tenant.domain}
+        <p style={{ fontSize: 11, color: '#ccc', margin: 0, display: 'flex', gap: 12, alignItems: 'center' }}>
+          <span>Powered by <a href="https://propcloud.app" target="_blank" rel="noopener noreferrer"
+            style={{ color: 'var(--primary,#6b2fa0)', fontWeight: 600, textDecoration: 'none' }}>PropCLOUD</a></span>
+          <span style={{ color: '#ddd' }}>·</span>
+          <span style={{ fontFamily: 'monospace', letterSpacing: '-0.02em', color: '#bbb' }}>dB^r&gt;</span>
         </p>
       </div>
     </>
