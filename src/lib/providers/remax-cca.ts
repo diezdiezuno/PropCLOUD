@@ -72,6 +72,7 @@ export async function fetchRemaxCCAProperties(
       bedrooms: p.BedroomsTotal ?? null,
       bathrooms: p.BathroomsFull ?? null,
       area_m2: p.ConstructionSize ?? null,
+      lot_m2: p.LotSizeArea ?? null,
       address: p.Location ?? null,
       city: [p.Location, p.StateDepProv].filter(Boolean).join(', ') || null,
       country: p.Country ?? null,

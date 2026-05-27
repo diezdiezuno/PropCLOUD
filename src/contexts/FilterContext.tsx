@@ -35,7 +35,9 @@ interface FilterState {
   minBeds: number
   minBaths: number
   propertyType: string
-  zone: string   // location text filter
+  zone: string
+  minConstruction: number   // m² construcción mínimo
+  minLot: number            // m² terreno mínimo
 }
 
 const DEFAULT: FilterState = {
@@ -48,6 +50,8 @@ const DEFAULT: FilterState = {
   minBaths: 0,
   propertyType: '',
   zone: '',
+  minConstruction: 0,
+  minLot: 0,
 }
 
 // [lng, lat, zoom] — optional predefined coordinates for a zone
@@ -62,6 +66,8 @@ interface FilterContextValue extends FilterState {
   setMinBaths: (n: number) => void
   setPropertyType: (t: string) => void
   setZone: (zone: string, center?: ZoneCenter) => void
+  setMinConstruction: (n: number) => void
+  setMinLot: (n: number) => void
   resetFilters: () => void
   getSteps: () => number[]
   getPriceMin: () => number
@@ -93,6 +99,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     setMinBeds: (minBeds) => setS(f => ({ ...f, minBeds })),
     setMinBaths: (minBaths) => setS(f => ({ ...f, minBaths })),
     setPropertyType: (propertyType) => setS(f => ({ ...f, propertyType })),
+    setMinConstruction: (minConstruction) => setS(f => ({ ...f, minConstruction })),
+    setMinLot: (minLot) => setS(f => ({ ...f, minLot })),
     setZone: (zone, center) => {
       setS(f => ({ ...f, zone }))
       if (zone && center) {
@@ -140,6 +148,8 @@ export function useFilteredProperties(properties: Property[]) {
       if (!isMax && p.price > pMax) return false
       if (f.minBeds && (p.bedrooms ?? 0) < f.minBeds) return false
       if (f.minBaths && (p.bathrooms ?? 0) < f.minBaths) return false
+      if (f.minConstruction && (p.area_m2 ?? 0) < f.minConstruction) return false
+      if (f.minLot && (p.lot_m2 ?? 0) < f.minLot) return false
       if (f.propertyType) {
         const type = (p.type ?? '').toLowerCase()
         if (!type.includes(f.propertyType.toLowerCase())) return false
@@ -157,5 +167,5 @@ export function useFilteredProperties(properties: Property[]) {
       return true
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [properties, f.tab, f.currency, f.priceMinStep, f.priceMaxStep, f.minBeds, f.minBaths, f.propertyType, f.zone, f.keyword])
+  }, [properties, f.tab, f.currency, f.priceMinStep, f.priceMaxStep, f.minBeds, f.minBaths, f.propertyType, f.zone, f.keyword, f.minConstruction, f.minLot])
 }

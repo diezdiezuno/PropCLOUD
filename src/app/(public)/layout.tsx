@@ -44,7 +44,7 @@ export default async function PublicLayout({ children }: { children: React.React
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link href={fontsUrl} rel="stylesheet" />
       <FilterProvider>
-        <Nav tenant={tenant} />
+        <Nav tenant={tenant} enabledZones={config?.zone_config ?? null} />
         <main className="flex-1">{children}</main>
         <Footer config={config} tenant={tenant} />
       </FilterProvider>

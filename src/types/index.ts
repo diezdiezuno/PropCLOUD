@@ -16,6 +16,14 @@ export interface TenantTheme {
   mapStyle: string
 }
 
+export interface PageConfig {
+  slug: string
+  title: string
+  visible: boolean
+  order: number
+  custom?: boolean   // true = added by tenant, false = predefined
+}
+
 export interface TenantConfig {
   tenant_id: string
   // Content
@@ -38,6 +46,7 @@ export interface TenantConfig {
   map_center_lat: number | null
   map_center_lng: number | null
   map_zoom: number | null
+  zone_config: string[] | null           // enabled zone search terms (null = all)
   // Listing
   listing_view: 'grid' | 'list' | null
   listing_cols: number | null
@@ -46,6 +55,8 @@ export interface TenantConfig {
   // Detail
   detail_sections: string[] | null
   detail_contact_mode: 'agent' | 'office' | null
+  // Pages
+  pages_config: PageConfig[] | null       // static pages visibility config
 }
 
 export interface PropertySource {
@@ -82,6 +93,7 @@ export interface Property {
   bedrooms: number | null
   bathrooms: number | null
   area_m2: number | null
+  lot_m2: number | null
   address: string | null
   city: string | null
   country: string | null

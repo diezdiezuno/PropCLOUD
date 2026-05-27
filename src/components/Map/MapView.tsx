@@ -189,7 +189,7 @@ export default function MapView({ mapStyle, mapboxToken, mapCenter, mapZoom }: M
   }, [])
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: 'calc(100vh - var(--nav-h, 68px))' }}>
+    <div style={{ position: 'fixed', top: 'var(--nav-h, 68px)', left: 0, right: 0, bottom: 0 }}>
       <div ref={mapContainerRef} style={{ position: 'absolute', inset: 0 }} />
 
       {/* Property count overlay */}
