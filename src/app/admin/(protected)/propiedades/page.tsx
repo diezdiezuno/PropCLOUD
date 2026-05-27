@@ -7,12 +7,74 @@ import { createClient } from '@/lib/supabase-browser'
 type View = 'grid' | 'list'
 type Sort = 'price_asc' | 'price_desc' | 'newest'
 
-const ALL_VIEWS = [
-  { key: 'grid',  label: '⊞ Masonry',    desc: 'Cuadrícula tipo Pinterest con alturas variables' },
-  { key: 'hover', label: '⬛ Grid hover', desc: 'Cuadrícula uniforme con overlay al pasar el mouse' },
-  { key: 'dual',  label: '▌▐ Dual',       desc: '2 columnas con imagen grande y datos al lado' },
-  { key: 'list',  label: '≡ Lista',       desc: 'Fila horizontal compacta' },
-] as const
+const C = { img: 'linear-gradient(135deg,#c9b99a,#8a7060)', img2: 'linear-gradient(135deg,#b8c8d4,#7090a0)', line: '#ddd', lineFaint: '#eee' }
+
+const ALL_VIEWS: { key: string; label: string; desc: string; thumb: React.ReactNode }[] = [
+  {
+    key: 'grid', label: 'Masonry', desc: 'Cuadrícula tipo Pinterest con alturas variables',
+    thumb: (
+      <div style={{ width: '100%', height: 72, display: 'flex', gap: 3 }}>
+        {[[36,18,22],[20,32,16],[28,14,28],[16,26,20]].map((heights, col) => (
+          <div key={col} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {heights.map((h, i) => (
+              <div key={i} style={{ height: h, borderRadius: 3, background: i % 2 === 0 ? C.img : C.img2, flexShrink: 0 }} />
+            ))}
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    key: 'hover', label: 'Grid hover', desc: 'Cuadrícula uniforme con overlay al pasar el mouse',
+    thumb: (
+      <div style={{ width: '100%', height: 72, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gridTemplateRows: 'repeat(2,1fr)', gap: 3 }}>
+        {[C.img,C.img2,C.img,C.img2, C.img2,C.img,C.img2,C.img].map((bg, i) => (
+          <div key={i} style={{ borderRadius: 3, background: bg, position: 'relative', overflow: 'hidden' }}>
+            {i === 2 && (
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 3 }}>
+                <div style={{ height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.8)', marginBottom: 2, width: '80%' }} />
+                <div style={{ height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.5)', width: '55%' }} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    key: 'dual', label: 'Dual', desc: '2 columnas con imagen grande y datos al lado',
+    thumb: (
+      <div style={{ width: '100%', height: 72, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+        {[C.img, C.img2].map((bg, i) => (
+          <div key={i} style={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #eee', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: 36, background: bg, flexShrink: 0 }} />
+            <div style={{ flex: 1, padding: '5px 6px', display: 'flex', flexDirection: 'column', gap: 3, background: '#fff' }}>
+              <div style={{ height: 3, borderRadius: 1, background: C.line, width: '80%' }} />
+              <div style={{ height: 3, borderRadius: 1, background: C.lineFaint, width: '55%' }} />
+              <div style={{ height: 3, borderRadius: 1, background: C.line, width: '40%' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    key: 'list', label: 'Lista', desc: 'Fila horizontal compacta',
+    thumb: (
+      <div style={{ width: '100%', height: 72, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {[C.img, C.img2, C.img].map((bg, i) => (
+          <div key={i} style={{ flex: 1, display: 'flex', gap: 6, borderRadius: 4, overflow: 'hidden', border: '1px solid #eee', background: '#fff' }}>
+            <div style={{ width: 40, background: bg, flexShrink: 0 }} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3, justifyContent: 'center', paddingRight: 8 }}>
+              <div style={{ height: 3, borderRadius: 1, background: C.line, width: '70%' }} />
+              <div style={{ height: 3, borderRadius: 1, background: C.lineFaint, width: '50%' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+]
 type ViewKey = typeof ALL_VIEWS[number]['key']
 
 // ── Detalle ──────────────────────────────────────────────────
@@ -197,40 +259,41 @@ export default function PropiedadesPage() {
           <>
             <Section title="Vistas disponibles">
               <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
-                Elegí qué modos de visualización se muestran en el toggle del listado. Al menos uno debe estar activo.
+                Activá las vistas que querés ofrecer en el toggle del listado. Al menos una debe estar activa.
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {ALL_VIEWS.map(({ key, label, desc }) => {
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {ALL_VIEWS.map(({ key, label, desc, thumb }) => {
                   const active = enabledViews.includes(key)
                   const isDefault = defaultView === key
                   return (
                     <div key={key} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '12px 16px', borderRadius: 10,
-                      border: `1px solid ${active ? '#d1d5db' : '#f0f0f0'}`,
-                      background: active ? '#fff' : '#fafafa',
+                      borderRadius: 12, padding: 14, border: `2px solid ${active ? '#111' : '#e5e5e5'}`,
+                      background: '#fff', opacity: active ? 1 : 0.55, transition: 'opacity .15s, border-color .15s',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      {/* Thumbnail */}
+                      <div style={{ borderRadius: 8, overflow: 'hidden', marginBottom: 12, border: '1px solid #eee', padding: 10, background: '#fafafa' }}>
+                        {thumb}
+                      </div>
+                      {/* Toggle + label row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{label}</span>
                         <div onClick={() => toggleView(key)} style={{
-                          width: 44, height: 24, borderRadius: 12,
+                          width: 40, height: 22, borderRadius: 11, flexShrink: 0,
                           background: active ? '#111' : '#e0e0e0',
-                          position: 'relative', transition: 'background .2s', cursor: 'pointer', flexShrink: 0,
+                          position: 'relative', transition: 'background .2s', cursor: 'pointer',
                         }}>
                           <div style={{
-                            width: 18, height: 18, borderRadius: '50%', background: '#fff',
-                            position: 'absolute', top: 3, left: active ? 23 : 3,
+                            width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                            position: 'absolute', top: 3, left: active ? 21 : 3,
                             transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                           }} />
                         </div>
-                        <div>
-                          <div style={{ fontSize: 14, color: active ? '#111' : '#aaa', fontWeight: active ? 500 : 400 }}>{label}</div>
-                          <div style={{ fontSize: 12, color: '#bbb', marginTop: 2 }}>{desc}</div>
-                        </div>
                       </div>
+                      <p style={{ fontSize: 11, color: '#aaa', margin: '0 0 10px', lineHeight: 1.4 }}>{desc}</p>
                       {active && (
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#666', whiteSpace: 'nowrap' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 11, color: '#666' }}>
                           <input type="radio" name="defaultView" checked={isDefault} onChange={() => setDefaultView(key as View)} style={{ accentColor: '#111' }} />
-                          Por defecto
+                          Vista por defecto
                         </label>
                       )}
                     </div>
