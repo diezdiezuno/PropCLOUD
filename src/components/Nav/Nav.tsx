@@ -102,7 +102,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
   const isSecNav = !isMap && !isListings
 
   const f = useFilters()
-  const { lang, setLang } = useLang()
+  const { lang, setLang, isPending } = useLang()
   const isMobile = useIsMobile(768)
   const [advOpen, setAdvOpen] = useState(false)
   const [advAnimate, setAdvAnimate] = useState(true)
@@ -277,7 +277,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <LangToggle lang={lang} setLang={setLang} />
+            <LangToggle lang={lang} setLang={setLang} isPending={isPending} />
             <button onClick={() => setMobileFilterOpen(true)} style={{
               display: 'flex', alignItems: 'center', gap: 6,
               background: activeFilters > 0 ? '#1a1a1a' : '#fff',
@@ -530,7 +530,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
 
       {/* Right: lang + menu */}
       <div ref={menuRef} style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, position: 'relative', justifyContent: 'flex-end' }}>
-        <LangToggle lang={lang} setLang={setLang} />
+        <LangToggle lang={lang} setLang={setLang} isPending={isPending} />
         <button onClick={() => setMenuOpen(o => !o)} style={{ width: 40, height: 40, background: '#fff', border: '1px solid #ddd', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16 }}>
           ☰
         </button>
@@ -736,15 +736,19 @@ function KeyIcon() {
   )
 }
 
-function LangToggle({ lang, setLang }: { lang: string; setLang: (l: 'es' | 'en') => void }) {
+function LangToggle({ lang, setLang, isPending }: { lang: string; setLang: (l: 'es' | 'en') => void; isPending?: boolean }) {
   return (
-    <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: 20, padding: 2, gap: 1 }}>
+    <div style={{
+      display: 'flex', background: '#f0f0f0', borderRadius: 20, padding: 2, gap: 1,
+      opacity: isPending ? 0.55 : 1, transition: 'opacity .2s',
+    }}>
       {(['es', 'en'] as const).map(l => (
-        <button key={l} onClick={() => setLang(l)} style={{
-          padding: '3px 9px', borderRadius: 18, border: 'none', cursor: 'pointer',
+        <button key={l} onClick={() => !isPending && setLang(l)} style={{
+          padding: '3px 9px', borderRadius: 18, border: 'none',
+          cursor: isPending ? 'default' : 'pointer',
           fontSize: 11, fontWeight: 600, fontFamily: 'inherit', letterSpacing: '0.04em',
           background: lang === l ? '#111' : 'transparent',
-          color: lang === l ? '#fff' : '#888',
+          color: lang === l ? (isPending ? '#aaa' : '#fff') : '#888',
           transition: 'background .15s, color .15s',
         }}>
           {l.toUpperCase()}

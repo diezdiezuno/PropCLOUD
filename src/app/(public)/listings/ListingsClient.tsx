@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFilteredProperties } from '@/contexts/FilterContext'
-import { useLang, locProp } from '@/contexts/LanguageContext'
+import { useLang, locProp, useUI } from '@/contexts/LanguageContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import type { Property } from '@/types'
 
@@ -31,6 +31,7 @@ export default function ListingsClient({ defaultView = 'grid', defaultSort = 'pr
   const [view, setView] = useState<ViewMode>(defaultView === 'list' ? 'list' : 'grid')
 
   const { lang } = useLang()
+  const t = useUI()
   const filtered = useFilteredProperties(allProperties)
 
   const sorted = useMemo(() => {
@@ -57,13 +58,13 @@ export default function ListingsClient({ defaultView = 'grid', defaultSort = 'pr
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent, #f5a623)', fontWeight: 500, marginBottom: 8 }}>
-            Portafolio
+            {t.portfolio}
           </div>
           <h2 style={{ fontSize: 'clamp(24px, 4vw, 38px)', fontWeight: 700, color: 'var(--dark, #1a1a1a)', lineHeight: 1.2, marginBottom: 4 }}>
-            Todas las Propiedades
+            {t.allProperties}
           </h2>
           <p style={{ color: 'var(--mid, #666)', fontSize: 15, fontWeight: 300 }}>
-            {loading ? 'Cargando...' : `${sorted.length} propiedades encontradas`}
+            {loading ? t.loading : t.propertiesFound(sorted.length)}
           </p>
         </div>
 
@@ -93,10 +94,10 @@ export default function ListingsClient({ defaultView = 'grid', defaultSort = 'pr
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div style={{ width: 36, height: 36, border: '2px solid #e5e5e5', borderTopColor: 'var(--accent,#f5a623)', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 16px' }} />
-            <p style={{ color: '#999' }}>Cargando...</p>
+            <p style={{ color: '#999' }}>{t.loading}</p>
           </div>
         ) : sorted.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#aaa' }}>Sin resultados con esos filtros</div>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#aaa' }}>{t.noResults}</div>
         ) : view === 'grid' ? (
           // Masonry
           <div style={{ columns: isMobile ? 1 : 4, columnGap: 8 }}>
@@ -126,6 +127,7 @@ export default function ListingsClient({ defaultView = 'grid', defaultSort = 'pr
 // ── Card components ──────────────────────────────────────────────────────────
 
 function MasonryCard({ p, onClick }: { p: Property; onClick: () => void }) {
+  const t = useUI()
   const isRent = p.transaction === 'rent'
   const img = p.images[0]
   const loc = [p.city, p.country].filter(Boolean).join(', ')
@@ -138,7 +140,7 @@ function MasonryCard({ p, onClick }: { p: Property; onClick: () => void }) {
     <div className="property-card" onClick={onClick} style={{ breakInside: 'avoid', marginBottom: 8 }}>
       <div className="card-img">
         <img src={img || 'https://via.placeholder.com/600x400/e2e2e8/8a8a9a?text=Sin+imagen'} alt="" loading="lazy" />
-        <span className={`card-badge${isRent ? ' rent' : ''}`}>{isRent ? 'Alquiler' : 'Venta'}</span>
+        <span className={`card-badge${isRent ? ' rent' : ''}`}>{isRent ? t.rent : t.sale}</span>
         <div className="card-overlay">
           <div className="card-ov-type">{p.type}</div>
           <div className="card-ov-title">{p.title}</div>
@@ -152,6 +154,7 @@ function MasonryCard({ p, onClick }: { p: Property; onClick: () => void }) {
 }
 
 function HoverCard({ p, onClick }: { p: Property; onClick: () => void }) {
+  const t = useUI()
   const isRent = p.transaction === 'rent'
   const img = p.images[0]
   const loc = [p.city, p.country].filter(Boolean).join(', ')
@@ -159,7 +162,7 @@ function HoverCard({ p, onClick }: { p: Property; onClick: () => void }) {
     <div className="property-card" onClick={onClick} style={{ breakInside: 'avoid', marginBottom: 0 }}>
       <div className="card-img square">
         <img src={img || 'https://via.placeholder.com/600x600/e2e2e8/8a8a9a?text=Sin+imagen'} alt="" loading="lazy" />
-        <span className={`card-badge${isRent ? ' rent' : ''}`}>{isRent ? 'Alquiler' : 'Venta'}</span>
+        <span className={`card-badge${isRent ? ' rent' : ''}`}>{isRent ? t.rent : t.sale}</span>
         <div className="card-overlay">
           <div className="card-ov-type">{p.type}</div>
           <div className="card-ov-title">{p.title}</div>
@@ -172,6 +175,7 @@ function HoverCard({ p, onClick }: { p: Property; onClick: () => void }) {
 }
 
 function DualCard({ p, onClick }: { p: Property; onClick: () => void }) {
+  const t = useUI()
   const isRent = p.transaction === 'rent'
   const img = p.images[0]
   const loc = [p.city, p.country].filter(Boolean).join(', ')
@@ -179,7 +183,7 @@ function DualCard({ p, onClick }: { p: Property; onClick: () => void }) {
     <div className="card-dual" onClick={onClick}>
       <div className="card-dual-img">
         <img src={img || 'https://via.placeholder.com/800x450/e2e2e8/8a8a9a?text=Sin+imagen'} alt="" loading="lazy" />
-        <span className={`card-badge${isRent ? ' rent' : ''}`}>{isRent ? 'Alquiler' : 'Venta'}</span>
+        <span className={`card-badge${isRent ? ' rent' : ''}`}>{isRent ? t.rent : t.sale}</span>
       </div>
       <div className="card-dual-body">
         <div className="card-dual-type">{p.type}</div>
@@ -188,8 +192,8 @@ function DualCard({ p, onClick }: { p: Property; onClick: () => void }) {
         <div className="card-dual-price">{fmtPrice(p.price, p.currency)}</div>
       </div>
       <div className="card-dual-feats">
-        {p.bedrooms != null && <div className="card-dual-feat"><strong>{p.bedrooms}</strong>🛏 Hab</div>}
-        {p.bathrooms != null && <div className="card-dual-feat"><strong>{p.bathrooms}</strong>🚿 Baños</div>}
+        {p.bedrooms != null && <div className="card-dual-feat"><strong>{p.bedrooms}</strong>🛏 {t.bdrShort}</div>}
+        {p.bathrooms != null && <div className="card-dual-feat"><strong>{p.bathrooms}</strong>🚿 {t.bathShort}</div>}
         {p.area_m2 != null && <div className="card-dual-feat"><strong>{p.area_m2}</strong>📐 m²</div>}
       </div>
     </div>
@@ -197,6 +201,7 @@ function DualCard({ p, onClick }: { p: Property; onClick: () => void }) {
 }
 
 function ListRow({ p, onClick }: { p: Property; onClick: () => void }) {
+  const t = useUI()
   const isRent = p.transaction === 'rent'
   const img = p.images[0]
   const loc = [p.city, p.country].filter(Boolean).join(', ')
@@ -204,7 +209,7 @@ function ListRow({ p, onClick }: { p: Property; onClick: () => void }) {
     <div className="card-list-row" onClick={onClick} style={{ marginBottom: 0, borderBottom: '1px solid #ebebeb' }}>
       <div className="card-list-img">
         <img src={img || 'https://via.placeholder.com/400x300/e2e2e8/8a8a9a?text=Sin+imagen'} alt="" loading="lazy" />
-        <span className={`card-badge${isRent ? ' rent' : ''}`}>{isRent ? 'Alquiler' : 'Venta'}</span>
+        <span className={`card-badge${isRent ? ' rent' : ''}`}>{isRent ? t.rent : t.sale}</span>
       </div>
       <div className="card-list-body">
         <div className="card-type">{p.type}</div>

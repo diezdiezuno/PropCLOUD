@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { useLang, locProp } from '@/contexts/LanguageContext'
+import { useLang, locProp, useUI } from '@/contexts/LanguageContext'
 import type { Property } from '@/types'
 
 interface Props {
@@ -14,8 +14,8 @@ interface Props {
   mapboxToken?: string
 }
 
-function fmtFull(price: number, currency: string): string {
-  if (!price) return 'Precio a consultar'
+function fmtFull(price: number, currency: string, noPrice: string): string {
+  if (!price) return noPrice
   if (currency === 'CRC') return '₡' + Number(price).toLocaleString('es-CR')
   return '$' + Number(price).toLocaleString('en-US')
 }
@@ -25,6 +25,7 @@ export default function PropertyDetailClient({
 }: Props) {
   const isMobile = useIsMobile()
   const { lang } = useLang()
+  const t = useUI()
   const [property, setProperty] = useState<Property | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -78,19 +79,19 @@ export default function PropertyDetailClient({
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3500) }
   function shareProperty() {
     if (navigator.share) { navigator.share({ title: property?.title ?? '', url: window.location.href }).catch(() => {}) }
-    else { navigator.clipboard?.writeText(window.location.href); showToast('Enlace copiado') }
+    else { navigator.clipboard?.writeText(window.location.href); showToast(t.linkCopied) }
   }
   function scrollToForm() { formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
 
   function submitInquiry() {
-    if (!formName.trim() || !formEmail.trim()) { showToast('Por favor completá nombre y correo.'); return }
+    if (!formName.trim() || !formEmail.trim()) { showToast(t.fillNameEmail); return }
     const phone = contactMode === 'office' ? officeWhatsapp : property?.agent_phone
     if (phone) {
       const msg = encodeURIComponent(`Hola, me interesa esta propiedad: ${property?.title}\n\nNombre: ${formName}\nCorreo: ${formEmail}${formPhone ? `\nTel: ${formPhone}` : ''}${formMsg ? `\n\n${formMsg}` : ''}`)
       window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${msg}`, '_blank')
     }
     setFormSent(true)
-    showToast(`Consulta enviada sobre: ${property?.title}`)
+    showToast(`${t.contact}: ${property?.title}`)
   }
 
   if (loading) {
@@ -104,24 +105,25 @@ export default function PropertyDetailClient({
   if (notFound || !property) {
     return (
       <div style={{ paddingTop: 'var(--nav-h,60px)', minHeight: '100vh', background: '#f5f5f7', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-        <div style={{ fontSize: 18, fontWeight: 600, color: '#333' }}>Propiedad no encontrada</div>
+        <div style={{ fontSize: 18, fontWeight: 600, color: '#333' }}>{t.propertyNotFound}</div>
         <a href="/listings" style={{ background: '#222', color: '#fff', borderRadius: 10, padding: '10px 22px', fontSize: 14, textDecoration: 'none', fontFamily: 'inherit' }}>
-          Ver todas las propiedades
+          {t.viewAllProperties}
         </a>
       </div>
     )
   }
 
   const p = locProp(property, lang)
+  const fmt = (price: number, currency: string) => fmtFull(price, currency, t.priceOnRequest)
   const imgs = p.images.length > 0 ? p.images : ['https://via.placeholder.com/1200x800/e2e2e8/8a8a9a?text=Sin+imagen']
   const loc = [p.city, p.country].filter(Boolean).join(', ')
   const type = p.type ?? 'Propiedad'
   const tagLabel = [type, loc].filter(Boolean).join(' · ')
   const contactPhone = contactMode === 'office' ? officeWhatsapp : p.agent_phone
-  const displayName    = contactMode === 'office' ? 'Oficina' : (p.agent_name ?? '')
+  const displayName    = contactMode === 'office' ? t.office : (p.agent_name ?? '')
   const displaySub     = contactMode === 'office' ? (officeEmail ?? officeWhatsapp ?? '') : (p.agent_email ?? p.agent_phone ?? 'RE/MAX')
   const displayInitial = displayName.trim() ? displayName.trim()[0].toUpperCase() : '?'
-  const ctaLabel       = contactMode === 'office' ? 'Contactar oficina' : 'Contactar agente'
+  const ctaLabel       = contactMode === 'office' ? t.contactOffice : t.contactAgent
   const token = mapboxToken ?? (process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '')
   const mapSrc = p.lat && p.lng && token
     ? `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l+6b2fa0(${p.lng},${p.lat})/${p.lng},${p.lat},14/800x300@2x?access_token=${token}`
@@ -145,16 +147,16 @@ export default function PropertyDetailClient({
     <div ref={formRef}>
       {formSent ? (
         <div style={{ textAlign: 'center', padding: '16px 0', color: '#38a169', fontSize: 14, fontWeight: 600 }}>
-          Consulta enviada. Te contactaremos pronto.
+          {t.inquirySent}
         </div>
       ) : (
         <>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 14 }}>Solicitar información</div>
-          <input className="det-inp" type="text" placeholder="Nombre completo" value={formName} onChange={e => setFormName(e.target.value)} />
-          <input className="det-inp" type="email" placeholder="Correo electrónico" value={formEmail} onChange={e => setFormEmail(e.target.value)} />
-          <input className="det-inp" type="tel" placeholder="WhatsApp" value={formPhone} onChange={e => setFormPhone(e.target.value)} />
-          <textarea className="det-inp" rows={3} placeholder="Me interesa esta propiedad..." value={formMsg} onChange={e => setFormMsg(e.target.value)} style={{ resize: 'none' }} />
-          <button onClick={submitInquiry} className="det-submit">{contactPhone ? `${ctaLabel} →` : 'Enviar consulta →'}</button>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 14 }}>{t.requestInfo}</div>
+          <input className="det-inp" type="text" placeholder={t.fullName} value={formName} onChange={e => setFormName(e.target.value)} />
+          <input className="det-inp" type="email" placeholder={t.email} value={formEmail} onChange={e => setFormEmail(e.target.value)} />
+          <input className="det-inp" type="tel" placeholder={t.whatsapp} value={formPhone} onChange={e => setFormPhone(e.target.value)} />
+          <textarea className="det-inp" rows={3} placeholder={t.interestedMsg} value={formMsg} onChange={e => setFormMsg(e.target.value)} style={{ resize: 'none' }} />
+          <button onClick={submitInquiry} className="det-submit">{contactPhone ? `${ctaLabel} →` : t.sendInquiry}</button>
         </>
       )}
     </div>
@@ -163,7 +165,7 @@ export default function PropertyDetailClient({
   const staticMap = mapSrc ? (
     <a href={`https://maps.google.com/?q=${p.lat},${p.lng}`} target="_blank" rel="noopener noreferrer"
       style={{ display: 'block', borderRadius: 10, overflow: 'hidden', marginBottom: 8, flexShrink: 0 }}>
-      <img className="det-map-static" src={mapSrc} alt="Mapa de ubicación" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+      <img className="det-map-static" src={mapSrc} alt={t.location} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
     </a>
   ) : null
 
@@ -200,7 +202,7 @@ export default function PropertyDetailClient({
             <img src={imgs[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             {imgs.length > 1 && (
               <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(4px)', color: '#fff', fontSize: 11, fontWeight: 500, padding: '4px 12px', borderRadius: 20 }}>
-                {imgs.length} fotos
+                {imgs.length} {t.photos}
               </div>
             )}
           </div>
@@ -216,22 +218,22 @@ export default function PropertyDetailClient({
             <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '.16em', textTransform: 'uppercase', color: '#aaa', marginBottom: 8 }}>{tagLabel}</div>
             <h1 style={{ fontFamily: 'var(--font-heading,"Playfair Display",serif)', fontSize: 24, lineHeight: 1.25, margin: '0 0 10px', color: '#111' }}>{p.title}</h1>
             <div style={{ fontSize: 28, fontWeight: 700, color: '#111', marginBottom: 20 }}>
-              {fmtFull(p.price, p.currency)}
-              {p.transaction === 'rent' && <span style={{ fontSize: 13, fontWeight: 400, color: '#aaa', marginLeft: 8 }}>/mes</span>}
+              {fmt(p.price, p.currency)}
+              {p.transaction === 'rent' && <span style={{ fontSize: 13, fontWeight: 400, color: '#aaa', marginLeft: 8 }}>{t.perMonth}</span>}
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-              <button onClick={shareProperty} style={actionBtn}>Compartir</button>
-              <button onClick={scrollToForm} style={{ ...actionBtn, background: '#111', color: '#fff', borderColor: '#111' }}>Contactar →</button>
+              <button onClick={shareProperty} style={actionBtn}>{t.share}</button>
+              <button onClick={scrollToForm} style={{ ...actionBtn, background: '#111', color: '#fff', borderColor: '#111' }}>{t.contact} →</button>
             </div>
             <Divider />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
-              {p.bedrooms != null && <Stat value={p.bedrooms} label="Habitaciones" />}
-              {p.bathrooms != null && <Stat value={p.bathrooms} label="Baños" />}
-              {p.area_m2 != null && <Stat value={`${p.area_m2} m²`} label="Construcción" />}
-              {p.lot_m2 != null && <Stat value={`${p.lot_m2} m²`} label="Lote" />}
+              {p.bedrooms != null && <Stat value={p.bedrooms} label={t.bedrooms} />}
+              {p.bathrooms != null && <Stat value={p.bathrooms} label={t.bathrooms} />}
+              {p.area_m2 != null && <Stat value={`${p.area_m2} m²`} label={t.built} />}
+              {p.lot_m2 != null && <Stat value={`${p.lot_m2} m²`} label={t.lot} />}
             </div>
             {p.description && (<><Divider /><p style={{ fontSize: 14, lineHeight: 1.75, color: '#666', margin: '0 0 18px', whiteSpace: 'pre-line' }}>{p.description}</p></>)}
-            {staticMap && (<><Divider /><SectionLabel>Ubicación</SectionLabel>{staticMap}</>)}
+            {staticMap && (<><Divider /><SectionLabel>{t.location}</SectionLabel>{staticMap}</>)}
             <Divider />
             <div style={{ background: '#f9f9f9', borderRadius: 10, padding: 20, border: '1px solid #eee' }}>
               {agentCard}
@@ -260,14 +262,14 @@ export default function PropertyDetailClient({
             <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginBottom: 10 }}>{tagLabel}</div>
             <h1 style={{ fontFamily: 'var(--font-heading,"Playfair Display",serif)', fontSize: 'clamp(28px,3vw,36px)', color: '#fff', lineHeight: 1.2, margin: '0 0 10px' }}>{p.title}</h1>
             <div style={{ fontSize: 28, fontWeight: 700, color: '#fff' }}>
-              {fmtFull(p.price, p.currency)}
-              {p.transaction === 'rent' && <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 8, opacity: 0.7 }}>/mes</span>}
+              {fmt(p.price, p.currency)}
+              {p.transaction === 'rent' && <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 8, opacity: 0.7 }}>{t.perMonth}</span>}
             </div>
           </div>
           {imgs.length > 1 && (
             <button onClick={() => { setLbIdx(0); setLbOpen(true) }}
               style={{ position: 'absolute', bottom: 44, right: 44, background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,.3)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '8px 18px', borderRadius: 24, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Ver {imgs.length} fotos
+              {t.viewPhotos(imgs.length)}
             </button>
           )}
         </div>
@@ -278,15 +280,15 @@ export default function PropertyDetailClient({
           <div style={{ padding: '40px 48px 80px' }}>
             {/* Stats row */}
             <div style={{ display: 'flex', gap: 40, padding: '20px 0', borderTop: '1px solid #eee', borderBottom: '1px solid #eee', marginBottom: 32 }}>
-              {p.bedrooms != null && <AHeroStat val={p.bedrooms} lbl="Habitaciones" />}
-              {p.bathrooms != null && <AHeroStat val={p.bathrooms} lbl="Baños" />}
-              {p.area_m2 != null && <AHeroStat val={p.area_m2} lbl="m² Const." />}
-              {p.lot_m2 != null && <AHeroStat val={p.lot_m2} lbl="m² Lote" />}
+              {p.bedrooms != null && <AHeroStat val={p.bedrooms} lbl={t.bedrooms} />}
+              {p.bathrooms != null && <AHeroStat val={p.bathrooms} lbl={t.bathrooms} />}
+              {p.area_m2 != null && <AHeroStat val={p.area_m2} lbl={t.builtShort} />}
+              {p.lot_m2 != null && <AHeroStat val={p.lot_m2} lbl={t.lotShort} />}
             </div>
             {/* Share row */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
               <button onClick={shareProperty} style={actionBtn}>
-                <ShareIcon /> Compartir
+                <ShareIcon /> {t.share}
               </button>
               <button onClick={scrollToForm} style={{ ...actionBtn, background: '#111', color: '#fff', borderColor: '#111' }}>
                 {ctaLabel} →
@@ -297,7 +299,7 @@ export default function PropertyDetailClient({
             {/* Gallery thumbnails */}
             {imgs.length > 1 && (
               <>
-                <SectionLabel>Galería</SectionLabel>
+                <SectionLabel>{t.gallery}</SectionLabel>
                 <div style={{ display: 'flex', gap: 6, height: 160, marginBottom: 32, borderRadius: 8, overflow: 'hidden' }}>
                   <div onClick={() => { setLbIdx(0); setLbOpen(true) }}
                     style={{ flex: 2, overflow: 'hidden', borderRadius: 6, cursor: 'pointer', background: '#e5e5e5' }}>
@@ -322,11 +324,11 @@ export default function PropertyDetailClient({
             {/* Map */}
             {staticMap && (
               <>
-                <SectionLabel>Ubicación</SectionLabel>
+                <SectionLabel>{t.location}</SectionLabel>
                 {staticMap}
                 <a href={`https://maps.google.com/?q=${p.lat},${p.lng}`} target="_blank" rel="noopener noreferrer"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--primary,#6b2fa0)', fontSize: 11, textDecoration: 'none', marginBottom: 28 }}>
-                  Ver en Google Maps →
+                  {t.viewOnGoogleMaps}
                 </a>
               </>
             )}
@@ -358,7 +360,7 @@ export default function PropertyDetailClient({
             onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')} />
           {imgs.length > 1 && (
             <div style={{ position: 'absolute', bottom: 20, right: 24, background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(4px)', color: '#fff', fontSize: 11, fontWeight: 500, padding: '5px 12px', borderRadius: 20 }}>
-              {imgs.length} fotos
+              {imgs.length} {t.photos}
             </div>
           )}
         </div>
@@ -368,22 +370,22 @@ export default function PropertyDetailClient({
           <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '.18em', textTransform: 'uppercase', color: '#aaa', marginBottom: 12 }}>{tagLabel}</div>
           <h1 style={{ fontFamily: 'var(--font-heading,"Playfair Display",serif)', fontSize: 'clamp(28px,4vw,38px)', lineHeight: 1.2, color: '#111', margin: '0 0 12px' }}>{p.title}</h1>
           <div style={{ fontSize: 32, fontWeight: 700, color: '#111', marginBottom: 24, letterSpacing: '-.01em' }}>
-            {fmtFull(p.price, p.currency)}
-            {p.transaction === 'rent' && <span style={{ fontSize: 14, fontWeight: 400, color: '#aaa', marginLeft: 10 }}>/mes</span>}
+            {fmt(p.price, p.currency)}
+            {p.transaction === 'rent' && <span style={{ fontSize: 14, fontWeight: 400, color: '#aaa', marginLeft: 10 }}>{t.perMonth}</span>}
           </div>
 
           {/* Action row */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
-            <button onClick={shareProperty} style={actionBtn}><ShareIcon /> Compartir</button>
+            <button onClick={shareProperty} style={actionBtn}><ShareIcon /> {t.share}</button>
             <button onClick={scrollToForm} style={{ ...actionBtn, background: '#111', color: '#fff', borderColor: '#111' }}>{ctaLabel} →</button>
           </div>
 
           {/* Stat pills */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 32 }}>
-            {p.bedrooms != null && <BPill label="habitaciones" value={p.bedrooms} />}
-            {p.bathrooms != null && <BPill label="baños" value={p.bathrooms} />}
-            {p.area_m2 != null && <BPill label="m² const." value={p.area_m2} />}
-            {p.lot_m2 != null && <BPill label="m² lote" value={p.lot_m2} />}
+            {p.bedrooms != null && <BPill label={t.bedroomsLower} value={p.bedrooms} />}
+            {p.bathrooms != null && <BPill label={t.bathroomsLower} value={p.bathrooms} />}
+            {p.area_m2 != null && <BPill label={t.builtLower} value={p.area_m2} />}
+            {p.lot_m2 != null && <BPill label={t.lotLower} value={p.lot_m2} />}
           </div>
 
           {/* Description */}
@@ -397,7 +399,7 @@ export default function PropertyDetailClient({
           {/* Gallery horizontal scroll */}
           {imgs.length > 1 && (
             <>
-              <SectionLabel>Galería</SectionLabel>
+              <SectionLabel>{t.gallery}</SectionLabel>
               <div style={{ display: 'flex', gap: 10, height: 200, overflowX: 'auto', marginBottom: 36, paddingBottom: 4, scrollbarWidth: 'thin' }}>
                 {imgs.map((src, i) => (
                   <div key={i} onClick={() => { setLbIdx(i); setLbOpen(true) }}
@@ -415,11 +417,11 @@ export default function PropertyDetailClient({
           {staticMap && (
             <>
               <Divider />
-              <SectionLabel>Ubicación</SectionLabel>
+              <SectionLabel>{t.location}</SectionLabel>
               <div style={{ marginBottom: 8 }}>{staticMap}</div>
               <a href={`https://maps.google.com/?q=${p.lat},${p.lng}`} target="_blank" rel="noopener noreferrer"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--primary,#6b2fa0)', fontSize: 11, textDecoration: 'none', marginBottom: 36 }}>
-                Ver en Google Maps →
+                {t.viewOnGoogleMaps}
               </a>
             </>
           )}
@@ -427,8 +429,8 @@ export default function PropertyDetailClient({
           {/* Contact form */}
           <Divider />
           <div style={{ background: '#f9f9f9', border: '1px solid #eee', borderRadius: 12, padding: 32 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 4 }}>¿Te interesa esta propiedad?</div>
-            <div style={{ fontSize: 13, color: '#aaa', marginBottom: 20 }}>Un agente te contactará en menos de 24 horas</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 4 }}>{t.interestedTitle}</div>
+            <div style={{ fontSize: 13, color: '#aaa', marginBottom: 20 }}>{t.agentContact24h}</div>
             {agentCard}
             {contactForm}
           </div>
@@ -452,14 +454,14 @@ export default function PropertyDetailClient({
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', marginBottom: 16 }}>{tagLabel}</div>
             <h1 style={{ fontFamily: 'var(--font-heading,"Playfair Display",serif)', fontSize: 'clamp(32px,5vw,48px)', color: '#fff', lineHeight: 1.15, margin: '0 0 14px' }}>{p.title}</h1>
             <div style={{ fontSize: 'clamp(24px,3vw,34px)', fontWeight: 300, color: '#fff', letterSpacing: '.02em' }}>
-              {fmtFull(p.price, p.currency)}
-              {p.transaction === 'rent' && <span style={{ fontSize: 14, marginLeft: 10, opacity: 0.7 }}>/mes</span>}
+              {fmt(p.price, p.currency)}
+              {p.transaction === 'rent' && <span style={{ fontSize: 14, marginLeft: 10, opacity: 0.7 }}>{t.perMonth}</span>}
             </div>
           </div>
           <div style={{ position: 'absolute', bottom: 24, right: 24 }}>
             <button onClick={shareProperty}
               style={{ background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,.3)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '8px 18px', borderRadius: 24, cursor: 'pointer', fontFamily: 'inherit', marginRight: 8 }}>
-              Compartir
+              {t.share}
             </button>
             <button onClick={scrollToForm}
               style={{ background: 'rgba(255,255,255,.9)', border: 'none', color: '#111', fontSize: 12, fontWeight: 600, padding: '8px 18px', borderRadius: 24, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -469,7 +471,7 @@ export default function PropertyDetailClient({
           {imgs.length > 1 && (
             <button onClick={() => { setLbIdx(0); setLbOpen(true) }}
               style={{ position: 'absolute', bottom: 24, left: 24, background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,.2)', color: '#fff', fontSize: 11, fontWeight: 500, padding: '6px 14px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit' }}>
-              {imgs.length} fotos
+              {imgs.length} {t.photos}
             </button>
           )}
         </div>
@@ -478,10 +480,10 @@ export default function PropertyDetailClient({
         {(p.bedrooms != null || p.bathrooms != null || p.area_m2 != null || p.lot_m2 != null) && (
           <div style={{ padding: '56px 48px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 0, flexWrap: 'wrap' }}>
-              {p.bedrooms != null && <DStatItem val={p.bedrooms} lbl="Habitaciones" />}
-              {p.bathrooms != null && <DStatItem val={p.bathrooms} lbl="Baños" />}
-              {p.area_m2 != null && <DStatItem val={p.area_m2} lbl="m² Const." />}
-              {p.lot_m2 != null && <DStatItem val={p.lot_m2} lbl="m² Lote" />}
+              {p.bedrooms != null && <DStatItem val={p.bedrooms} lbl={t.bedrooms} />}
+              {p.bathrooms != null && <DStatItem val={p.bathrooms} lbl={t.bathrooms} />}
+              {p.area_m2 != null && <DStatItem val={p.area_m2} lbl={t.builtShort} />}
+              {p.lot_m2 != null && <DStatItem val={p.lot_m2} lbl={t.lotShort} />}
             </div>
           </div>
         )}
@@ -490,7 +492,7 @@ export default function PropertyDetailClient({
         {p.description && (
           <div style={{ maxWidth: 660, margin: '0 auto', padding: '56px 32px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
             <div style={{ fontFamily: 'var(--font-heading,"Playfair Display",serif)', fontSize: 22, fontStyle: 'italic', color: '#888', marginBottom: 20 }}>
-              Una propiedad diseñada para quienes aprecian lo extraordinario
+              {t.propertyQuote}
             </div>
             <p style={{ fontSize: 15, lineHeight: 1.9, color: '#666', fontWeight: 300, whiteSpace: 'pre-line', margin: 0 }}>{p.description}</p>
           </div>
@@ -517,7 +519,7 @@ export default function PropertyDetailClient({
           <div style={{ borderBottom: '1px solid #f0f0f0' }}>
             <a href={`https://maps.google.com/?q=${p.lat},${p.lng}`} target="_blank" rel="noopener noreferrer"
               style={{ display: 'block', height: 280, overflow: 'hidden' }}>
-              <img src={mapSrc!} alt="Mapa de ubicación"
+              <img src={mapSrc!} alt={t.location}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 onError={e => { (e.target as HTMLImageElement).closest('a')!.style.display = 'none' }} />
             </a>
@@ -527,9 +529,9 @@ export default function PropertyDetailClient({
         {/* Contact form section */}
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '56px 32px 80px' }}>
           <div style={{ fontFamily: 'var(--font-heading,"Playfair Display",serif)', fontSize: 26, textAlign: 'center', marginBottom: 6, color: '#111' }}>
-            ¿Te interesa esta propiedad?
+            {t.interestedTitle}
           </div>
-          <div style={{ fontSize: 13, color: '#aaa', textAlign: 'center', marginBottom: 28 }}>Un agente te contactará en menos de 24 horas</div>
+          <div style={{ fontSize: 13, color: '#aaa', textAlign: 'center', marginBottom: 28 }}>{t.agentContact24h}</div>
           {agentCard}
           <div style={{ background: '#f9f9f9', border: '1px solid #eee', borderRadius: 12, padding: 28 }}>
             {contactForm}
@@ -563,7 +565,7 @@ export default function PropertyDetailClient({
               <img src={src} alt="" loading={i === 0 ? 'eager' : 'lazy'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               {i === 0 && imgs.length > 1 && (
                 <div style={{ position: 'absolute', bottom: 16, right: 16, background: 'rgba(0,0,0,.45)', backdropFilter: 'blur(4px)', color: '#fff', fontSize: 11, fontWeight: 500, padding: '5px 12px', borderRadius: 20 }}>
-                  {imgs.length} fotos
+                  {imgs.length} {t.photos}
                 </div>
               )}
               <div className="det-photo-zoom">⤢</div>
@@ -577,35 +579,35 @@ export default function PropertyDetailClient({
             <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '.16em', textTransform: 'uppercase', color: '#aaa', marginBottom: 10 }}>{tagLabel}</div>
             <h1 style={{ fontFamily: 'var(--font-heading,"Playfair Display",serif)', fontSize: 'clamp(22px,2.5vw,26px)', lineHeight: 1.25, margin: '0 0 10px', color: '#111', fontWeight: 700 }}>{p.title}</h1>
             <div style={{ fontSize: 'clamp(26px,3vw,30px)', fontWeight: 700, color: '#111', marginBottom: 20, letterSpacing: '-.01em' }}>
-              {fmtFull(p.price, p.currency)}
-              {p.transaction === 'rent' && <span style={{ fontSize: 14, fontWeight: 400, color: '#aaa', marginLeft: 8 }}>/mes</span>}
+              {fmt(p.price, p.currency)}
+              {p.transaction === 'rent' && <span style={{ fontSize: 14, fontWeight: 400, color: '#aaa', marginLeft: 8 }}>{t.perMonth}</span>}
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-              <button onClick={shareProperty} style={actionBtn}><ShareIcon /> Compartir</button>
+              <button onClick={shareProperty} style={actionBtn}><ShareIcon /> {t.share}</button>
               <button onClick={scrollToForm} style={{ ...actionBtn, background: '#111', color: '#fff', borderColor: '#111' }}>{ctaLabel} →</button>
             </div>
             <Divider />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
-              {p.bedrooms != null && <Stat value={p.bedrooms} label="Habitaciones" />}
-              {p.bathrooms != null && <Stat value={p.bathrooms} label="Baños" />}
-              {p.area_m2 != null && <Stat value={`${p.area_m2} m²`} label="Construcción" />}
-              {p.lot_m2 != null && <Stat value={`${p.lot_m2} m²`} label="Lote" />}
+              {p.bedrooms != null && <Stat value={p.bedrooms} label={t.bedrooms} />}
+              {p.bathrooms != null && <Stat value={p.bathrooms} label={t.bathrooms} />}
+              {p.area_m2 != null && <Stat value={`${p.area_m2} m²`} label={t.built} />}
+              {p.lot_m2 != null && <Stat value={`${p.lot_m2} m²`} label={t.lot} />}
             </div>
             <Divider />
             {p.description && (
               <>
-                <SectionLabel>Descripción</SectionLabel>
+                <SectionLabel>{t.description}</SectionLabel>
                 <p style={{ fontSize: 13, lineHeight: 1.75, color: '#666', margin: '0 0 18px', whiteSpace: 'pre-line' }}>{p.description}</p>
                 <Divider />
               </>
             )}
             {staticMap && (
               <>
-                <SectionLabel>Ubicación</SectionLabel>
+                <SectionLabel>{t.location}</SectionLabel>
                 {staticMap}
                 <a href={`https://maps.google.com/?q=${p.lat},${p.lng}`} target="_blank" rel="noopener noreferrer"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--primary,#6b2fa0)', fontSize: 11, textDecoration: 'none', marginBottom: 18 }}>
-                  Ver en Google Maps →
+                  {t.viewOnGoogleMaps}
                 </a>
                 <Divider />
               </>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useFilters, useFilteredProperties } from '@/contexts/FilterContext'
-import { useLang, locProp } from '@/contexts/LanguageContext'
+import { useLang, locProp, useUI } from '@/contexts/LanguageContext'
 import type { Property } from '@/types'
 
 interface MapViewProps {
@@ -48,6 +48,7 @@ export default function MapView({ mapStyle, mapboxToken, mapCenter, mapZoom }: M
   const [count, setCount] = useState<number | null>(null)
   const f = useFilters()
   const { lang } = useLang()
+  const t = useUI()
   const langRef = useRef(lang)
   langRef.current = lang
 
@@ -208,7 +209,7 @@ export default function MapView({ mapStyle, mapboxToken, mapCenter, mapZoom }: M
           borderRadius: 24, fontSize: 13, fontWeight: 500, zIndex: 400,
           pointerEvents: 'none', whiteSpace: 'nowrap', backdropFilter: 'blur(4px)',
         }}>
-          {count} propiedades en esta zona
+          {count} {t.propertiesInArea}
         </div>
       )}
 
@@ -222,7 +223,7 @@ export default function MapView({ mapStyle, mapboxToken, mapCenter, mapZoom }: M
         }}>
           <div className="map-loading-ring" />
           <p style={{ fontSize: 14, color: '#8a8a9a', fontWeight: 500, letterSpacing: '0.02em' }}>
-            Cargando propiedades...
+            {t.loadingProperties}
           </p>
         </div>
       )}
