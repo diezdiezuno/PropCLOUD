@@ -10,6 +10,13 @@ interface MapViewProps {
   mapboxToken: string
   mapCenter?: [number, number]
   mapZoom?: number
+  // Layer visibility (Mapbox Standard style config properties)
+  show3dObjects?: boolean
+  showPoiLabels?: boolean
+  showTransitLabels?: boolean
+  showPlaceLabels?: boolean
+  showRoadLabels?: boolean
+  autoLightPreset?: boolean
 }
 
 function getMapLightPreset(): string {
@@ -38,7 +45,15 @@ function fmtFull(price: number, currency: string): string {
   return '$' + Number(price).toLocaleString('en-US')
 }
 
-export default function MapView({ mapStyle, mapboxToken, mapCenter, mapZoom }: MapViewProps) {
+export default function MapView({
+  mapStyle, mapboxToken, mapCenter, mapZoom,
+  show3dObjects = true,
+  showPoiLabels = true,
+  showTransitLabels = true,
+  showPlaceLabels = true,
+  showRoadLabels = true,
+  autoLightPreset = false,
+}: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const markersRef = useRef<any[]>([])
@@ -153,7 +168,18 @@ export default function MapView({ mapStyle, mapboxToken, mapCenter, mapZoom }: M
         })
 
         map.on('load', async () => {
-          try { map.setConfigProperty('basemap', 'lightPreset', getMapLightPreset()) } catch {}
+          // Light preset
+          try {
+            if (autoLightPreset) {
+              map.setConfigProperty('basemap', 'lightPreset', getMapLightPreset())
+            }
+          } catch {}
+          // Layer visibility
+          try { map.setConfigProperty('basemap', 'show3dObjects', show3dObjects) } catch {}
+          try { map.setConfigProperty('basemap', 'showPointOfInterestLabels', showPoiLabels) } catch {}
+          try { map.setConfigProperty('basemap', 'showTransitLabels', showTransitLabels) } catch {}
+          try { map.setConfigProperty('basemap', 'showPlaceLabels', showPlaceLabels) } catch {}
+          try { map.setConfigProperty('basemap', 'showRoadLabels', showRoadLabels) } catch {}
           setStatus('ready')
 
           // Load properties

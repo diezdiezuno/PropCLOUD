@@ -16,6 +16,13 @@ export interface TenantTheme {
   fontHeading: string
   fontBody: string
   mapStyle: string
+  // Map display options
+  autoLightPreset?: boolean
+  show3dObjects?: boolean
+  showPoiLabels?: boolean
+  showTransitLabels?: boolean
+  showPlaceLabels?: boolean
+  showRoadLabels?: boolean
 }
 
 export interface PageConfig {

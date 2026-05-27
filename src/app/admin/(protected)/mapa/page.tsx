@@ -312,6 +312,12 @@ export default function MapaPage() {
   const [zoom, setZoom] = useState(12)
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/streets-v12')
   const [autoLightPreset, setAutoLightPreset] = useState(false)
+  // Layer visibility
+  const [show3dObjects, setShow3dObjects] = useState(true)
+  const [showPoiLabels, setShowPoiLabels] = useState(true)
+  const [showTransitLabels, setShowTransitLabels] = useState(true)
+  const [showPlaceLabels, setShowPlaceLabels] = useState(true)
+  const [showRoadLabels, setShowRoadLabels] = useState(true)
 
   // Zones
   const [zones, setZones] = useState<ZoneConfigItem[]>([])
@@ -343,6 +349,11 @@ export default function MapaPage() {
       }
       if (tenantRow?.theme?.mapStyle) setMapStyle(tenantRow.theme.mapStyle)
       if (tenantRow?.theme?.autoLightPreset) setAutoLightPreset(true)
+      if (tenantRow?.theme?.show3dObjects === false) setShow3dObjects(false)
+      if (tenantRow?.theme?.showPoiLabels === false) setShowPoiLabels(false)
+      if (tenantRow?.theme?.showTransitLabels === false) setShowTransitLabels(false)
+      if (tenantRow?.theme?.showPlaceLabels === false) setShowPlaceLabels(false)
+      if (tenantRow?.theme?.showRoadLabels === false) setShowRoadLabels(false)
       setLoading(false)
     })
   }, [])
@@ -367,7 +378,7 @@ export default function MapaPage() {
     // Merge mapStyle into existing theme (don't wipe other branding fields)
     const { data: tenantRow } = await supabase.from('tenants').select('theme').eq('id', tenantId).single()
     await supabase.from('tenants').update({
-      theme: { ...(tenantRow?.theme ?? {}), mapStyle, autoLightPreset },
+      theme: { ...(tenantRow?.theme ?? {}), mapStyle, autoLightPreset, show3dObjects, showPoiLabels, showTransitLabels, showPlaceLabels, showRoadLabels },
     }).eq('id', tenantId)
     await supabase.from('tenant_config').upsert({
       tenant_id: tenantId,
@@ -534,6 +545,47 @@ export default function MapaPage() {
                   ))}
                 </div>
               )}
+            </Section>
+
+            <Section title="Capas visibles">
+              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
+                Controlá qué elementos se muestran en el mapa del sitio. Solo aplica con los estilos estándar de Mapbox.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {([
+                  [show3dObjects,      setShow3dObjects,      '🏢', 'Objetos 3D',             'Edificios, árboles y estructuras en tres dimensiones'],
+                  [showPoiLabels,      setShowPoiLabels,      '📍', 'Etiquetas de negocios',  'Nombres de restaurantes, tiendas, hoteles, etc.'],
+                  [showTransitLabels,  setShowTransitLabels,  '🚌', 'Transporte público',      'Paradas, líneas de bus y metro'],
+                  [showPlaceLabels,    setShowPlaceLabels,    '🗺️', 'Nombres de lugares',      'Barrios, ciudades, países'],
+                  [showRoadLabels,     setShowRoadLabels,     '🛣️', 'Nombres de calles',       'Etiquetas con el nombre de cada vía'],
+                ] as [boolean, (v: boolean) => void, string, string, string][]).map(([value, setter, icon, label, desc], i, arr) => (
+                  <div key={label} style={{
+                    display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0',
+                    borderBottom: i < arr.length - 1 ? '1px solid #f0f0f0' : 'none',
+                  }}>
+                    <span style={{ fontSize: 18, width: 24, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 1 }}>{label}</div>
+                      <div style={{ fontSize: 11, color: '#bbb' }}>{desc}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setter(!value)}
+                      style={{
+                        flexShrink: 0, width: 44, height: 24, borderRadius: 12, border: 'none',
+                        background: value ? '#111' : '#e0e0e0',
+                        position: 'relative', cursor: 'pointer', transition: 'background .2s',
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute', top: 3, left: value ? 23 : 3,
+                        width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                        transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.25)',
+                      }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </Section>
           </>
         )}

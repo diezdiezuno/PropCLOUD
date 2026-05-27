@@ -13,7 +13,8 @@ export default async function HomePage() {
 
   const config = await getTenantConfig(tenant.id).catch(() => null)
 
-  const mapStyle = tenant.theme?.mapStyle ?? 'mapbox://styles/mapbox/streets-v12'
+  const theme = tenant.theme ?? {}
+  const mapStyle = theme.mapStyle ?? 'mapbox://styles/mapbox/streets-v12'
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
   const mapCenter: [number, number] = [
     config?.map_center_lng ?? -84.0,
@@ -27,6 +28,12 @@ export default async function HomePage() {
       mapboxToken={mapboxToken}
       mapCenter={mapCenter}
       mapZoom={mapZoom}
+      autoLightPreset={theme.autoLightPreset === true}
+      show3dObjects={theme.show3dObjects !== false}
+      showPoiLabels={theme.showPoiLabels !== false}
+      showTransitLabels={theme.showTransitLabels !== false}
+      showPlaceLabels={theme.showPlaceLabels !== false}
+      showRoadLabels={theme.showRoadLabels !== false}
     />
   )
 }

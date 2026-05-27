@@ -9,6 +9,12 @@ interface Props {
   mapboxToken: string
   mapCenter?: [number, number]
   mapZoom?: number
+  show3dObjects?: boolean
+  showPoiLabels?: boolean
+  showTransitLabels?: boolean
+  showPlaceLabels?: boolean
+  showRoadLabels?: boolean
+  autoLightPreset?: boolean
 }
 
 export default function MapViewWrapper(props: Props) {
