@@ -8,8 +8,10 @@ type View = 'grid' | 'list'
 type Sort = 'price_asc' | 'price_desc' | 'newest'
 
 const ALL_VIEWS = [
-  { key: 'grid', label: '⊞ Masonry', desc: 'Cuadrícula tipo Pinterest' },
-  { key: 'list', label: '≡ Lista',   desc: 'Fila horizontal compacta' },
+  { key: 'grid',  label: '⊞ Masonry',    desc: 'Cuadrícula tipo Pinterest con alturas variables' },
+  { key: 'hover', label: '⬛ Grid hover', desc: 'Cuadrícula uniforme con overlay al pasar el mouse' },
+  { key: 'dual',  label: '▌▐ Dual',       desc: '2 columnas con imagen grande y datos al lado' },
+  { key: 'list',  label: '≡ Lista',       desc: 'Fila horizontal compacta' },
 ] as const
 type ViewKey = typeof ALL_VIEWS[number]['key']
 
@@ -102,7 +104,7 @@ export default function PropiedadesPage() {
   // Listado state
   const [defaultView, setDefaultView] = useState<View>('grid')
   const [sort, setSort] = useState<Sort>('price_asc')
-  const [enabledViews, setEnabledViews] = useState<ViewKey[]>(['grid', 'list'])
+  const [enabledViews, setEnabledViews] = useState<ViewKey[]>(['grid', 'hover', 'dual', 'list'])
 
   // Detalle state
   const [detailLayout, setDetailLayout] = useState<DetailLayout>('C')
@@ -124,8 +126,8 @@ export default function PropiedadesPage() {
         if (cfg.listing_view) setDefaultView(cfg.listing_view as View)
         if (cfg.listing_sort) setSort(cfg.listing_sort as Sort)
         if (cfg.listing_views?.length) {
-          // Filter to only valid keys
-          const valid = (cfg.listing_views as string[]).filter(v => v === 'grid' || v === 'list') as ViewKey[]
+          const validKeys = new Set(['grid', 'hover', 'dual', 'list'])
+          const valid = (cfg.listing_views as string[]).filter(v => validKeys.has(v)) as ViewKey[]
           if (valid.length) setEnabledViews(valid)
         }
         if (cfg.detail_layout) setDetailLayout(cfg.detail_layout as DetailLayout)

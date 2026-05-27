@@ -11,7 +11,7 @@ type ViewMode = 'grid' | 'hover' | 'dual' | 'list'
 type Sort = 'price_asc' | 'price_desc' | 'newest'
 
 interface Props {
-  defaultView?: 'grid' | 'list'
+  defaultView?: ViewMode
   defaultCols?: number
   defaultSort?: Sort
   enabledViews?: string[]
@@ -28,7 +28,7 @@ export default function ListingsClient({ defaultView = 'grid', defaultSort = 'pr
   const isMobile = useIsMobile()
   const [allProperties, setAllProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<ViewMode>(defaultView === 'list' ? 'list' : 'grid')
+  const [view, setView] = useState<ViewMode>(defaultView ?? 'grid')
 
   const { lang } = useLang()
   const t = useUI()
