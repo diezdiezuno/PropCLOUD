@@ -5,20 +5,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useFilters, USD_STEPS, CRC_STEPS, stepToPrice, fmtPrice } from '@/contexts/FilterContext'
 import type { ZoneCenter } from '@/contexts/FilterContext'
-import { useLang } from '@/contexts/LanguageContext'
+import { useLang, useUI } from '@/contexts/LanguageContext'
+import type { UIStrings } from '@/contexts/LanguageContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import type { Tenant, ZoneConfigItem, PageConfig } from '@/types'
-
-const PROPERTY_TYPES = [
-  { value: '', label: 'Todas' },
-  { value: 'Casa', label: 'Casa / Villa' },
-  { value: 'Apto', label: 'Apto / Condo' },
-  { value: 'Lote', label: 'Lote / Terreno' },
-  { value: 'Multifamiliar', label: 'Multifamiliar' },
-  { value: 'Comercial', label: 'Comercial' },
-  { value: 'Oficina', label: 'Oficina' },
-  { value: 'Bodega', label: 'Bodega' },
-]
 
 // All predefined zones with optional fixed center [lng, lat, zoom]
 const ALL_ZONES: [string, string, ZoneCenter?][] = [
@@ -45,26 +35,31 @@ interface NavProps {
   pagesConfig?: PageConfig[] | null    // null = use defaults
 }
 
-// Default page link order (predefined)
-const DEFAULT_LINKS = [
-  { href: '/about',         label: 'Nosotros',          slug: 'nosotros',       defaultVisible: true },
-  { href: '/listar',        label: 'Listar propiedad',  slug: 'listar',         defaultVisible: true },
-  { href: '/reclutamiento', label: 'Reclutamiento',     slug: 'reclutamiento',  defaultVisible: false },
-  { href: '/contact',       label: 'Contacto',          slug: 'contacto',       defaultVisible: true },
+// Default page link slugs / hrefs — labels are resolved from t at render time
+const DEFAULT_LINK_DEFS = [
+  { href: '/about',         slug: 'nosotros',       defaultVisible: true },
+  { href: '/listar',        slug: 'listar',         defaultVisible: true },
+  { href: '/reclutamiento', slug: 'reclutamiento',  defaultVisible: false },
+  { href: '/contact',       slug: 'contacto',       defaultVisible: true },
 ]
 
-function getPageLinks(pagesConfig: PageConfig[] | null | undefined) {
-  // Fixed links always shown in sec-nav
+function getPageLinks(pagesConfig: PageConfig[] | null | undefined, t: UIStrings) {
+  const slugLabel: Record<string, string> = {
+    nosotros: t.navAbout,
+    listar: t.navListProperty,
+    reclutamiento: t.navCareers,
+    contacto: t.navContact,
+  }
   const fixed = [
-    { href: '/', label: 'Mapa' },
-    { href: '/listings', label: 'Propiedades' },
+    { href: '/', label: t.navMap },
+    { href: '/listings', label: t.navProperties },
   ]
-  const configurable = DEFAULT_LINKS.filter(link => {
+  const configurable = DEFAULT_LINK_DEFS.filter(link => {
     if (!pagesConfig) return link.defaultVisible
     const match = pagesConfig.find(p => p.slug === link.slug)
     return match ? match.visible : link.defaultVisible
-  })
-  // Custom pages from config
+  }).map(link => ({ href: link.href, label: slugLabel[link.slug] ?? link.slug }))
+
   const customs = (pagesConfig ?? []).filter(p => p.custom && p.visible).map(p => ({
     href: `/${p.slug}`, label: p.title,
   }))
@@ -103,6 +98,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
 
   const f = useFilters()
   const { lang, setLang, isPending } = useLang()
+  const t = useUI()
   const isMobile = useIsMobile(768)
   const [advOpen, setAdvOpen] = useState(false)
   const [advAnimate, setAdvAnimate] = useState(true)
@@ -122,6 +118,18 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
   const pMax = stepToPrice(f.priceMaxStep, steps)
   const isMax = f.isMaxPrice()
   const maxLabel = f.currency === 'CRC' ? '₡1B+' : '$5M+'
+
+  // Translated property types (computed from t)
+  const PROPERTY_TYPES = [
+    { value: '', label: t.ptAll },
+    { value: 'Casa', label: t.ptHouse },
+    { value: 'Apto', label: t.ptApt },
+    { value: 'Lote', label: t.ptLand },
+    { value: 'Multifamiliar', label: t.ptMultifamily },
+    { value: 'Comercial', label: t.ptCommercial },
+    { value: 'Oficina', label: t.ptOffice },
+    { value: 'Bodega', label: t.ptWarehouse },
+  ]
 
   // Zones to display: use rich ZoneConfigItem[] if provided, else fall back to ALL_ZONES
   const ZONES: { label: string; key: string; center?: ZoneCenter }[] = zones
@@ -169,7 +177,6 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
   }, [])
 
   // Auto-open advanced panel on listings page, close on map page
-  // When navigating TO map: close instantly (no transition) so --nav-h is correct before Mapbox init
   useEffect(() => {
     if (isListings) { setAdvAnimate(true); setAdvOpen(true) }
     if (isMap) { setAdvAnimate(false); setAdvOpen(false) }
@@ -218,7 +225,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
 
   // ── SEC-NAV (static pages + detail: about, contact, listar, listings/[id], etc.) ────────────────────
   if (isSecNav) {
-    const pageLinks = getPageLinks(pagesConfig)
+    const pageLinks = getPageLinks(pagesConfig, t)
     return (
       <>
         <nav ref={navRef} style={{
@@ -237,21 +244,54 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
 
           <div style={{ flex: 1 }} />
 
-          {/* Desktop: page links */}
-          {!isMobile && pageLinks.map(link => (
-            <Link key={link.href} href={link.href}
-              style={{
-                fontSize: 13, fontWeight: pathname === link.href ? 600 : 400,
-                color: pathname === link.href ? '#111' : '#666',
-                textDecoration: 'none', padding: '8px 12px', borderRadius: 8,
-                background: pathname === link.href ? '#f5f5f7' : 'transparent',
-                transition: 'background .15s, color .15s', whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = '#f5f5f7' }}
-              onMouseLeave={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
-            >{link.label}</Link>
-          ))}
+          {/* Desktop: page links + lang toggle at the end */}
+          {!isMobile && (
+            <>
+              {pageLinks.map(link => (
+                <Link key={link.href} href={link.href}
+                  style={{
+                    fontSize: 13, fontWeight: pathname === link.href ? 600 : 400,
+                    color: pathname === link.href ? '#111' : '#666',
+                    textDecoration: 'none', padding: '8px 12px', borderRadius: 8,
+                    background: pathname === link.href ? '#f5f5f7' : 'transparent',
+                    transition: 'background .15s, color .15s', whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = '#f5f5f7' }}
+                  onMouseLeave={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
+                >{link.label}</Link>
+              ))}
+              <LangToggle lang={lang} setLang={setLang} isPending={isPending} />
+            </>
+          )}
 
+          {/* Mobile: hamburger + lang toggle */}
+          {isMobile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <LangToggle lang={lang} setLang={setLang} isPending={isPending} />
+              <div ref={menuRef} style={{ position: 'relative' }}>
+                <button onClick={() => setMenuOpen(o => !o)} style={{ width: 36, height: 36, background: '#fff', border: '1px solid #ddd', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 15 }}>
+                  ☰
+                </button>
+                {menuOpen && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: '#fff', border: '1px solid #e0e0e0', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.15)', minWidth: 200, zIndex: 10001, padding: 8 }}>
+                    {pageLinks.map(link => (
+                      <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
+                        style={{
+                          display: 'block', padding: '12px 16px', textDecoration: 'none',
+                          color: pathname === link.href ? '#111' : '#444', fontSize: 14,
+                          fontWeight: pathname === link.href ? 600 : 500, borderRadius: 8,
+                          background: pathname === link.href ? '#f5f5f7' : 'transparent',
+                          transition: 'background .15s',
+                        }}
+                        onMouseEnter={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = '#f7f7f7' }}
+                        onMouseLeave={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
+                      >{link.label}</Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </nav>
         <style>{`@keyframes dropdownFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}`}</style>
       </>
@@ -289,7 +329,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                 <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
-              Filtros
+              {t.filters}
               {activeFilters > 0 && (
                 <span style={{ background: 'var(--accent,#f5a623)', color: '#111', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 2 }}>
                   {activeFilters}
@@ -303,7 +343,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
               </button>
               {menuOpen && (
                 <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: '#fff', border: '1px solid #e0e0e0', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.15)', minWidth: 200, zIndex: 10001, padding: 8 }}>
-                  {getPageLinks(pagesConfig).map(link => (
+                  {getPageLinks(pagesConfig, t).map(link => (
                     <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
                       style={{
                         display: 'block', padding: '12px 16px', textDecoration: 'none',
@@ -327,26 +367,26 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
           <div style={{ position: 'fixed', inset: 0, zIndex: 20000, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }} onClick={() => setMobileFilterOpen(false)}>
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#fff', borderRadius: '20px 20px 0 0', padding: '0 0 32px', maxHeight: '90vh', overflowY: 'auto', animation: 'slideUp .25s cubic-bezier(0.4,0,0.2,1)' }} onClick={e => e.stopPropagation()}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px 16px', borderBottom: '1px solid #f0f0f0', marginTop: 16 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>Filtros</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>{t.filters}</span>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  {activeFilters > 0 && <button onClick={f.resetFilters} style={{ fontSize: 12, color: '#999', background: 'none', border: '1px solid #ddd', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>✕ Limpiar</button>}
-                  <button onClick={() => setMobileFilterOpen(false)} style={{ fontSize: 12, fontWeight: 600, background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontFamily: 'inherit' }}>Aplicar</button>
+                  {activeFilters > 0 && <button onClick={f.resetFilters} style={{ fontSize: 12, color: '#999', background: 'none', border: '1px solid #ddd', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>{t.clearFilters}</button>}
+                  <button onClick={() => setMobileFilterOpen(false)} style={{ fontSize: 12, fontWeight: 600, background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 16px', cursor: 'pointer', fontFamily: 'inherit' }}>{t.applyFilters}</button>
                 </div>
               </div>
 
               <div style={{ padding: '20px 20px 0' }}>
                 <div style={{ marginBottom: 24 }}>
-                  <FilterLabel>Tipo de transacción</FilterLabel>
+                  <FilterLabel>{t.transactionType}</FilterLabel>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    {[{ v: 'sale', l: 'Compra' }, { v: 'rent', l: 'Alquiler' }].map(t => (
-                      <button key={t.v} onClick={() => f.setTab(t.v as 'sale' | 'rent')} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: `1px solid ${f.tab === t.v ? '#1a1a1a' : '#e0e0e0'}`, background: f.tab === t.v ? '#1a1a1a' : '#fff', color: f.tab === t.v ? '#fff' : '#555', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t.l}</button>
+                    {[{ v: 'sale', l: t.buy }, { v: 'rent', l: t.rent }].map(tab => (
+                      <button key={tab.v} onClick={() => f.setTab(tab.v as 'sale' | 'rent')} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: `1px solid ${f.tab === tab.v ? '#1a1a1a' : '#e0e0e0'}`, background: f.tab === tab.v ? '#1a1a1a' : '#fff', color: f.tab === tab.v ? '#fff' : '#555', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{tab.l}</button>
                     ))}
                   </div>
                 </div>
 
                 <div style={{ marginBottom: 24 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <FilterLabel>Precio</FilterLabel>
+                    <FilterLabel>{t.price}</FilterLabel>
                     <CurrencyToggle currency={f.currency} onChange={f.setCurrency} />
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 10, textAlign: 'center' }}>
@@ -356,47 +396,47 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <FilterLabel>Palabra clave</FilterLabel>
-                  <input value={f.keyword} onChange={e => f.setKeyword(e.target.value)} placeholder="Ej: piscina, condominio..." style={mobileInputStyle} />
+                  <FilterLabel>{t.keyword}</FilterLabel>
+                  <input value={f.keyword} onChange={e => f.setKeyword(e.target.value)} placeholder={t.keywordPlaceholder} style={mobileInputStyle} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
                   <div>
-                    <FilterLabel>Cuartos mín.</FilterLabel>
+                    <FilterLabel>{t.minBeds}</FilterLabel>
                     <select value={f.minBeds} onChange={e => f.setMinBeds(Number(e.target.value))} style={mobileInputStyle}>
-                      <option value={0}>Cualquiera</option>
+                      <option value={0}>{t.any}</option>
                       {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}+</option>)}
                     </select>
                   </div>
                   <div>
-                    <FilterLabel>Baños mín.</FilterLabel>
+                    <FilterLabel>{t.minBaths}</FilterLabel>
                     <select value={f.minBaths} onChange={e => f.setMinBaths(Number(e.target.value))} style={mobileInputStyle}>
-                      <option value={0}>Cualquiera</option>
+                      <option value={0}>{t.any}</option>
                       {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}+</option>)}
                     </select>
                   </div>
                   <div>
-                    <FilterLabel>m² Const. mín.</FilterLabel>
-                    <input type="number" value={f.minConstruction || ''} onChange={e => f.setMinConstruction(Number(e.target.value) || 0)} placeholder="Ej: 100" min={0} style={mobileInputStyle} />
+                    <FilterLabel>{t.minBuiltMobile}</FilterLabel>
+                    <input type="number" value={f.minConstruction || ''} onChange={e => f.setMinConstruction(Number(e.target.value) || 0)} placeholder="100" min={0} style={mobileInputStyle} />
                   </div>
                   <div>
-                    <FilterLabel>m² Terreno mín.</FilterLabel>
-                    <input type="number" value={f.minLot || ''} onChange={e => f.setMinLot(Number(e.target.value) || 0)} placeholder="Ej: 200" min={0} style={mobileInputStyle} />
+                    <FilterLabel>{t.minLotMobile}</FilterLabel>
+                    <input type="number" value={f.minLot || ''} onChange={e => f.setMinLot(Number(e.target.value) || 0)} placeholder="200" min={0} style={mobileInputStyle} />
                   </div>
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <FilterLabel>Tipo de propiedad</FilterLabel>
+                  <FilterLabel>{t.propertyTypeLabel}</FilterLabel>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {PROPERTY_TYPES.map(t => (
-                      <PillBtn key={t.value} active={f.propertyType === t.value} onClick={() => f.setPropertyType(t.value)}>{t.label}</PillBtn>
+                    {PROPERTY_TYPES.map(type => (
+                      <PillBtn key={type.value} active={f.propertyType === type.value} onClick={() => f.setPropertyType(type.value)}>{type.label}</PillBtn>
                     ))}
                   </div>
                 </div>
 
                 {ZONES.length > 0 && (
                   <div style={{ marginBottom: 8 }}>
-                    <FilterLabel>Zona</FilterLabel>
+                    <FilterLabel>{t.zoneLabel}</FilterLabel>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {ZONES.map(({ label, key, center }) => (
                         <PillBtn key={key} active={f.zone === key} onClick={() => f.setZone(f.zone === key ? '' : key, f.zone === key ? undefined : center)}>{label}</PillBtn>
@@ -442,8 +482,8 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
 
         {/* Tabs */}
         <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-          <NavTab active={f.tab === 'sale'} onClick={() => f.setTab('sale')} icon={<HouseIcon />} label="Compra" />
-          <NavTab active={f.tab === 'rent'} onClick={() => f.setTab('rent')} icon={<KeyIcon />} label="Alquiler" />
+          <NavTab active={f.tab === 'sale'} onClick={() => f.setTab('sale')} icon={<HouseIcon />} label={t.buy} />
+          <NavTab active={f.tab === 'rent'} onClick={() => f.setTab('rent')} icon={<KeyIcon />} label={t.rent} />
         </div>
 
         <NavSep />
@@ -452,7 +492,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
         <div style={{ minWidth: 160, maxWidth: 300, flex: 1, padding: '0 12px', marginTop: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Precio</span>
+              <span style={{ fontSize: 11, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t.price}</span>
               <CurrencyToggle currency={f.currency} onChange={f.setCurrency} />
             </div>
             {/* Editable price labels */}
@@ -469,7 +509,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
               ) : (
                 <span
                   onClick={startEditMin}
-                  title="Editar mínimo"
+                  title="Min"
                   style={{ fontSize: 12, fontWeight: 700, color: '#111', cursor: 'pointer', borderBottom: '1px dashed #ccc', padding: '0 2px', lineHeight: 1.4, transition: 'border-color .2s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLSpanElement).style.borderBottomColor = 'var(--accent,#f5a623)'}
                   onMouseLeave={e => (e.currentTarget as HTMLSpanElement).style.borderBottomColor = '#ccc'}
@@ -490,7 +530,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
               ) : (
                 <span
                   onClick={startEditMax}
-                  title="Editar máximo"
+                  title="Max"
                   style={{ fontSize: 12, fontWeight: 700, color: '#111', cursor: 'pointer', borderBottom: '1px dashed #ccc', padding: '0 2px', lineHeight: 1.4, transition: 'border-color .2s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLSpanElement).style.borderBottomColor = 'var(--accent,#f5a623)'}
                   onMouseLeave={e => (e.currentTarget as HTMLSpanElement).style.borderBottomColor = '#ccc'}
@@ -519,7 +559,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          Filtros <span style={{ fontSize: 10 }}>{advOpen ? '▴' : '▾'}</span>
+          {t.filters} <span style={{ fontSize: 10 }}>{advOpen ? '▴' : '▾'}</span>
           {activeFilters > 0 && (
             <span style={{ background: 'var(--accent,#f5a623)', color: '#111', borderRadius: '50%', width: 16, height: 16, fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {activeFilters}
@@ -536,7 +576,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
         </button>
         {menuOpen && (
           <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, background: '#fff', border: '1px solid #e0e0e0', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.15)', minWidth: 220, zIndex: 10001, padding: 8, animation: 'dropdownFade .18s ease' }}>
-            {getPageLinks(pagesConfig).map(link => (
+            {getPageLinks(pagesConfig, t).map(link => (
               <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
                 style={{
                   display: 'block', padding: '12px 16px', textDecoration: 'none',
@@ -564,26 +604,26 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
         transition: advAnimate ? 'max-height .35s cubic-bezier(0.4,0,0.2,1), padding .35s' : 'none',
       }}>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: 12, alignItems: 'end', marginBottom: 12 }}>
-          <AdvField label="Palabra clave">
-            <input value={f.keyword} onChange={e => f.setKeyword(e.target.value)} placeholder="Ej: piscina, condominio..." style={advInputStyle} />
+          <AdvField label={t.keyword}>
+            <input value={f.keyword} onChange={e => f.setKeyword(e.target.value)} placeholder={t.keywordPlaceholder} style={advInputStyle} />
           </AdvField>
-          <AdvField label="Cuartos">
+          <AdvField label={t.rooms}>
             <select value={f.minBeds} onChange={e => f.setMinBeds(Number(e.target.value))} style={advInputStyle}>
-              <option value={0}>Cualquiera</option>
+              <option value={0}>{t.any}</option>
               {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}+</option>)}
             </select>
           </AdvField>
-          <AdvField label="Baños">
+          <AdvField label={t.bathrooms}>
             <select value={f.minBaths} onChange={e => f.setMinBaths(Number(e.target.value))} style={advInputStyle}>
-              <option value={0}>Cualquiera</option>
+              <option value={0}>{t.any}</option>
               {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}+</option>)}
             </select>
           </AdvField>
-          <AdvField label="m² Const. (mín.)">
-            <input type="number" value={f.minConstruction || ''} onChange={e => f.setMinConstruction(Number(e.target.value) || 0)} placeholder="Ej: 100" min={0} style={advInputStyle} />
+          <AdvField label={t.minBuiltLabel}>
+            <input type="number" value={f.minConstruction || ''} onChange={e => f.setMinConstruction(Number(e.target.value) || 0)} placeholder="100" min={0} style={advInputStyle} />
           </AdvField>
-          <AdvField label="m² Terreno (mín.)">
-            <input type="number" value={f.minLot || ''} onChange={e => f.setMinLot(Number(e.target.value) || 0)} placeholder="Ej: 200" min={0} style={advInputStyle} />
+          <AdvField label={t.minLotLabel}>
+            <input type="number" value={f.minLot || ''} onChange={e => f.setMinLot(Number(e.target.value) || 0)} placeholder="200" min={0} style={advInputStyle} />
           </AdvField>
           <button
             onClick={f.resetFilters}
@@ -591,16 +631,16 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary,#6b2fa0)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary,#6b2fa0)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ddd'; (e.currentTarget as HTMLButtonElement).style.color = '#999' }}
           >
-            ✕ Limpiar
+            {t.clearFilters}
           </button>
         </div>
 
         {/* Property types */}
         <div style={{ paddingTop: 10, borderTop: '1px solid #f0f0f0', marginBottom: 10 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#aaa', marginBottom: 8 }}>Tipo de Propiedad</div>
+          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#aaa', marginBottom: 8 }}>{t.propertyTypeLabel}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {PROPERTY_TYPES.map(t => (
-              <PillBtn key={t.value} active={f.propertyType === t.value} onClick={() => f.setPropertyType(t.value)}>{t.label}</PillBtn>
+            {PROPERTY_TYPES.map(type => (
+              <PillBtn key={type.value} active={f.propertyType === type.value} onClick={() => f.setPropertyType(type.value)}>{type.label}</PillBtn>
             ))}
           </div>
         </div>
@@ -608,7 +648,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
         {/* Zone pills */}
         {ZONES.length > 0 && (
           <div style={{ paddingTop: 10, borderTop: '1px solid #f0f0f0' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#aaa', marginBottom: 8 }}>Zona</div>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#aaa', marginBottom: 8 }}>{t.zoneLabel}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {ZONES.map(({ label, key, center }) => (
                 <PillBtn key={key} active={f.zone === key} onClick={() => f.setZone(f.zone === key ? '' : key, f.zone === key ? undefined : center)}>{label}</PillBtn>
