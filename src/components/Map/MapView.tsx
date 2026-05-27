@@ -190,9 +190,8 @@ export default function MapView({ mapStyle, mapboxToken, mapCenter, mapZoom }: M
 
   return (
     <>
-    {/* Spacer in normal flow — creates scroll space so footer is accessible below the map */}
-    <div style={{ height: 'calc(100vh - var(--nav-h, 68px))', pointerEvents: 'none' }} aria-hidden="true" />
-    <div style={{ position: 'fixed', top: 'var(--nav-h, 68px)', left: 0, right: 0, bottom: 0 }}>
+    {/* In-flow container — same height as viewport minus nav; footer sits naturally below */}
+    <div style={{ marginTop: 'var(--nav-h, 68px)', height: 'calc(100vh - var(--nav-h, 68px))', position: 'relative' }}>
       <div ref={mapContainerRef} style={{ position: 'absolute', inset: 0 }} />
 
       {/* Property count overlay */}
