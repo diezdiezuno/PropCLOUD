@@ -64,6 +64,19 @@ export default function PropertyDetailClient({
     return () => window.removeEventListener('keydown', h)
   }, [lbOpen, property])
 
+  // Listen for events fired by the detail nav buttons (Share / Contactar)
+  useEffect(() => {
+    const onShare = () => shareProperty()
+    const onScroll = () => scrollToForm()
+    window.addEventListener('det-share', onShare)
+    window.addEventListener('det-scroll-form', onScroll)
+    return () => {
+      window.removeEventListener('det-share', onShare)
+      window.removeEventListener('det-scroll-form', onScroll)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [property])
+
   function showToast(msg: string) {
     setToast(msg)
     setTimeout(() => setToast(''), 3500)
@@ -125,8 +138,15 @@ export default function PropertyDetailClient({
   const type = p.type ?? 'Propiedad'
   const tagLabel = [type, loc].filter(Boolean).join(' · ')
   const contactPhone = contactMode === 'office' ? officeWhatsapp : p.agent_phone
-  const agentName = p.agent_name ?? ''
-  const agentInitial = agentName.trim() ? agentName.trim()[0].toUpperCase() : '?'
+  // Display info: when office mode show office/tenant name, else show agent
+  const displayName    = contactMode === 'office'
+    ? 'Oficina'
+    : (p.agent_name ?? '')
+  const displaySub     = contactMode === 'office'
+    ? (officeEmail ?? officeWhatsapp ?? '')
+    : (p.agent_email ?? p.agent_phone ?? 'RE/MAX')
+  const displayInitial = displayName.trim() ? displayName.trim()[0].toUpperCase() : '?'
+  const ctaLabel       = contactMode === 'office' ? 'Contactar oficina →' : 'Contactar agente →'
   const token = mapboxToken ?? (process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '')
 
   return (
@@ -260,15 +280,15 @@ export default function PropertyDetailClient({
 
             {/* Agent + contact form sidebar — margin-top:auto pushes to bottom when content is short */}
             <div ref={formRef} style={{ background: '#f9f9f9', borderRadius: 10, padding: 22, border: '1px solid #eee', marginTop: 'auto' }}>
-              {/* Agent */}
-              {agentName && (
+              {/* Agent / Office */}
+              {displayName && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #eee' }}>
                   <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,var(--accent,#f5a623),var(--primary,#6b2fa0))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
-                    {agentInitial}
+                    {displayInitial}
                   </div>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{agentName}</div>
-                    <div style={{ fontSize: 11, color: '#aaa' }}>{p.agent_phone ?? 'RE/MAX'}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{displayName}</div>
+                    <div style={{ fontSize: 11, color: '#aaa' }}>{displaySub}</div>
                   </div>
                 </div>
               )}
@@ -286,7 +306,7 @@ export default function PropertyDetailClient({
                   <input className="det-inp" type="tel" placeholder="WhatsApp" value={formPhone} onChange={e => setFormPhone(e.target.value)} />
                   <textarea className="det-inp" rows={3} placeholder="Me interesa esta propiedad..." value={formMsg} onChange={e => setFormMsg(e.target.value)} style={{ resize: 'none' }} />
                   <button onClick={submitInquiry} className="det-submit">
-                    {contactPhone ? 'Contactar por WhatsApp →' : 'Enviar consulta →'}
+                    {contactPhone ? ctaLabel : 'Enviar consulta →'}
                   </button>
                 </>
               )}

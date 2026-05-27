@@ -19,6 +19,7 @@ export default async function PropertyDetailPage({ params }: Props) {
       contactMode={config?.detail_contact_mode ?? 'agent'}
       officeWhatsapp={config?.whatsapp ?? null}
       officeEmail={config?.contact_email ?? null}
+      mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''}
     />
   )
 }

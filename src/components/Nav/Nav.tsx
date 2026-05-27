@@ -213,7 +213,112 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
     setEditingMax(false)
   }
 
-  // ── SEC-NAV (detail + static pages, NOT map or listings) ────────────────────
+  // ── DETAIL NAV (property detail page) ───────────────────────────────────────
+  if (isDetail) {
+    const pageLinks = getPageLinks(pagesConfig)
+    const navBtnBase: React.CSSProperties = {
+      display: 'flex', alignItems: 'center', gap: 6,
+      padding: '8px 16px', borderRadius: 22,
+      fontFamily: 'inherit', fontSize: 13, fontWeight: 500,
+      cursor: 'pointer', border: '1.5px solid #e0e0e0',
+      background: '#fff', color: '#555', whiteSpace: 'nowrap',
+      transition: 'all .2s',
+    }
+    return (
+      <>
+        <nav ref={navRef} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10000,
+          background: '#fff', borderBottom: '1px solid #e0e0e0',
+          display: 'flex', alignItems: 'center',
+          height: 60, padding: '0 24px', gap: 10,
+        }}>
+          {/* Logo */}
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            {tenant?.logo_url ? (
+              <img src={tenant.logo_url} alt={tenant?.name} style={{ height: 32, objectFit: 'contain' }} />
+            ) : (
+              <span style={{ fontWeight: 800, fontSize: 16, color: '#111', letterSpacing: '-.02em' }}>{tenant?.name ?? 'PropCLOUD'}</span>
+            )}
+          </Link>
+
+          <div style={{ flex: 1 }} />
+
+          {/* ← Volver */}
+          <Link href="/listings" style={{
+            display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none',
+            fontSize: 13, fontWeight: 500, color: '#666', padding: '8px 4px', whiteSpace: 'nowrap',
+          }}
+            onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#111'}
+            onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = '#666'}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Volver
+          </Link>
+
+          {/* Share button */}
+          {!isMobile && (
+            <button
+              style={navBtnBase}
+              onClick={() => window.dispatchEvent(new Event('det-share'))}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#bbb'; (e.currentTarget as HTMLButtonElement).style.color = '#111' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#e0e0e0'; (e.currentTarget as HTMLButtonElement).style.color = '#555' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              Compartir
+            </button>
+          )}
+
+          {/* Contact CTA */}
+          <button
+            style={{ ...navBtnBase, background: '#111', color: '#fff', borderColor: '#111' }}
+            onClick={() => window.dispatchEvent(new Event('det-scroll-form'))}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#333'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#333' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#111'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#111' }}
+          >
+            Contactar agente →
+          </button>
+
+          {/* Hamburger */}
+          <div ref={menuRef} style={{ position: 'relative' }}>
+            <button onClick={() => setMenuOpen(o => !o)} style={{
+              width: 40, height: 40, background: '#fff', border: '1px solid #ddd',
+              borderRadius: '50%', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', cursor: 'pointer', fontSize: 16,
+            }}>☰</button>
+            {menuOpen && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+                background: '#fff', border: '1px solid #e0e0e0', borderRadius: 12,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.15)', minWidth: 220,
+                zIndex: 10001, padding: 8,
+              }}>
+                {pageLinks.map(link => (
+                  <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '12px 16px', textDecoration: 'none', color: '#222',
+                      fontSize: 14, fontWeight: 500, borderRadius: 8,
+                      transition: 'background .15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = '#f7f7f7'}
+                    onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'}
+                  >{link.label}</Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </nav>
+        <style>{`@keyframes dropdownFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}`}</style>
+      </>
+    )
+  }
+
+  // ── SEC-NAV (static pages: about, contact, listar, etc.) ────────────────────
   if (isSecNav) {
     const pageLinks = getPageLinks(pagesConfig)
     return (
@@ -224,33 +329,15 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
           display: 'flex', alignItems: 'center',
           height: 60, padding: '0 24px', gap: 6,
         }}>
-          {/* Logo */}
           <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', flexShrink: 0, marginRight: 8 }}>
             {tenant?.logo_url ? (
-              <img src={tenant.logo_url} alt={tenant.name} style={{ height: 32, objectFit: 'contain' }} />
+              <img src={tenant.logo_url} alt={tenant?.name} style={{ height: 32, objectFit: 'contain' }} />
             ) : (
               <span style={{ fontWeight: 800, fontSize: 16, color: '#111', letterSpacing: '-.02em' }}>{tenant?.name ?? 'PropCLOUD'}</span>
             )}
           </Link>
 
           <div style={{ flex: 1 }} />
-
-          {/* Detail: back link */}
-          {isDetail && (
-            <Link href="/listings" style={{
-              display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none',
-              fontSize: 13, fontWeight: 500, color: '#666', padding: '8px 4px',
-              transition: 'color .2s',
-            }}
-              onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#111'}
-              onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = '#666'}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Propiedades
-            </Link>
-          )}
 
           {/* Desktop: page links */}
           {!isMobile && pageLinks.map(link => (
@@ -264,20 +351,16 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
               }}
               onMouseEnter={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = '#f5f5f7' }}
               onMouseLeave={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
-            >
-              {link.label}
-            </Link>
+            >{link.label}</Link>
           ))}
 
-          {/* Hamburger menu (mobile + desktop overflow) */}
+          {/* Hamburger */}
           <div ref={menuRef} style={{ position: 'relative', marginLeft: isMobile ? 0 : 8 }}>
             <button onClick={() => setMenuOpen(o => !o)} style={{
               width: 40, height: 40, background: '#fff', border: '1px solid #ddd',
               borderRadius: '50%', display: 'flex', alignItems: 'center',
               justifyContent: 'center', cursor: 'pointer', fontSize: 16,
-            }}>
-              ☰
-            </button>
+            }}>☰</button>
             {menuOpen && (
               <div style={{
                 position: 'absolute', top: 'calc(100% + 10px)', right: 0,
@@ -296,15 +379,13 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
                     }}
                     onMouseEnter={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = '#f7f7f7' }}
                     onMouseLeave={e => { if (pathname !== link.href) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
-                  >
-                    {link.label}
-                  </Link>
+                  >{link.label}</Link>
                 ))}
               </div>
             )}
           </div>
         </nav>
-        <style>{`@keyframes dropdownFade { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }`}</style>
+        <style>{`@keyframes dropdownFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}`}</style>
       </>
     )
   }
