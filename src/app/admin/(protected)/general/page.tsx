@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 
 // ── Font lists ────────────────────────────────────────────────────────────────
@@ -78,6 +78,23 @@ export default function GeneralPage() {
   const [fontHeading, setFontHeading] = useState('Playfair Display')
   const [fontBody, setFontBody] = useState('Outfit')
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/streets-v12')
+  const [uploading, setUploading] = useState<{ nav: boolean; footer: boolean }>({ nav: false, footer: false })
+
+  async function uploadLogo(file: File, field: 'nav' | 'footer') {
+    if (!tenantId) return
+    const ext = file.name.split('.').pop() ?? 'png'
+    const path = `${tenantId}/${field}-logo-${Date.now()}.${ext}`
+    setUploading(u => ({ ...u, [field]: true }))
+    const supabase = createClient()
+    const { error: upErr } = await supabase.storage
+      .from('tenant-assets')
+      .upload(path, file, { upsert: true, contentType: file.type })
+    if (upErr) { setUploading(u => ({ ...u, [field]: false })); setError(upErr.message); return }
+    const { data: { publicUrl } } = supabase.storage.from('tenant-assets').getPublicUrl(path)
+    if (field === 'nav') setLogoUrl(publicUrl)
+    else setFooterLogoUrl(publicUrl)
+    setUploading(u => ({ ...u, [field]: false }))
+  }
 
   // Load Google Fonts into admin so previews render correctly
   useEffect(() => {
@@ -188,7 +205,7 @@ export default function GeneralPage() {
           <Section title="Datos de la inmobiliaria">
             <Field label="Nombre de la inmobiliaria">
               <input value={name} onChange={e => setName(e.target.value)} required style={inputStyle} />
-              <p style={hint}>Aparece en el título del browser, el footer y el panel.</p>
+              <p style={hintStyle}>Aparece en el título del browser, el footer y el panel.</p>
             </Field>
             <div style={{ height: 16 }} />
             <Field label="Dominio">
@@ -199,7 +216,7 @@ export default function GeneralPage() {
                 required
                 style={inputStyle}
               />
-              <p style={hint}>
+              <p style={hintStyle}>
                 Sin <code>https://</code> ni <code>www</code>. Ejemplo: <code>sunrisecr.com</code><br />
                 El sistema muestra el tenant correcto cuando detecta este dominio en el request.
               </p>
@@ -212,14 +229,13 @@ export default function GeneralPage() {
           <>
             {/* Logos */}
             <Section title="Logo principal (Nav)">
-              <Field label="URL del logo">
-                <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)}
-                  placeholder="https://..." style={inputStyle} />
-              </Field>
-              {logoUrl && (
-                <img src={logoUrl} alt="Logo preview"
-                  style={{ height: 48, objectFit: 'contain', marginTop: 12, borderRadius: 6, border: '1px solid #e5e5e5', padding: 6, background: '#fff' }} />
-              )}
+              <LogoUploader
+                url={logoUrl}
+                onUrl={setLogoUrl}
+                onFile={f => uploadLogo(f, 'nav')}
+                uploading={uploading.nav}
+                hint="Se muestra en la barra de navegación. PNG o SVG con fondo transparente recomendado."
+              />
             </Section>
 
             <Section title="Logo del footer">
@@ -233,25 +249,22 @@ export default function GeneralPage() {
                   </label>
                 ))}
               </div>
-              {footerLogoMode === 'custom' && (
-                <>
-                  <Field label="URL del logo para footer">
-                    <input value={footerLogoUrl} onChange={e => setFooterLogoUrl(e.target.value)}
-                      placeholder="https://..." style={inputStyle} />
-                  </Field>
-                  {footerLogoUrl && (
-                    <div style={{ marginTop: 10, background: '#f7f7f7', borderRadius: 8, padding: 12, display: 'inline-block' }}>
-                      <img src={footerLogoUrl} alt="Footer logo preview"
-                        style={{ height: 36, objectFit: 'contain', display: 'block' }} />
-                    </div>
-                  )}
-                </>
-              )}
-              {footerLogoMode === 'same' && logoUrl && (
-                <div style={{ marginTop: 6, background: '#f7f7f7', borderRadius: 8, padding: 12, display: 'inline-block' }}>
+              {footerLogoMode === 'custom' ? (
+                <LogoUploader
+                  url={footerLogoUrl}
+                  onUrl={setFooterLogoUrl}
+                  onFile={f => uploadLogo(f, 'footer')}
+                  uploading={uploading.footer}
+                  hint="Versión del logo para fondo oscuro del footer. Generalmente blanca o clara."
+                  darkPreview
+                />
+              ) : logoUrl ? (
+                <div style={{ background: '#1a1a1a', borderRadius: 8, padding: '12px 16px', display: 'inline-block', marginTop: 4 }}>
                   <img src={logoUrl} alt="Footer logo preview"
                     style={{ height: 36, objectFit: 'contain', display: 'block' }} />
                 </div>
+              ) : (
+                <p style={{ fontSize: 13, color: '#bbb', margin: 0 }}>Subí primero el logo principal.</p>
               )}
             </Section>
 
@@ -265,7 +278,7 @@ export default function GeneralPage() {
                     <input value={primaryColor} onChange={e => setPrimaryColor(e.target.value)}
                       style={{ ...inputStyle, flex: 1, fontFamily: 'monospace' }} />
                   </div>
-                  <p style={{ ...hint, marginTop: 5 }}>Menú activo, botones, gradientes.</p>
+                  <p style={{ ...hintStyle, marginTop: 5 }}>Menú activo, botones, gradientes.</p>
                 </Field>
                 <Field label="Color de acento">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -274,7 +287,7 @@ export default function GeneralPage() {
                     <input value={accentColor} onChange={e => setAccentColor(e.target.value)}
                       style={{ ...inputStyle, flex: 1, fontFamily: 'monospace' }} />
                   </div>
-                  <p style={{ ...hint, marginTop: 5 }}>Badges, etiquetas, precio en cards, redes sociales.</p>
+                  <p style={{ ...hintStyle, marginTop: 5 }}>Badges, etiquetas, precio en cards, redes sociales.</p>
                 </Field>
               </div>
 
@@ -408,7 +421,7 @@ export default function GeneralPage() {
               <Field label="URL de estilo custom (Mapbox Studio)">
                 <input value={mapStyle} onChange={e => setMapStyle(e.target.value)}
                   placeholder="mapbox://styles/..." style={inputStyle} />
-                <p style={hint}>Si tenés un estilo propio en Mapbox Studio, pegá la URL aquí.</p>
+                <p style={hintStyle}>Si tenés un estilo propio en Mapbox Studio, pegá la URL aquí.</p>
               </Field>
             </Section>
           </>
@@ -432,6 +445,106 @@ export default function GeneralPage() {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function LogoUploader({
+  url, onUrl, onFile, uploading, hint, darkPreview,
+}: {
+  url: string
+  onUrl: (v: string) => void
+  onFile: (f: File) => void
+  uploading: boolean
+  hint?: string
+  darkPreview?: boolean
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file && file.type.startsWith('image/')) onFile(file)
+  }
+
+  return (
+    <div>
+      {/* Drop zone */}
+      <div
+        onClick={() => !uploading && inputRef.current?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={handleDrop}
+        style={{
+          border: '2px dashed #e0e0e0', borderRadius: 10, padding: '20px 16px',
+          display: 'flex', alignItems: 'center', gap: 16, cursor: uploading ? 'default' : 'pointer',
+          background: uploading ? '#f9f9f9' : '#fdfdfd',
+          transition: 'border-color .15s, background .15s',
+        }}
+        onMouseEnter={e => { if (!uploading) (e.currentTarget as HTMLElement).style.borderColor = '#bbb' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e0e0e0' }}
+      >
+        {/* Preview or placeholder */}
+        <div style={{
+          width: 72, height: 48, flexShrink: 0, borderRadius: 7, overflow: 'hidden',
+          background: darkPreview ? '#1a1a1a' : '#f0f0f0',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: '1px solid #e8e8e8',
+        }}>
+          {uploading ? (
+            <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid #ddd', borderTopColor: '#888', animation: 'spin 0.7s linear infinite' }} />
+          ) : url ? (
+            <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }} />
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="m21 15-5-5L5 21" />
+            </svg>
+          )}
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#333', marginBottom: 2 }}>
+            {uploading ? 'Subiendo…' : url ? 'Cambiar imagen' : 'Subir imagen'}
+          </div>
+          <div style={{ fontSize: 11, color: '#aaa' }}>
+            {uploading ? 'Por favor esperá' : 'PNG, SVG, JPG o WebP · Arrastrá o hacé click'}
+          </div>
+        </div>
+
+        {url && !uploading && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onUrl('') }}
+            style={{ fontSize: 11, color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, fontFamily: 'inherit', flexShrink: 0 }}
+          >
+            Quitar
+          </button>
+        )}
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/svg+xml,image/jpeg,image/webp"
+        style={{ display: 'none' }}
+        onChange={e => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }}
+      />
+
+      {/* URL fallback */}
+      <div style={{ marginTop: 10 }}>
+        <label style={{ fontSize: 11, color: '#bbb', display: 'block', marginBottom: 4 }}>O pegá una URL directamente</label>
+        <input
+          value={url}
+          onChange={e => onUrl(e.target.value)}
+          placeholder="https://..."
+          style={{ ...inputStyle, fontSize: 12 }}
+        />
+      </div>
+
+      {hint && <p style={hintStyle}>{hint}</p>}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ background: '#fff', borderRadius: 12, padding: '22px 24px', marginBottom: 16, border: '1px solid #ebebeb' }}>
@@ -451,6 +564,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#666', display: 'block', marginBottom: 6 }
-const hint: React.CSSProperties = { fontSize: 11, color: '#bbb', margin: '4px 0 0', lineHeight: 1.5 }
+const hintStyle: React.CSSProperties = { fontSize: 11, color: '#bbb', margin: '6px 0 0', lineHeight: 1.5 }
 const inputStyle: React.CSSProperties = { width: '100%', border: '1px solid #e0e0e0', borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }
 const selectStyle: React.CSSProperties = { ...inputStyle, background: '#fff', cursor: 'pointer' }
