@@ -21,39 +21,6 @@ const FONT_BODIES = [
   { name: 'Lato',       sample: 'Casa amplia, 4 cuartos, piscina privada. Precio: $850,000' },
 ]
 
-// ── Map styles ────────────────────────────────────────────────────────────────
-const MAP_STYLES = [
-  {
-    value: 'mapbox://styles/mapbox/streets-v12',
-    label: 'Streets',
-    color: '#e8ddd0',
-    desc: 'Calles, edificios y puntos de interés. El más completo para propiedades urbanas.',
-  },
-  {
-    value: 'mapbox://styles/mapbox/light-v11',
-    label: 'Light',
-    color: '#f2f0ec',
-    desc: 'Fondo claro y minimalista. Los markers de propiedades destacan sin distracción.',
-  },
-  {
-    value: 'mapbox://styles/mapbox/dark-v11',
-    label: 'Dark',
-    color: '#1a1c23',
-    desc: 'Fondo oscuro elegante. Perfecto para inmobiliarias premium o de nicho.',
-  },
-  {
-    value: 'mapbox://styles/mapbox/satellite-streets-v12',
-    label: 'Satélite',
-    color: '#3a5a3a',
-    desc: 'Fotografía aérea real con calles superpuestas. Ideal para lotes y propiedades grandes.',
-  },
-  {
-    value: 'mapbox://styles/mapbox/outdoors-v12',
-    label: 'Outdoors',
-    color: '#d6e8cc',
-    desc: 'Topografía y terreno natural. Para propiedades rurales, de playa o de montaña.',
-  },
-]
 
 type Tab = 'identidad' | 'branding'
 
@@ -77,7 +44,6 @@ export default function GeneralPage() {
   const [accentColor, setAccentColor] = useState('#f59e0b')
   const [fontHeading, setFontHeading] = useState('Playfair Display')
   const [fontBody, setFontBody] = useState('Outfit')
-  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/streets-v12')
   const [uploading, setUploading] = useState<{ nav: boolean; footer: boolean }>({ nav: false, footer: false })
 
   async function uploadLogo(file: File, field: 'nav' | 'footer') {
@@ -137,7 +103,6 @@ export default function GeneralPage() {
         setAccentColor(tenant.theme?.accentColor ?? '#f59e0b')
         setFontHeading(tenant.theme?.fontHeading ?? 'Playfair Display')
         setFontBody(tenant.theme?.fontBody ?? 'Outfit')
-        setMapStyle(tenant.theme?.mapStyle ?? 'mapbox://styles/mapbox/streets-v12')
       }
       if (cfg?.footer_logo_url) {
         setFooterLogoMode('custom')
@@ -164,9 +129,11 @@ export default function GeneralPage() {
         return
       }
     } else {
+      // Fetch current theme first so we don't overwrite mapStyle (managed in Mapa)
+      const { data: tenantRow } = await supabase.from('tenants').select('theme').eq('id', tenantId).single()
       await supabase.from('tenants').update({
         logo_url: logoUrl || null,
-        theme: { primaryColor, accentColor, fontHeading, fontBody, mapStyle },
+        theme: { ...(tenantRow?.theme ?? {}), primaryColor, accentColor, fontHeading, fontBody },
       }).eq('id', tenantId)
       await supabase.from('tenant_config').upsert({
         tenant_id: tenantId,
@@ -399,37 +366,6 @@ export default function GeneralPage() {
               </div>
             </Section>
 
-            {/* Map style */}
-            <Section title="Estilo del mapa">
-              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-                Define la apariencia visual del mapa en la página principal y en los mapas estáticos de cada propiedad.
-                No afecta qué propiedades se muestran ni su ubicación.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-                {MAP_STYLES.map(s => {
-                  const active = mapStyle === s.value
-                  return (
-                    <button key={s.value} type="button" onClick={() => setMapStyle(s.value)} style={{
-                      display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px',
-                      borderRadius: 10, border: `2px solid ${active ? '#111' : '#eee'}`,
-                      background: active ? '#111' : '#fff', cursor: 'pointer', textAlign: 'left',
-                    }}>
-                      {/* Color swatch */}
-                      <div style={{ width: 36, height: 36, borderRadius: 8, background: s.color, flexShrink: 0, border: '1px solid rgba(0,0,0,.08)' }} />
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: active ? '#fff' : '#111', marginBottom: 2 }}>{s.label}</div>
-                        <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,.55)' : '#aaa' }}>{s.desc}</div>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-              <Field label="URL de estilo custom (Mapbox Studio)">
-                <input value={mapStyle} onChange={e => setMapStyle(e.target.value)}
-                  placeholder="mapbox://styles/..." style={inputStyle} />
-                <p style={hintStyle}>Si tenés un estilo propio en Mapbox Studio, pegá la URL aquí.</p>
-              </Field>
-            </Section>
           </>
         )}
 

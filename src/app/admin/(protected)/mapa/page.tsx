@@ -4,6 +4,14 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import type { ZoneConfigItem } from '@/types'
 
+const MAP_STYLES = [
+  { value: 'mapbox://styles/mapbox/streets-v12',         label: 'Streets',  color: '#e8ddd0', desc: 'Calles, edificios y puntos de interés. El más completo para propiedades urbanas.' },
+  { value: 'mapbox://styles/mapbox/light-v11',           label: 'Light',    color: '#f2f0ec', desc: 'Fondo claro y minimalista. Los markers de propiedades destacan sin distracción.' },
+  { value: 'mapbox://styles/mapbox/dark-v11',            label: 'Dark',     color: '#1a1c23', desc: 'Fondo oscuro elegante. Perfecto para inmobiliarias premium o de nicho.' },
+  { value: 'mapbox://styles/mapbox/satellite-streets-v12', label: 'Satélite', color: '#3a5a3a', desc: 'Fotografía aérea real con calles superpuestas. Ideal para lotes y propiedades grandes.' },
+  { value: 'mapbox://styles/mapbox/outdoors-v12',        label: 'Outdoors', color: '#d6e8cc', desc: 'Topografía y terreno natural. Para propiedades rurales, de playa o de montaña.' },
+]
+
 // Predefined zones included in every install
 const PREDEFINED: ZoneConfigItem[] = [
   { label: 'Curridabat',  key: 'Curridabat',   enabled: true },
@@ -185,10 +193,11 @@ export default function MapaPage() {
   const [saved, setSaved] = useState(false)
   const [tenantId, setTenantId] = useState('')
 
-  // Map center / zoom
+  // Map center / zoom / style
   const [lat, setLat] = useState('9.9281')
   const [lng, setLng] = useState('-84.0907')
   const [zoom, setZoom] = useState(12)
+  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/streets-v12')
 
   // Zones
   const [zones, setZones] = useState<ZoneConfigItem[]>([])
@@ -204,10 +213,12 @@ export default function MapaPage() {
         .from('tenant_admins').select('tenant_id').eq('user_id', user.id).single()
       if (!adminRec) return
       setTenantId(adminRec.tenant_id)
-      const { data: cfg } = await supabase
-        .from('tenant_config')
-        .select('map_center_lat, map_center_lng, map_zoom, zone_config')
-        .eq('tenant_id', adminRec.tenant_id).single()
+      const [{ data: cfg }, { data: tenantRow }] = await Promise.all([
+        supabase.from('tenant_config')
+          .select('map_center_lat, map_center_lng, map_zoom, zone_config')
+          .eq('tenant_id', adminRec.tenant_id).single(),
+        supabase.from('tenants').select('theme').eq('id', adminRec.tenant_id).single(),
+      ])
       if (cfg) {
         if (cfg.map_center_lat) setLat(String(cfg.map_center_lat))
         if (cfg.map_center_lng) setLng(String(cfg.map_center_lng))
@@ -216,6 +227,7 @@ export default function MapaPage() {
       } else {
         setZones(mergeZones(null))
       }
+      if (tenantRow?.theme?.mapStyle) setMapStyle(tenantRow.theme.mapStyle)
       setLoading(false)
     })
   }, [])
@@ -237,6 +249,11 @@ export default function MapaPage() {
     e.preventDefault()
     setSaving(true)
     const supabase = createClient()
+    // Merge mapStyle into existing theme (don't wipe other branding fields)
+    const { data: tenantRow } = await supabase.from('tenants').select('theme').eq('id', tenantId).single()
+    await supabase.from('tenants').update({
+      theme: { ...(tenantRow?.theme ?? {}), mapStyle },
+    }).eq('id', tenantId)
     await supabase.from('tenant_config').upsert({
       tenant_id: tenantId,
       map_center_lat: parseFloat(lat),
@@ -278,12 +295,57 @@ export default function MapaPage() {
 
         {/* Zoom */}
         <Section title="Zoom inicial">
+          <style>{`
+            .z-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer;}
+            .z-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#111;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25);cursor:pointer;}
+            .z-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#111;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25);cursor:pointer;}
+          `}</style>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <input type="range" min={4} max={18} value={zoom} onChange={e => setZoom(Number(e.target.value))} style={{ flex: 1 }} />
+            <input
+              type="range" min={4} max={18} value={zoom}
+              onChange={e => setZoom(Number(e.target.value))}
+              className="z-slider"
+              style={{ flex: 1, background: `linear-gradient(to right,#111 0%,#111 ${((zoom-4)/(18-4)*100).toFixed(1)}%,#e0e0e0 ${((zoom-4)/(18-4)*100).toFixed(1)}%,#e0e0e0 100%)` }}
+            />
             <div style={{ fontSize: 20, fontWeight: 700, color: '#111', width: 32, textAlign: 'center' }}>{zoom}</div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#bbb', marginTop: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#bbb', marginTop: 8 }}>
             <span>4 — País</span><span>10 — Ciudad</span><span>14 — Barrio</span><span>18 — Calle</span>
+          </div>
+        </Section>
+
+        {/* Estilo del mapa */}
+        <Section title="Estilo del mapa">
+          <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
+            Define la apariencia visual del mapa. No afecta qué propiedades se muestran ni su ubicación.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+            {MAP_STYLES.map(s => {
+              const active = mapStyle === s.value
+              return (
+                <button key={s.value} type="button" onClick={() => setMapStyle(s.value)} style={{
+                  display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px',
+                  borderRadius: 10, border: `2px solid ${active ? '#111' : '#eee'}`,
+                  background: active ? '#111' : '#fff', cursor: 'pointer', textAlign: 'left',
+                }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: s.color, flexShrink: 0, border: '1px solid rgba(0,0,0,.08)' }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: active ? '#fff' : '#111', marginBottom: 2 }}>{s.label}</div>
+                    <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,.55)' : '#aaa' }}>{s.desc}</div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#666', display: 'block', marginBottom: 6 }}>
+              URL de estilo custom (Mapbox Studio)
+            </label>
+            <input value={mapStyle} onChange={e => setMapStyle(e.target.value)}
+              placeholder="mapbox://styles/..." style={inputStyle} />
+            <p style={{ fontSize: 11, color: '#bbb', margin: '4px 0 0' }}>
+              Si tenés un estilo propio en Mapbox Studio, pegá la URL aquí.
+            </p>
           </div>
         </Section>
 
