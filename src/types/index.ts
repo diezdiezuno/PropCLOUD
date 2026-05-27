@@ -24,6 +24,15 @@ export interface PageConfig {
   custom?: boolean   // true = added by tenant, false = predefined
 }
 
+// A zone pill entry — predefined or custom (user-added via map)
+export interface ZoneConfigItem {
+  label: string               // display name, e.g. "Escazú"
+  key: string                 // search term matched against property location
+  enabled: boolean
+  custom?: boolean            // true = added by tenant
+  center?: [number, number, number]  // [lng, lat, zoom] for map flyTo
+}
+
 export interface TenantConfig {
   tenant_id: string
   // Content
@@ -46,7 +55,7 @@ export interface TenantConfig {
   map_center_lat: number | null
   map_center_lng: number | null
   map_zoom: number | null
-  zone_config: string[] | null           // enabled zone search terms (null = all)
+  zone_config: ZoneConfigItem[] | null   // null = show all predefined; array = full zone list
   // Listing
   listing_view: 'grid' | 'list' | null
   listing_cols: number | null

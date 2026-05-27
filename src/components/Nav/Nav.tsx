@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useFilters, USD_STEPS, CRC_STEPS, stepToPrice, fmtPrice } from '@/contexts/FilterContext'
 import type { ZoneCenter } from '@/contexts/FilterContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import type { Tenant } from '@/types'
+import type { Tenant, ZoneConfigItem } from '@/types'
 
 const PROPERTY_TYPES = [
   { value: '', label: 'Todas' },
@@ -39,7 +39,7 @@ const ALL_ZONES: [string, string, ZoneCenter?][] = [
 
 interface NavProps {
   tenant: Tenant | null
-  enabledZones?: string[] | null  // null = show all predefined zones
+  zones?: ZoneConfigItem[] | null  // null = show all predefined zones
 }
 
 // Parse user-typed price string: "2M" → 2000000, "500K" → 500000
@@ -65,7 +65,7 @@ function priceToStep(price: number, steps: number[]): number {
   return best
 }
 
-export default function Nav({ tenant, enabledZones }: NavProps) {
+export default function Nav({ tenant, zones }: NavProps) {
   const f = useFilters()
   const isMobile = useIsMobile(768)
   const [advOpen, setAdvOpen] = useState(false)
@@ -86,10 +86,10 @@ export default function Nav({ tenant, enabledZones }: NavProps) {
   const isMax = f.isMaxPrice()
   const maxLabel = f.currency === 'CRC' ? '₡1B+' : '$5M+'
 
-  // Zones to display (filtered by enabledZones config)
-  const ZONES = enabledZones?.length
-    ? ALL_ZONES.filter(([, search]) => enabledZones.includes(search))
-    : ALL_ZONES
+  // Zones to display: use rich ZoneConfigItem[] if provided, else fall back to ALL_ZONES
+  const ZONES: { label: string; key: string; center?: ZoneCenter }[] = zones
+    ? zones.filter(z => z.enabled).map(z => ({ label: z.label, key: z.key, center: z.center as ZoneCenter | undefined }))
+    : ALL_ZONES.map(([label, key, center]) => ({ label, key, center }))
 
   const activeFilters = [
     f.tab !== 'sale',
@@ -308,8 +308,8 @@ export default function Nav({ tenant, enabledZones }: NavProps) {
                   <div style={{ marginBottom: 8 }}>
                     <FilterLabel>Zona</FilterLabel>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {ZONES.map(([label, search, center]) => (
-                        <PillBtn key={search} active={f.zone === search} onClick={() => f.setZone(f.zone === search ? '' : search, f.zone === search ? undefined : center)}>{label}</PillBtn>
+                      {ZONES.map(({ label, key, center }) => (
+                        <PillBtn key={key} active={f.zone === key} onClick={() => f.setZone(f.zone === key ? '' : key, f.zone === key ? undefined : center)}>{label}</PillBtn>
                       ))}
                     </div>
                   </div>
@@ -519,8 +519,8 @@ export default function Nav({ tenant, enabledZones }: NavProps) {
           <div style={{ paddingTop: 10, borderTop: '1px solid #f0f0f0' }}>
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: '#aaa', marginBottom: 8 }}>Zona</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {ZONES.map(([label, search, center]) => (
-                <PillBtn key={search} active={f.zone === search} onClick={() => f.setZone(f.zone === search ? '' : search, f.zone === search ? undefined : center)}>{label}</PillBtn>
+              {ZONES.map(({ label, key, center }) => (
+                <PillBtn key={key} active={f.zone === key} onClick={() => f.setZone(f.zone === key ? '' : key, f.zone === key ? undefined : center)}>{label}</PillBtn>
               ))}
             </div>
           </div>
