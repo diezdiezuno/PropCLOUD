@@ -151,15 +151,14 @@ export default function PropertyDetailClient({
 
   return (
     <>
-      {/* ── Split-screen container ── */}
+      {/* ── Split-screen container — in normal flow so footer is accessible below ── */}
       <div style={isMobile ? {
         paddingTop: 'var(--nav-h,60px)',
         minHeight: '100vh',
         background: '#fff',
       } : {
-        position: 'fixed',
-        top: 'var(--nav-h,60px)',
-        left: 0, right: 0, bottom: 0,
+        marginTop: 'var(--nav-h,60px)',
+        height: 'calc(100vh - var(--nav-h,60px))',
         display: 'grid',
         gridTemplateColumns: '58% 42%',
       }}>
@@ -316,10 +315,6 @@ export default function PropertyDetailClient({
         </div>
       </div>
 
-      {/* Spacer in normal flow (desktop only) so the footer is reachable by scrolling below the fixed split layout */}
-      {!isMobile && (
-        <div style={{ height: 'calc(100vh - var(--nav-h, 60px))', pointerEvents: 'none' }} aria-hidden="true" />
-      )}
 
       {/* ── Lightbox ── */}
       {lbOpen && (
