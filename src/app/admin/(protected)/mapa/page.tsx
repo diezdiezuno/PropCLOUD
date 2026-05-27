@@ -187,7 +187,10 @@ function ZonePicker({ mapboxToken, defaultCenter, defaultZoom, onConfirm, onCanc
 // ────────────────────────────────────────────────────────────
 // Main page
 // ────────────────────────────────────────────────────────────
+type MapTab = 'config' | 'diseno' | 'zonas'
+
 export default function MapaPage() {
+  const [tab, setTab] = useState<MapTab>('config')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -270,172 +273,198 @@ export default function MapaPage() {
 
   if (loading) return <PageLoader />
 
+  const TABS: { id: MapTab; label: string }[] = [
+    { id: 'config', label: 'Configuración' },
+    { id: 'diseno', label: 'Diseño' },
+    { id: 'zonas',  label: 'Zonas' },
+  ]
+
   return (
     <div>
       <PageHeader
-        title="Configuración del mapa"
-        desc="Centro inicial, zoom y zonas de búsqueda rápida"
+        title="Mapa"
+        desc="Centro, zoom, estilo visual y zonas de búsqueda rápida"
       />
+
+      {/* ── Tabs ── */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #e8e8e8', marginBottom: 24 }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            padding: '10px 20px', background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
+            color: tab === t.id ? '#111' : '#888', fontFamily: 'inherit',
+            borderBottom: `2px solid ${tab === t.id ? '#111' : 'transparent'}`,
+            marginBottom: -1, transition: 'color .15s',
+          }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <style>{`
+        .z-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer;}
+        .z-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#111;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25);cursor:pointer;}
+        .z-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#111;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25);cursor:pointer;}
+      `}</style>
+
       <form onSubmit={save}>
 
-        {/* Centro del mapa */}
-        <Section title="Centro del mapa">
-          <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
-            Abrí Google Maps, hacé click derecho en el punto que querés centrar y copiá las coordenadas.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-            <Field label="Latitud">
-              <input value={lat} onChange={e => setLat(e.target.value)} placeholder="9.9281" style={inputStyle} />
-            </Field>
-            <Field label="Longitud">
-              <input value={lng} onChange={e => setLng(e.target.value)} placeholder="-84.0907" style={inputStyle} />
-            </Field>
-          </div>
-        </Section>
+        {/* ══ TAB: CONFIGURACIÓN ══ */}
+        {tab === 'config' && (
+          <>
+            <Section title="Centro del mapa">
+              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
+                Abrí Google Maps, hacé click derecho en el punto que querés centrar y copiá las coordenadas.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <Field label="Latitud">
+                  <input value={lat} onChange={e => setLat(e.target.value)} placeholder="9.9281" style={inputStyle} />
+                </Field>
+                <Field label="Longitud">
+                  <input value={lng} onChange={e => setLng(e.target.value)} placeholder="-84.0907" style={inputStyle} />
+                </Field>
+              </div>
+            </Section>
 
-        {/* Zoom */}
-        <Section title="Zoom inicial">
-          <style>{`
-            .z-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer;}
-            .z-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#111;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25);cursor:pointer;}
-            .z-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#111;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25);cursor:pointer;}
-          `}</style>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <input
-              type="range" min={4} max={18} value={zoom}
-              onChange={e => setZoom(Number(e.target.value))}
-              className="z-slider"
-              style={{ flex: 1, background: `linear-gradient(to right,#111 0%,#111 ${((zoom-4)/(18-4)*100).toFixed(1)}%,#e0e0e0 ${((zoom-4)/(18-4)*100).toFixed(1)}%,#e0e0e0 100%)` }}
-            />
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#111', width: 32, textAlign: 'center' }}>{zoom}</div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#bbb', marginTop: 8 }}>
-            <span>4 — País</span><span>10 — Ciudad</span><span>14 — Barrio</span><span>18 — Calle</span>
-          </div>
-        </Section>
+            <Section title="Zoom inicial">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <input
+                  type="range" min={4} max={18} value={zoom}
+                  onChange={e => setZoom(Number(e.target.value))}
+                  className="z-slider"
+                  style={{ flex: 1, background: `linear-gradient(to right,#111 0%,#111 ${((zoom-4)/(18-4)*100).toFixed(1)}%,#e0e0e0 ${((zoom-4)/(18-4)*100).toFixed(1)}%,#e0e0e0 100%)` }}
+                />
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#111', width: 32, textAlign: 'center' }}>{zoom}</div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#bbb', marginTop: 8 }}>
+                <span>4 — País</span><span>10 — Ciudad</span><span>14 — Barrio</span><span>18 — Calle</span>
+              </div>
+            </Section>
+          </>
+        )}
 
-        {/* Estilo del mapa */}
-        <Section title="Estilo del mapa">
-          <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-            Define la apariencia visual del mapa. No afecta qué propiedades se muestran ni su ubicación.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-            {MAP_STYLES.map(s => {
-              const active = mapStyle === s.value
-              return (
-                <button key={s.value} type="button" onClick={() => setMapStyle(s.value)} style={{
-                  display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px',
-                  borderRadius: 10, border: `2px solid ${active ? '#111' : '#eee'}`,
-                  background: active ? '#111' : '#fff', cursor: 'pointer', textAlign: 'left',
-                }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, background: s.color, flexShrink: 0, border: '1px solid rgba(0,0,0,.08)' }} />
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: active ? '#fff' : '#111', marginBottom: 2 }}>{s.label}</div>
-                    <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,.55)' : '#aaa' }}>{s.desc}</div>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#666', display: 'block', marginBottom: 6 }}>
-              URL de estilo custom (Mapbox Studio)
-            </label>
-            <input value={mapStyle} onChange={e => setMapStyle(e.target.value)}
-              placeholder="mapbox://styles/..." style={inputStyle} />
-            <p style={{ fontSize: 11, color: '#bbb', margin: '4px 0 0' }}>
-              Si tenés un estilo propio en Mapbox Studio, pegá la URL aquí.
+        {/* ══ TAB: DISEÑO ══ */}
+        {tab === 'diseno' && (
+          <Section title="Estilo del mapa">
+            <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
+              Define la apariencia visual del mapa. No afecta qué propiedades se muestran ni su ubicación.
             </p>
-          </div>
-        </Section>
-
-        {/* Predefined zones */}
-        <Section title="Zonas predefinidas">
-          <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
-            Activá o desactivá las zonas que querés mostrar como pills de búsqueda rápida en el mapa.
-            {' '}<strong style={{ color: '#111' }}>{enabledCount} activas</strong>
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
-            {predefinedZones.map(z => (
-              <button key={z.key} type="button" onClick={() => toggleZone(z.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-                  borderRadius: 10, fontSize: 13, fontFamily: 'inherit', textAlign: 'left',
-                  border: '1.5px solid', cursor: 'pointer', transition: 'all .15s',
-                  borderColor: z.enabled ? '#111' : '#e8e8e8',
-                  background: z.enabled ? '#111' : '#fff',
-                  color: z.enabled ? '#fff' : '#999',
-                }}>
-                <span style={{ fontSize: 14 }}>{z.enabled ? '✓' : '○'}</span>
-                <span style={{ fontWeight: 500 }}>{z.label}</span>
-              </button>
-            ))}
-          </div>
-        </Section>
-
-        {/* Custom zones */}
-        <Section title="Zonas personalizadas">
-          <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
-            Agregá zonas propias haciendo click en el mapa para definir el centro. Al activar el pill en el sitio, el mapa vuela a esa posición.
-          </p>
-
-          {customZones.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-              {customZones.map(z => (
-                <div key={z.key} style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  background: '#fafafa', border: '1.5px solid #ebebeb', borderRadius: 10, padding: '10px 14px',
-                }}>
-                  {/* Enable toggle */}
-                  <button type="button" onClick={() => toggleZone(z.key)} style={{
-                    width: 32, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
-                    background: z.enabled ? '#38a169' : '#e0e0e0', position: 'relative', flexShrink: 0, transition: 'background .2s',
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+              {MAP_STYLES.map(s => {
+                const active = mapStyle === s.value
+                return (
+                  <button key={s.value} type="button" onClick={() => setMapStyle(s.value)} style={{
+                    display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px',
+                    borderRadius: 10, border: `2px solid ${active ? '#111' : '#eee'}`,
+                    background: active ? '#111' : '#fff', cursor: 'pointer', textAlign: 'left',
                   }}>
-                    <span style={{
-                      position: 'absolute', top: 2, left: z.enabled ? 14 : 2, width: 16, height: 16,
-                      borderRadius: '50%', background: '#fff', transition: 'left .2s',
-                    }} />
-                  </button>
-
-                  {/* Info */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{z.label}</div>
-                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>
-                      Busca: &quot;{z.key}&quot;
-                      {z.center && ` · ${z.center[1].toFixed(4)}, ${z.center[0].toFixed(4)} · zoom ${z.center[2]}`}
+                    <div style={{ width: 36, height: 36, borderRadius: 8, background: s.color, flexShrink: 0, border: '1px solid rgba(0,0,0,.08)' }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: active ? '#fff' : '#111', marginBottom: 2 }}>{s.label}</div>
+                      <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,.55)' : '#aaa' }}>{s.desc}</div>
                     </div>
-                  </div>
-
-                  {/* Delete */}
-                  <button type="button" onClick={() => removeZone(z.key)} style={{
-                    width: 28, height: 28, borderRadius: 6, border: '1px solid #fee2e2',
-                    background: '#fff', color: '#e53e3e', cursor: 'pointer',
-                    fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>×</button>
-                </div>
-              ))}
+                  </button>
+                )
+              })}
             </div>
-          )}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#666', display: 'block', marginBottom: 6 }}>
+                URL de estilo custom (Mapbox Studio)
+              </label>
+              <input value={mapStyle} onChange={e => setMapStyle(e.target.value)}
+                placeholder="mapbox://styles/..." style={inputStyle} />
+              <p style={{ fontSize: 11, color: '#bbb', margin: '4px 0 0' }}>
+                Si tenés un estilo propio en Mapbox Studio, pegá la URL aquí.
+              </p>
+            </div>
+          </Section>
+        )}
 
-          {showPicker ? (
-            <ZonePicker
-              mapboxToken={mapboxToken}
-              defaultCenter={[parseFloat(lng) || -84.09, parseFloat(lat) || 9.93]}
-              defaultZoom={zoom}
-              onConfirm={addZone}
-              onCancel={() => setShowPicker(false)}
-            />
-          ) : (
-            <button type="button" onClick={() => setShowPicker(true)} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-              border: '1.5px dashed #d0d0d0', background: '#fff', color: '#888',
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}>
-              + Agregar zona desde el mapa
-            </button>
-          )}
-        </Section>
+        {/* ══ TAB: ZONAS ══ */}
+        {tab === 'zonas' && (
+          <>
+            <Section title="Zonas predefinidas">
+              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
+                Activá o desactivá las zonas que querés mostrar como pills de búsqueda rápida en el mapa.
+                {' '}<strong style={{ color: '#111' }}>{enabledCount} activas</strong>
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
+                {predefinedZones.map(z => (
+                  <button key={z.key} type="button" onClick={() => toggleZone(z.key)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                      borderRadius: 10, fontSize: 13, fontFamily: 'inherit', textAlign: 'left',
+                      border: '1.5px solid', cursor: 'pointer', transition: 'all .15s',
+                      borderColor: z.enabled ? '#111' : '#e8e8e8',
+                      background: z.enabled ? '#111' : '#fff',
+                      color: z.enabled ? '#fff' : '#999',
+                    }}>
+                    <span style={{ fontSize: 14 }}>{z.enabled ? '✓' : '○'}</span>
+                    <span style={{ fontWeight: 500 }}>{z.label}</span>
+                  </button>
+                ))}
+              </div>
+            </Section>
+
+            <Section title="Zonas personalizadas">
+              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
+                Agregá zonas propias haciendo click en el mapa para definir el centro. Al activar el pill en el sitio, el mapa vuela a esa posición.
+              </p>
+
+              {customZones.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                  {customZones.map(z => (
+                    <div key={z.key} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      background: '#fafafa', border: '1.5px solid #ebebeb', borderRadius: 10, padding: '10px 14px',
+                    }}>
+                      <button type="button" onClick={() => toggleZone(z.key)} style={{
+                        width: 32, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
+                        background: z.enabled ? '#38a169' : '#e0e0e0', position: 'relative', flexShrink: 0, transition: 'background .2s',
+                      }}>
+                        <span style={{
+                          position: 'absolute', top: 2, left: z.enabled ? 14 : 2, width: 16, height: 16,
+                          borderRadius: '50%', background: '#fff', transition: 'left .2s',
+                        }} />
+                      </button>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>{z.label}</div>
+                        <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>
+                          Busca: &quot;{z.key}&quot;
+                          {z.center && ` · ${z.center[1].toFixed(4)}, ${z.center[0].toFixed(4)} · zoom ${z.center[2]}`}
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => removeZone(z.key)} style={{
+                        width: 28, height: 28, borderRadius: 6, border: '1px solid #fee2e2',
+                        background: '#fff', color: '#e53e3e', cursor: 'pointer',
+                        fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {showPicker ? (
+                <ZonePicker
+                  mapboxToken={mapboxToken}
+                  defaultCenter={[parseFloat(lng) || -84.09, parseFloat(lat) || 9.93]}
+                  defaultZoom={zoom}
+                  onConfirm={addZone}
+                  onCancel={() => setShowPicker(false)}
+                />
+              ) : (
+                <button type="button" onClick={() => setShowPicker(true)} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                  border: '1.5px dashed #d0d0d0', background: '#fff', color: '#888',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}>
+                  + Agregar zona desde el mapa
+                </button>
+              )}
+            </Section>
+          </>
+        )}
 
         <SaveBar saving={saving} saved={saved} />
       </form>
