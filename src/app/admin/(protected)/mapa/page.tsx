@@ -596,7 +596,7 @@ export default function MapaPage() {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {([
-                  [show3dObjects,      setShow3dObjects,      '🏢', 'Objetos 3D',             'Edificios, árboles y estructuras en tres dimensiones'],
+                  ...(customStyleUrl.trim() ? [[show3dObjects, setShow3dObjects, '🏢', 'Objetos 3D', 'Edificios, árboles y estructuras en tres dimensiones']] : []),
                   [showPoiLabels,      setShowPoiLabels,      '📍', 'Etiquetas de negocios',  'Nombres de restaurantes, tiendas, hoteles, etc.'],
                   [showTransitLabels,  setShowTransitLabels,  '🚌', 'Transporte público',      'Paradas, líneas de bus y metro'],
                   [showPlaceLabels,    setShowPlaceLabels,    '🗺️', 'Nombres de lugares',      'Barrios, ciudades, países'],
