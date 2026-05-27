@@ -81,15 +81,21 @@ export default function GeneralPage() {
   const [uploading, setUploading] = useState<{ nav: boolean; footer: boolean }>({ nav: false, footer: false })
 
   async function uploadLogo(file: File, field: 'nav' | 'footer') {
-    if (!tenantId) return
+    if (!tenantId) { setError('tenantId no disponible — recargá la página.'); return }
     const ext = file.name.split('.').pop() ?? 'png'
     const path = `${tenantId}/${field}-logo-${Date.now()}.${ext}`
     setUploading(u => ({ ...u, [field]: true }))
+    setError('')
     const supabase = createClient()
     const { error: upErr } = await supabase.storage
       .from('tenant-assets')
       .upload(path, file, { upsert: true, contentType: file.type })
-    if (upErr) { setUploading(u => ({ ...u, [field]: false })); setError(upErr.message); return }
+    if (upErr) {
+      console.error('[uploadLogo]', upErr)
+      setUploading(u => ({ ...u, [field]: false }))
+      setError(`Error al subir: ${upErr.message}`)
+      return
+    }
     const { data: { publicUrl } } = supabase.storage.from('tenant-assets').getPublicUrl(path)
     if (field === 'nav') setLogoUrl(publicUrl)
     else setFooterLogoUrl(publicUrl)
@@ -427,6 +433,12 @@ export default function GeneralPage() {
           </>
         )}
 
+        {error && (
+          <div style={{ background: '#fff5f5', border: '1px solid #fed7d7', borderRadius: 10, padding: '12px 16px', marginBottom: 12, fontSize: 13, color: '#c53030', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingTop: 4 }}>
           <button type="submit" disabled={saving} style={{
             background: '#111', color: '#fff', border: 'none', borderRadius: 10,
@@ -436,7 +448,6 @@ export default function GeneralPage() {
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>
           {saved && <span style={{ fontSize: 13, color: '#38a169' }}>✓ Guardado</span>}
-          {error && <span style={{ fontSize: 13, color: '#c53030' }}>{error}</span>}
         </div>
       </form>
     </div>
