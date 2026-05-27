@@ -44,6 +44,116 @@ function mergeZones(saved: ZoneConfigItem[] | null): ZoneConfigItem[] {
 }
 
 // ────────────────────────────────────────────────────────────
+// Center picker — click on map to set map center
+// ────────────────────────────────────────────────────────────
+function CenterPicker({
+  mapboxToken,
+  defaultCenter,
+  defaultZoom,
+  onPick,
+}: {
+  mapboxToken: string
+  defaultCenter: [number, number]
+  defaultZoom: number
+  onPick: (lng: number, lat: number, zoom: number) => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<any>(null)
+  const markerRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    let map: any
+
+    ;(async () => {
+      const mapboxgl = (await import('mapbox-gl')).default
+      mapboxgl.accessToken = mapboxToken
+
+      map = new mapboxgl.Map({
+        container: containerRef.current!,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: defaultCenter,
+        zoom: defaultZoom,
+      })
+      mapRef.current = map
+
+      map.addControl(new mapboxgl.NavigationControl(), 'top-right')
+
+      // Place initial marker if coords are valid
+      const [defLng, defLat] = defaultCenter
+      if (defLng !== 0 && defLat !== 0) {
+        const el = document.createElement('div')
+        el.style.cssText = 'width:20px;height:20px;background:#111;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer'
+        markerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
+          .setLngLat(defaultCenter)
+          .addTo(map)
+      }
+
+      map.on('click', (e: any) => {
+        const { lng, lat } = e.lngLat
+        const zoom = Math.round(map.getZoom() * 10) / 10
+
+        if (markerRef.current) markerRef.current.remove()
+        const el = document.createElement('div')
+        el.style.cssText = 'width:20px;height:20px;background:#111;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer'
+        markerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([lng, lat])
+          .addTo(map)
+
+        onPick(lng, lat, zoom)
+      })
+    })()
+
+    return () => { map?.remove(); mapRef.current = null }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <div ref={containerRef}
+      style={{ width: '100%', height: 320, borderRadius: 10, overflow: 'hidden', border: '1px solid #e0e0e0' }} />
+  )
+}
+
+// ────────────────────────────────────────────────────────────
+// Style preview — live map that re-renders on style change
+// ────────────────────────────────────────────────────────────
+function StylePreview({ mapboxToken, mapStyle }: { mapboxToken: string; mapStyle: string }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    let map: any
+
+    ;(async () => {
+      const mapboxgl = (await import('mapbox-gl')).default
+      mapboxgl.accessToken = mapboxToken
+
+      map = new mapboxgl.Map({
+        container: containerRef.current!,
+        style: mapStyle,
+        center: [-84.0907, 9.9281],
+        zoom: 12,
+        interactive: false,
+        attributionControl: false,
+      })
+    })()
+
+    return () => { map?.remove() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapStyle])
+
+  return (
+    <div style={{ margin: '16px 0' }}>
+      <div style={{ fontSize: 10, color: '#bbb', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>
+        Vista previa
+      </div>
+      <div ref={containerRef}
+        style={{ width: '100%', height: 200, borderRadius: 10, overflow: 'hidden', border: '1px solid #e0e0e0' }} />
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
 // Zone picker mini-map
 // ────────────────────────────────────────────────────────────
 interface PickerProps {
@@ -201,6 +311,7 @@ export default function MapaPage() {
   const [lng, setLng] = useState('-84.0907')
   const [zoom, setZoom] = useState(12)
   const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/streets-v12')
+  const [autoLightPreset, setAutoLightPreset] = useState(false)
 
   // Zones
   const [zones, setZones] = useState<ZoneConfigItem[]>([])
@@ -231,6 +342,7 @@ export default function MapaPage() {
         setZones(mergeZones(null))
       }
       if (tenantRow?.theme?.mapStyle) setMapStyle(tenantRow.theme.mapStyle)
+      if (tenantRow?.theme?.autoLightPreset) setAutoLightPreset(true)
       setLoading(false)
     })
   }, [])
@@ -255,7 +367,7 @@ export default function MapaPage() {
     // Merge mapStyle into existing theme (don't wipe other branding fields)
     const { data: tenantRow } = await supabase.from('tenants').select('theme').eq('id', tenantId).single()
     await supabase.from('tenants').update({
-      theme: { ...(tenantRow?.theme ?? {}), mapStyle },
+      theme: { ...(tenantRow?.theme ?? {}), mapStyle, autoLightPreset },
     }).eq('id', tenantId)
     await supabase.from('tenant_config').upsert({
       tenant_id: tenantId,
@@ -313,17 +425,24 @@ export default function MapaPage() {
         {tab === 'config' && (
           <>
             <Section title="Centro del mapa">
-              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16 }}>
-                Abrí Google Maps, hacé click derecho en el punto que querés centrar y copiá las coordenadas.
+              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 14 }}>
+                Hacé click en el mapa para fijar el punto de inicio. El mapa del sitio abrirá centrado aquí.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                <Field label="Latitud">
-                  <input value={lat} onChange={e => setLat(e.target.value)} placeholder="9.9281" style={inputStyle} />
-                </Field>
-                <Field label="Longitud">
-                  <input value={lng} onChange={e => setLng(e.target.value)} placeholder="-84.0907" style={inputStyle} />
-                </Field>
-              </div>
+              <CenterPicker
+                mapboxToken={mapboxToken}
+                defaultCenter={[parseFloat(lng) || -84.0907, parseFloat(lat) || 9.9281]}
+                defaultZoom={zoom}
+                onPick={(newLng, newLat, newZoom) => {
+                  setLng(String(newLng))
+                  setLat(String(newLat))
+                  setZoom(newZoom)
+                }}
+              />
+              {(lat && lng) && (
+                <p style={{ fontSize: 12, color: '#aaa', margin: '10px 0 0' }}>
+                  📍 {parseFloat(lat).toFixed(5)}, {parseFloat(lng).toFixed(5)} · Zoom {zoom}
+                </p>
+              )}
             </Section>
 
             <Section title="Zoom inicial">
@@ -345,39 +464,78 @@ export default function MapaPage() {
 
         {/* ══ TAB: DISEÑO ══ */}
         {tab === 'diseno' && (
-          <Section title="Estilo del mapa">
-            <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-              Define la apariencia visual del mapa. No afecta qué propiedades se muestran ni su ubicación.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-              {MAP_STYLES.map(s => {
-                const active = mapStyle === s.value
-                return (
-                  <button key={s.value} type="button" onClick={() => setMapStyle(s.value)} style={{
-                    display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px',
-                    borderRadius: 10, border: `2px solid ${active ? '#111' : '#eee'}`,
-                    background: active ? '#111' : '#fff', cursor: 'pointer', textAlign: 'left',
-                  }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, background: s.color, flexShrink: 0, border: '1px solid rgba(0,0,0,.08)' }} />
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: active ? '#fff' : '#111', marginBottom: 2 }}>{s.label}</div>
-                      <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,.55)' : '#aaa' }}>{s.desc}</div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#666', display: 'block', marginBottom: 6 }}>
-                URL de estilo custom (Mapbox Studio)
-              </label>
-              <input value={mapStyle} onChange={e => setMapStyle(e.target.value)}
-                placeholder="mapbox://styles/..." style={inputStyle} />
-              <p style={{ fontSize: 11, color: '#bbb', margin: '4px 0 0' }}>
-                Si tenés un estilo propio en Mapbox Studio, pegá la URL aquí.
+          <>
+            <Section title="Estilo del mapa">
+              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
+                Define la apariencia visual del mapa. No afecta qué propiedades se muestran ni su ubicación.
               </p>
-            </div>
-          </Section>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {MAP_STYLES.map(s => {
+                  const active = mapStyle === s.value
+                  return (
+                    <button key={s.value} type="button" onClick={() => setMapStyle(s.value)} style={{
+                      display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px',
+                      borderRadius: 10, border: `2px solid ${active ? '#111' : '#eee'}`,
+                      background: active ? '#111' : '#fff', cursor: 'pointer', textAlign: 'left',
+                    }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 8, background: s.color, flexShrink: 0, border: '1px solid rgba(0,0,0,.08)' }} />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: active ? '#fff' : '#111', marginBottom: 2 }}>{s.label}</div>
+                        <div style={{ fontSize: 11, color: active ? 'rgba(255,255,255,.55)' : '#aaa' }}>{s.desc}</div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <StylePreview mapboxToken={mapboxToken} mapStyle={mapStyle} />
+            </Section>
+
+            <Section title="Iluminación automática">
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#111', marginBottom: 4 }}>
+                    Cambio de mapa según hora del día
+                  </div>
+                  <p style={{ fontSize: 13, color: '#888', margin: 0, lineHeight: 1.6 }}>
+                    Activa un preset de luz diferente de mañana, tarde, atardecer y noche para que el mapa se vea natural a cualquier hora.
+                    Solo funciona con los estilos Streets, Light y Outdoors.
+                  </p>
+                </div>
+                {/* Toggle switch */}
+                <button
+                  type="button"
+                  onClick={() => setAutoLightPreset(v => !v)}
+                  style={{
+                    flexShrink: 0, width: 44, height: 24, borderRadius: 12, border: 'none',
+                    background: autoLightPreset ? '#111' : '#e0e0e0',
+                    position: 'relative', cursor: 'pointer', transition: 'background .2s', marginTop: 2,
+                  }}
+                >
+                  <span style={{
+                    position: 'absolute', top: 3, left: autoLightPreset ? 23 : 3,
+                    width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                    transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.25)',
+                  }} />
+                </button>
+              </div>
+              {autoLightPreset && (
+                <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[['🌅', 'Amanecer', '5–8h'], ['☀️', 'Día', '8–17h'], ['🌆', 'Atardecer', '17–20h'], ['🌙', 'Noche', '20–5h']].map(([icon, label, hours]) => (
+                    <div key={label} style={{
+                      display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
+                      borderRadius: 20, background: '#f4f4f4', border: '1px solid #ebebeb',
+                      fontSize: 12, color: '#555',
+                    }}>
+                      <span>{icon}</span>
+                      <span style={{ fontWeight: 500 }}>{label}</span>
+                      <span style={{ color: '#bbb', fontSize: 11 }}>{hours}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          </>
         )}
 
         {/* ══ TAB: ZONAS ══ */}

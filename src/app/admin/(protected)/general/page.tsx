@@ -22,7 +22,7 @@ const FONT_BODIES = [
 ]
 
 
-type Tab = 'identidad' | 'branding'
+type Tab = 'identidad' | 'branding' | 'contacto'
 
 export default function GeneralPage() {
   const [tab, setTab] = useState<Tab>('identidad')
@@ -48,6 +48,17 @@ export default function GeneralPage() {
   const [fontHeading, setFontHeading] = useState('Playfair Display')
   const [fontBody, setFontBody] = useState('Outfit')
   const [uploading, setUploading] = useState<{ nav: boolean; footer: boolean; favicon: boolean }>({ nav: false, footer: false, favicon: false })
+
+  // Contacto
+  const [whatsapp, setWhatsapp] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [address, setAddress] = useState('')
+  const [instagram, setInstagram] = useState('')
+  const [facebook, setFacebook] = useState('')
+  const [linkedin, setLinkedin] = useState('')
+  const [youtube, setYoutube] = useState('')
+  const [tiktok, setTiktok] = useState('')
+  const [twitter, setTwitter] = useState('')
 
   async function uploadLogo(file: File, field: 'nav' | 'footer' | 'favicon') {
     if (!tenantId) { setError('tenantId no disponible — recargá la página.'); return }
@@ -96,7 +107,7 @@ export default function GeneralPage() {
 
       const [{ data: tenant }, { data: cfg }] = await Promise.all([
         supabase.from('tenants').select('name, domain, tagline, logo_url, favicon_url, theme').eq('id', adminRec.tenant_id).single(),
-        supabase.from('tenant_config').select('footer_logo_url, default_language').eq('tenant_id', adminRec.tenant_id).single(),
+        supabase.from('tenant_config').select('footer_logo_url, default_language, whatsapp, contact_email, address, instagram, facebook, linkedin, youtube, tiktok, twitter').eq('tenant_id', adminRec.tenant_id).single(),
       ])
 
       if (tenant) {
@@ -115,6 +126,17 @@ export default function GeneralPage() {
         setFooterLogoUrl(cfg.footer_logo_url)
       }
       if (cfg?.default_language) setDefaultLang(cfg.default_language as 'es' | 'en')
+      if (cfg) {
+        setWhatsapp(cfg.whatsapp ?? '')
+        setContactEmail(cfg.contact_email ?? '')
+        setAddress(cfg.address ?? '')
+        setInstagram(cfg.instagram ?? '')
+        setFacebook(cfg.facebook ?? '')
+        setLinkedin(cfg.linkedin ?? '')
+        setYoutube(cfg.youtube ?? '')
+        setTiktok(cfg.tiktok ?? '')
+        setTwitter(cfg.twitter ?? '')
+      }
       setLoading(false)
     })
   }, [])
@@ -139,7 +161,7 @@ export default function GeneralPage() {
         { tenant_id: tenantId, default_language: defaultLang },
         { onConflict: 'tenant_id' }
       )
-    } else {
+    } else if (tab === 'branding') {
       // Fetch current theme first so we don't overwrite mapStyle (managed in Mapa)
       const { data: tenantRow } = await supabase.from('tenants').select('theme').eq('id', tenantId).single()
       await supabase.from('tenants').update({
@@ -150,6 +172,20 @@ export default function GeneralPage() {
       await supabase.from('tenant_config').upsert({
         tenant_id: tenantId,
         footer_logo_url: footerLogoMode === 'custom' ? (footerLogoUrl || null) : null,
+      }, { onConflict: 'tenant_id' })
+    } else {
+      // contacto
+      await supabase.from('tenant_config').upsert({
+        tenant_id: tenantId,
+        whatsapp: whatsapp.trim() || null,
+        contact_email: contactEmail.trim() || null,
+        address: address.trim() || null,
+        instagram: instagram.trim() || null,
+        facebook: facebook.trim() || null,
+        linkedin: linkedin.trim() || null,
+        youtube: youtube.trim() || null,
+        tiktok: tiktok.trim() || null,
+        twitter: twitter.trim() || null,
       }, { onConflict: 'tenant_id' })
     }
 
@@ -169,16 +205,15 @@ export default function GeneralPage() {
 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e8e8e8', marginBottom: 24 }}>
-        {(['identidad', 'branding'] as Tab[]).map(t => (
-          <button key={t} onClick={() => { setTab(t); setError(''); setSaved(false) }} style={{
+        {([['identidad', 'Identidad'], ['branding', 'Branding'], ['contacto', 'Contacto']] as [Tab, string][]).map(([id, label]) => (
+          <button key={id} onClick={() => { setTab(id); setError(''); setSaved(false) }} style={{
             padding: '10px 20px', background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 13, fontWeight: tab === t ? 600 : 400,
-            color: tab === t ? '#111' : '#888', fontFamily: 'inherit',
-            borderBottom: `2px solid ${tab === t ? '#111' : 'transparent'}`,
+            fontSize: 13, fontWeight: tab === id ? 600 : 400,
+            color: tab === id ? '#111' : '#888', fontFamily: 'inherit',
+            borderBottom: `2px solid ${tab === id ? '#111' : 'transparent'}`,
             marginBottom: -1, transition: 'color .15s',
-            textTransform: 'capitalize',
           }}>
-            {t === 'identidad' ? 'Identidad' : 'Branding'}
+            {label}
           </button>
         ))}
       </div>
@@ -445,6 +480,48 @@ export default function GeneralPage() {
               </div>
             </Section>
 
+          </>
+        )}
+
+        {/* ══ TAB: CONTACTO ══ */}
+        {tab === 'contacto' && (
+          <>
+            <Section title="Contacto directo">
+              <Field label="WhatsApp (con código de país, sin + ni espacios)">
+                <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)}
+                  placeholder="50688888888" style={inputStyle} />
+                <p style={hintStyle}>Aparece en el footer y en el botón de contacto de cada propiedad.</p>
+              </Field>
+              <div style={{ height: 14 }} />
+              <Field label="Email de contacto">
+                <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)}
+                  placeholder="info@tuinmobiliaria.com" style={inputStyle} />
+              </Field>
+              <div style={{ height: 14 }} />
+              <Field label="Dirección">
+                <input value={address} onChange={e => setAddress(e.target.value)}
+                  placeholder="San José, Costa Rica" style={inputStyle} />
+              </Field>
+            </Section>
+
+            <Section title="Redes sociales">
+              <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
+                Pegá la URL completa de cada perfil. Las redes con URL aparecen como íconos en el footer.
+              </p>
+              {([
+                ['📸', 'Instagram',   instagram,  setInstagram,  'https://instagram.com/tuinmobiliaria'],
+                ['👥', 'Facebook',    facebook,   setFacebook,   'https://facebook.com/tuinmobiliaria'],
+                ['💼', 'LinkedIn',    linkedin,   setLinkedin,   'https://linkedin.com/company/tu'],
+                ['▶️', 'YouTube',     youtube,    setYoutube,    'https://youtube.com/@tuinmobiliaria'],
+                ['🎵', 'TikTok',      tiktok,     setTiktok,     'https://tiktok.com/@tuinmobiliaria'],
+                ['𝕏',  'X / Twitter', twitter,    setTwitter,    'https://x.com/tuinmobiliaria'],
+              ] as [string, string, string, (v: string) => void, string][]).map(([icon, label, value, setter, placeholder]) => (
+                <Field key={label} label={`${icon} ${label}`}>
+                  <input value={value} onChange={e => setter(e.target.value)}
+                    placeholder={placeholder} style={{ ...inputStyle, marginBottom: 10 }} />
+                </Field>
+              ))}
+            </Section>
           </>
         )}
 
