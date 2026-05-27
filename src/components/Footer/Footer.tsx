@@ -10,24 +10,39 @@ interface Props {
   config: TenantConfig | null
 }
 
-const DEFAULT_NAV = [
-  { href: '/',              label: 'Inicio',           slug: 'inicio',         defaultVisible: true },
-  { href: '/listings',      label: 'Propiedades',      slug: 'propiedades',    defaultVisible: true },
-  { href: '/about',         label: 'Nosotros',         slug: 'nosotros',       defaultVisible: true },
-  { href: '/listar',        label: 'Listar propiedad', slug: 'listar',         defaultVisible: true },
-  { href: '/contact',       label: 'Contacto',         slug: 'contacto',       defaultVisible: true },
-  { href: '/reclutamiento', label: 'Reclutamiento',    slug: 'reclutamiento',  defaultVisible: false },
+// Fixed-order items always present; configurable items respect pagesConfig order
+const FIXED_NAV = [
+  { href: '/',         label: 'Inicio',      slug: 'inicio',      order: 0 },
+  { href: '/listings', label: 'Propiedades', slug: 'propiedades', order: 1 },
+]
+const CONFIGURABLE_NAV = [
+  { href: '/about',         label: 'Nosotros',         slug: 'nosotros',      defaultVisible: true,  defaultOrder: 2 },
+  { href: '/listar',        label: 'Listar propiedad', slug: 'listar',        defaultVisible: true,  defaultOrder: 3 },
+  { href: '/contact',       label: 'Contacto',         slug: 'contacto',      defaultVisible: true,  defaultOrder: 4 },
+  { href: '/reclutamiento', label: 'Reclutamiento',    slug: 'reclutamiento', defaultVisible: false, defaultOrder: 5 },
 ]
 
 function getNavLinks(pagesConfig: PageConfig[] | null) {
-  if (!pagesConfig) return DEFAULT_NAV.filter(l => l.defaultVisible)
-  return DEFAULT_NAV
+  const configurable = CONFIGURABLE_NAV
     .map(l => {
-      const cfg = pagesConfig.find(p => p.slug === l.slug)
-      return { ...l, visible: cfg ? cfg.visible : l.defaultVisible, order: cfg?.order ?? 99 }
+      const cfg = pagesConfig?.find(p => p.slug === l.slug)
+      return {
+        href: l.href,
+        label: l.label,
+        slug: l.slug,
+        visible: cfg ? cfg.visible : l.defaultVisible,
+        order: cfg ? cfg.order + 10 : l.defaultOrder,  // +10 so fixed items always come first
+      }
     })
     .filter(l => l.visible)
-    .sort((a, b) => a.order - b.order)
+  // Custom pages from config
+  const customs = (pagesConfig ?? [])
+    .filter(p => p.custom && p.visible)
+    .map(p => ({ href: `/${p.slug}`, label: p.title, slug: p.slug, visible: true, order: p.order + 10 }))
+  return [
+    ...FIXED_NAV.map(l => ({ ...l, visible: true })),
+    ...[...configurable, ...customs].sort((a, b) => a.order - b.order),
+  ]
 }
 
 export default function Footer({ tenant, config }: Props) {
@@ -35,9 +50,7 @@ export default function Footer({ tenant, config }: Props) {
   const isMobile = useIsMobile()
 
   const path = pathname ?? ''
-  // Home page: map is position:fixed and covers everything — hide footer
-  if (path === '/') return null
-  // Detail pages: full-screen split layout — hide footer
+  // Detail pages only: full-screen split layout — hide footer
   if (/^\/listings\/.+/.test(path)) return null
   if (!tenant) return null
 
