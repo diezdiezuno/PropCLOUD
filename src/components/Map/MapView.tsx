@@ -168,13 +168,19 @@ export default function MapView({
         })
 
         map.on('load', async () => {
-          // ── Standard style config properties (mapbox://styles/mapbox/standard) ──
+          // ── Debug: log layer types and setConfigProperty support ──
+          const allLayers = map.getStyle()?.layers ?? []
+          const extrusionLayers = allLayers.filter((l: any) => l.type === 'fill-extrusion')
+          console.log('[MapView] total layers:', allLayers.length, '| fill-extrusion layers:', extrusionLayers.map((l: any) => l.id))
           try {
-            if (autoLightPreset) {
-              map.setConfigProperty('basemap', 'lightPreset', getMapLightPreset())
-            }
-          } catch {}
-          try { map.setConfigProperty('basemap', 'show3dObjects', show3dObjects) } catch {}
+            map.setConfigProperty('basemap', 'show3dObjects', show3dObjects)
+            console.log('[MapView] setConfigProperty OK — show3dObjects:', show3dObjects)
+          } catch (e) {
+            console.warn('[MapView] setConfigProperty failed:', e)
+          }
+
+          // ── Standard style config properties ──
+          try { if (autoLightPreset) map.setConfigProperty('basemap', 'lightPreset', getMapLightPreset()) } catch {}
           try { map.setConfigProperty('basemap', 'showPointOfInterestLabels', showPoiLabels) } catch {}
           try { map.setConfigProperty('basemap', 'showTransitLabels', showTransitLabels) } catch {}
           try { map.setConfigProperty('basemap', 'showPlaceLabels', showPlaceLabels) } catch {}
@@ -182,29 +188,23 @@ export default function MapView({
 
           // ── Classic style layer visibility (streets-v12, light-v11, etc.) ──
           const vis = (v: boolean) => v ? 'visible' : 'none'
-          const layers = map.getStyle()?.layers ?? []
-          for (const layer of layers) {
-            const id: string = layer.id ?? ''
-            const type: string = layer.type ?? ''
-            const srcLayer: string = (layer['source-layer'] ?? '') as string
+          for (const layer of allLayers) {
+            const id: string = (layer as any).id ?? ''
+            const type: string = (layer as any).type ?? ''
+            const srcLayer: string = ((layer as any)['source-layer'] ?? '') as string
 
-            // 3D objects → all fill-extrusion layers
             if (type === 'fill-extrusion') {
               try { map.setLayoutProperty(id, 'visibility', vis(show3dObjects)) } catch {}
             }
-            // POI labels → symbol layers with source-layer containing 'poi'
             if (type === 'symbol' && srcLayer.includes('poi')) {
               try { map.setLayoutProperty(id, 'visibility', vis(showPoiLabels)) } catch {}
             }
-            // Transit labels
             if (type === 'symbol' && (srcLayer.includes('transit') || srcLayer.includes('train') || srcLayer.includes('bus'))) {
               try { map.setLayoutProperty(id, 'visibility', vis(showTransitLabels)) } catch {}
             }
-            // Place labels → symbol layers with source-layer 'place_label'
             if (type === 'symbol' && srcLayer.includes('place_label')) {
               try { map.setLayoutProperty(id, 'visibility', vis(showPlaceLabels)) } catch {}
             }
-            // Road labels → symbol layers with source-layer 'road'
             if (type === 'symbol' && srcLayer.includes('road')) {
               try { map.setLayoutProperty(id, 'visibility', vis(showRoadLabels)) } catch {}
             }
