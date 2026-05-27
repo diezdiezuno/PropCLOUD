@@ -1,6 +1,9 @@
 import { headers } from 'next/headers'
 import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import ListingsClient from './ListingsClient'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = { title: 'Propiedades' }
 
 export default async function ListingsPage() {
   const headersList = await headers()
