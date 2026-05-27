@@ -66,12 +66,27 @@ export default function Footer({ tenant, config }: Props) {
         background: '#f7f7f7',
         padding: isMobile ? '36px 16px 16px' : '44px 40px 24px',
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr auto',
+        gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr 1fr 1fr',
         gap: isMobile ? 28 : 36,
         alignItems: 'start',
       }}>
 
-        {/* Col 1 — Navigation */}
+        {/* Col 1 — Logo */}
+        <div>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={tenant.name}
+              style={{ maxHeight: 72, maxWidth: 180, width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }}
+            />
+          ) : (
+            <div style={{ fontFamily: 'var(--font-heading,serif)', fontSize: 18, fontWeight: 700, color: '#111' }}>
+              {tenant.name}
+            </div>
+          )}
+        </div>
+
+        {/* Col 2 — Navigation */}
         <div>
           <h5 style={colTitle}>Navegación</h5>
           {navLinks.map(l => (
@@ -79,7 +94,7 @@ export default function Footer({ tenant, config }: Props) {
           ))}
         </div>
 
-        {/* Col 2 — Contact */}
+        {/* Col 3 — Contact */}
         {hasContact ? (
           <div>
             <h5 style={colTitle}>Contacto</h5>
@@ -99,7 +114,7 @@ export default function Footer({ tenant, config }: Props) {
           </div>
         ) : <div />}
 
-        {/* Col 3 — Social */}
+        {/* Col 4 — Social */}
         {hasSocial ? (
           <div>
             <h5 style={colTitle}>Redes sociales</h5>
@@ -113,28 +128,6 @@ export default function Footer({ tenant, config }: Props) {
             </div>
           </div>
         ) : <div />}
-
-        {/* Col 4 — Logo */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'flex-start' : 'flex-end' }}>
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={tenant.name}
-              style={{
-                maxHeight: 72,
-                maxWidth: 180,
-                width: 'auto',
-                height: 'auto',
-                objectFit: 'contain',
-                display: 'block',
-              }}
-            />
-          ) : (
-            <div style={{ fontFamily: 'var(--font-heading,serif)', fontSize: 18, fontWeight: 700, color: '#111' }}>
-              {tenant.name}
-            </div>
-          )}
-        </div>
 
       </footer>
 
