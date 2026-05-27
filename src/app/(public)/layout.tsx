@@ -45,7 +45,7 @@ export default async function PublicLayout({ children }: { children: React.React
       <link href={fontsUrl} rel="stylesheet" />
       <FilterProvider>
         <Nav tenant={tenant} zones={config?.zone_config ?? null} pagesConfig={config?.pages_config ?? null} />
-        <main className="flex-1">{children}</main>
+        <main>{children}</main>
         <Footer config={config} tenant={tenant} />
       </FilterProvider>
     </div>

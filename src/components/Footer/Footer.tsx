@@ -34,8 +34,11 @@ export default function Footer({ tenant, config }: Props) {
   const pathname = usePathname()
   const isMobile = useIsMobile()
 
-  // Detail pages use fixed full-screen layout — hide footer (matches reference)
-  if (/^\/listings\/.+/.test(pathname ?? '')) return null
+  const path = pathname ?? ''
+  // Home page: map is position:fixed and covers everything — hide footer
+  if (path === '/') return null
+  // Detail pages: full-screen split layout — hide footer
+  if (/^\/listings\/.+/.test(path)) return null
   if (!tenant) return null
 
   const navLinks  = getNavLinks(config?.pages_config ?? null)

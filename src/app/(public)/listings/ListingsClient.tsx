@@ -49,7 +49,7 @@ export default function ListingsClient({ defaultView = 'grid', defaultSort = 'pr
   const go = (id: string) => router.push(`/listings/${id}`)
 
   return (
-    <div style={{ paddingTop: 'var(--nav-h, 68px)', minHeight: '100vh', background: '#f5f5f7' }}>
+    <div style={{ paddingTop: 'var(--nav-h, 68px)', background: '#f5f5f7' }}>
       <section style={{ padding: isMobile ? '24px 16px 64px' : '40px 40px 64px' }}>
 
         {/* Header */}
