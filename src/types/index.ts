@@ -5,6 +5,7 @@ export interface Tenant {
   domain: string
   tagline: string | null
   logo_url: string | null
+  favicon_url: string | null
   theme: TenantTheme
   created_at: string
 }

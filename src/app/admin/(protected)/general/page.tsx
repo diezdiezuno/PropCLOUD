@@ -41,13 +41,14 @@ export default function GeneralPage() {
   const [logoUrl, setLogoUrl] = useState('')
   const [footerLogoMode, setFooterLogoMode] = useState<'same' | 'custom'>('same')
   const [footerLogoUrl, setFooterLogoUrl] = useState('')
+  const [faviconUrl, setFaviconUrl] = useState('')
   const [primaryColor, setPrimaryColor] = useState('#6b2fa0')
   const [accentColor, setAccentColor] = useState('#f59e0b')
   const [fontHeading, setFontHeading] = useState('Playfair Display')
   const [fontBody, setFontBody] = useState('Outfit')
-  const [uploading, setUploading] = useState<{ nav: boolean; footer: boolean }>({ nav: false, footer: false })
+  const [uploading, setUploading] = useState<{ nav: boolean; footer: boolean; favicon: boolean }>({ nav: false, footer: false, favicon: false })
 
-  async function uploadLogo(file: File, field: 'nav' | 'footer') {
+  async function uploadLogo(file: File, field: 'nav' | 'footer' | 'favicon') {
     if (!tenantId) { setError('tenantId no disponible — recargá la página.'); return }
     const ext = file.name.split('.').pop() ?? 'png'
     const path = `${tenantId}/${field}-logo-${Date.now()}.${ext}`
@@ -65,7 +66,8 @@ export default function GeneralPage() {
     }
     const { data: { publicUrl } } = supabase.storage.from('tenant-assets').getPublicUrl(path)
     if (field === 'nav') setLogoUrl(publicUrl)
-    else setFooterLogoUrl(publicUrl)
+    else if (field === 'footer') setFooterLogoUrl(publicUrl)
+    else setFaviconUrl(publicUrl)
     setUploading(u => ({ ...u, [field]: false }))
   }
 
@@ -92,7 +94,7 @@ export default function GeneralPage() {
       setTenantId(adminRec.tenant_id)
 
       const [{ data: tenant }, { data: cfg }] = await Promise.all([
-        supabase.from('tenants').select('name, domain, tagline, logo_url, theme').eq('id', adminRec.tenant_id).single(),
+        supabase.from('tenants').select('name, domain, tagline, logo_url, favicon_url, theme').eq('id', adminRec.tenant_id).single(),
         supabase.from('tenant_config').select('footer_logo_url').eq('tenant_id', adminRec.tenant_id).single(),
       ])
 
@@ -101,6 +103,7 @@ export default function GeneralPage() {
         setDomain(tenant.domain ?? '')
         setTagline(tenant.tagline ?? '')
         setLogoUrl(tenant.logo_url ?? '')
+        setFaviconUrl(tenant.favicon_url ?? '')
         setPrimaryColor(tenant.theme?.primaryColor ?? '#6b2fa0')
         setAccentColor(tenant.theme?.accentColor ?? '#f59e0b')
         setFontHeading(tenant.theme?.fontHeading ?? 'Playfair Display')
@@ -135,6 +138,7 @@ export default function GeneralPage() {
       const { data: tenantRow } = await supabase.from('tenants').select('theme').eq('id', tenantId).single()
       await supabase.from('tenants').update({
         logo_url: logoUrl || null,
+        favicon_url: faviconUrl || null,
         theme: { ...(tenantRow?.theme ?? {}), primaryColor, accentColor, fontHeading, fontBody },
       }).eq('id', tenantId)
       await supabase.from('tenant_config').upsert({
@@ -256,6 +260,39 @@ export default function GeneralPage() {
               ) : (
                 <p style={{ fontSize: 13, color: '#bbb', margin: 0 }}>Subí primero el logo principal.</p>
               )}
+            </Section>
+
+            {/* Favicon */}
+            <Section title="Favicon">
+              <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <LogoUploader
+                    url={faviconUrl}
+                    onUrl={setFaviconUrl}
+                    onFile={f => uploadLogo(f, 'favicon')}
+                    uploading={uploading.favicon}
+                    hint="PNG o ICO de 32×32 px (mínimo) o 64×64 px. Aparece en la pestaña del browser y bookmarks."
+                    square
+                  />
+                </div>
+                {/* Browser tab mockup */}
+                <div style={{ flexShrink: 0, paddingTop: 4 }}>
+                  <div style={{ fontSize: 10, color: '#bbb', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Vista previa</div>
+                  <div style={{ background: '#e8e8e8', borderRadius: '8px 8px 0 0', padding: '6px 12px 0', width: 180 }}>
+                    <div style={{ background: '#fff', borderRadius: '6px 6px 0 0', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {faviconUrl ? (
+                        <img src={faviconUrl} alt="" style={{ width: 14, height: 14, objectFit: 'contain', flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 14, height: 14, borderRadius: 3, background: '#e0e0e0', flexShrink: 0 }} />
+                      )}
+                      <span style={{ fontSize: 11, color: '#444', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {name || 'Mi inmobiliaria'}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#bbb', marginLeft: 'auto', flexShrink: 0 }}>×</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </Section>
 
             {/* Colors */}
@@ -410,7 +447,7 @@ export default function GeneralPage() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function LogoUploader({
-  url, onUrl, onFile, uploading, hint, darkPreview,
+  url, onUrl, onFile, uploading, hint, darkPreview, square,
 }: {
   url: string
   onUrl: (v: string) => void
@@ -418,6 +455,7 @@ function LogoUploader({
   uploading: boolean
   hint?: string
   darkPreview?: boolean
+  square?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -443,9 +481,9 @@ function LogoUploader({
         onMouseEnter={e => { if (!uploading) (e.currentTarget as HTMLElement).style.borderColor = '#bbb' }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e0e0e0' }}
       >
-        {/* Thumbnail (square) */}
+        {/* Thumbnail */}
         <div style={{
-          width: 64, height: 64, flexShrink: 0, borderRadius: 8, overflow: 'hidden',
+          width: square ? 48 : 64, height: square ? 48 : 64, flexShrink: 0, borderRadius: square ? 6 : 8, overflow: 'hidden',
           background: darkPreview ? '#1a1a1a' : '#f0f0f0',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: '1px solid #e8e8e8',

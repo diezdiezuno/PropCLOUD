@@ -11,7 +11,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const domain = headersList.get('x-tenant-domain') ?? 'localhost'
   try {
     const tenant = await getTenantByDomain(domain)
-    if (tenant?.name) return { title: { default: tenant.name, template: `%s · ${tenant.name}` } }
+    if (tenant?.name) return {
+      title: { default: tenant.name, template: `%s · ${tenant.name}` },
+      icons: tenant.favicon_url ? { icon: tenant.favicon_url } : undefined,
+    }
   } catch {}
   return { title: 'PropCLOUD' }
 }
