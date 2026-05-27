@@ -66,8 +66,8 @@ export default function Footer({ tenant, config }: Props) {
         background: '#f7f7f7',
         padding: isMobile ? '36px 16px 16px' : '44px 40px 24px',
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr 1fr 1fr',
-        gap: isMobile ? 28 : '36px 56px',
+        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr 1fr',
+        gap: isMobile ? 28 : 40,
         alignItems: 'start',
       }}>
 
