@@ -25,12 +25,23 @@ export interface TenantTheme {
   showRoadLabels?: boolean
 }
 
+export interface PageSettings {
+  content_html?: string           // nosotros + custom pages
+  submission_email?: string       // listar + reclutamiento: where to receive
+  submission_whatsapp?: string
+  listar_fields?: string[]        // which optional fields to show
+  listar_intro?: string
+  reclutamiento_positions?: string[]
+  reclutamiento_intro?: string
+}
+
 export interface PageConfig {
   slug: string
   title: string
   visible: boolean
   order: number
   custom?: boolean   // true = added by tenant, false = predefined
+  settings?: PageSettings
 }
 
 // A zone pill entry — predefined or custom (user-added via map)

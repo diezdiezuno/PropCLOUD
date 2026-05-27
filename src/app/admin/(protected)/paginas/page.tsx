@@ -174,6 +174,16 @@ export default function PaginasPage() {
                   {page.visible ? 'Visible' : 'Oculta'}
                 </button>
 
+                {/* Edit link */}
+                <a href={`/admin/paginas/${page.slug}`}
+                  style={{
+                    padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                    border: '1.5px solid #e0e0e0', background: '#fff', color: '#555',
+                    textDecoration: 'none', whiteSpace: 'nowrap',
+                  }}>
+                  Editar →
+                </a>
+
                 {/* Delete (only custom) */}
                 {page.custom && (
                   <button type="button" onClick={() => removePage(page.slug)}
