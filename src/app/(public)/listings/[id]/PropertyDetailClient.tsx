@@ -263,9 +263,9 @@ export default function PropertyDetailClient({
                   style={{ display: 'block', borderRadius: 10, overflow: 'hidden', marginBottom: 8 }}
                 >
                   <img
+                    className="det-map-static"
                     src={`https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l+6b2fa0(${p.lng},${p.lat})/${p.lng},${p.lat},14/800x300@2x?access_token=${token}`}
                     alt="Mapa de ubicación"
-                    style={{ width: '100%', display: 'block' }}
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                   />
                 </a>

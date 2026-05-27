@@ -248,8 +248,8 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
             >{link.label}</Link>
           ))}
 
-          {/* Hamburger */}
-          <div ref={menuRef} style={{ position: 'relative', marginLeft: isMobile ? 0 : 8 }}>
+          {/* Hamburger — hidden on detail pages (links already visible in full) */}
+          {!/^\/listings\/.+/.test(pathname ?? '') && <div ref={menuRef} style={{ position: 'relative', marginLeft: isMobile ? 0 : 8 }}>
             <button onClick={() => setMenuOpen(o => !o)} style={{
               width: 40, height: 40, background: '#fff', border: '1px solid #ddd',
               borderRadius: '50%', display: 'flex', alignItems: 'center',
@@ -277,7 +277,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
                 ))}
               </div>
             )}
-          </div>
+          </div>}
         </nav>
         <style>{`@keyframes dropdownFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}`}</style>
       </>

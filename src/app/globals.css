@@ -161,6 +161,9 @@ input[type=range]::-moz-range-thumb {
 .det-photo-zoom { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0); background: rgba(0,0,0,.45); backdrop-filter: blur(6px); color: #fff; font-size: 20px; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: transform .25s, opacity .25s; opacity: 0; pointer-events: none; }
 .det-photo:hover .det-photo-zoom { transform: translate(-50%,-50%) scale(1); opacity: 1; }
 
+/* ── Detail map static ── */
+.det-map-static { width: 100%; height: 220px; object-fit: cover; border-radius: 10px; display: block; margin-bottom: 8px; }
+
 /* ── Detail form inputs ── */
 .det-inp { width: 100%; border: 1px solid #e0e0e0; border-radius: 5px; padding: 10px 13px; font-size: 13px; font-family: inherit; background: #fff; outline: none; resize: none; transition: border-color .2s; margin-bottom: 9px; box-sizing: border-box; }
 .det-inp:focus { border-color: var(--primary, #6b2fa0); }
