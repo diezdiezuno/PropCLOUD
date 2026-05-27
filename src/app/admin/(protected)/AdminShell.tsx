@@ -4,13 +4,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 
 const NAV = [
-  { href: '/admin/general',  icon: '⚙️',  label: 'General' },
-  { href: '/admin/mapa',     icon: '🗺️',  label: 'Mapa' },
-  { href: '/admin/listado',  icon: '📋', label: 'Listado' },
-  { href: '/admin/detalle',  icon: '🏡', label: 'Detalle' },
-  { href: '/admin/paginas',  icon: '📄', label: 'Páginas' },
-  { href: '/admin/fuentes',  icon: '🔗', label: 'Fuentes' },
-  { href: '/admin/agentes',  icon: '👥', label: 'Agentes' },
+  { href: '/admin/general',      icon: '⚙️',  label: 'General' },
+  { href: '/admin/mapa',         icon: '🗺️',  label: 'Mapa' },
+  { href: '/admin/propiedades',  icon: '🏠',  label: 'Propiedades' },
+  { href: '/admin/paginas',      icon: '📄',  label: 'Páginas' },
+  { href: '/admin/fuentes',      icon: '🔗',  label: 'Fuentes' },
+  { href: '/admin/agentes',      icon: '👥',  label: 'Agentes' },
 ]
 
 interface Tenant { id: string; name: string; slug: string; logo_url: string | null; theme: Record<string, string> }

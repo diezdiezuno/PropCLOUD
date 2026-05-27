@@ -131,7 +131,7 @@ export default function PropertyDetailClient({
 
   // ── Shared sub-blocks ────────────────────────────────────────────────────────
 
-  const agentCard = displayName ? (
+  const agentCard = contactMode !== 'office' && displayName ? (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: '#f5f5f5', borderRadius: 8, marginBottom: 16 }}>
       <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,var(--accent,#f5a623),var(--primary,#6b2fa0))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 15, fontWeight: 700, flexShrink: 0 }}>
         {displayInitial}

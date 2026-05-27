@@ -143,12 +143,12 @@ export default function Footer({ tenant, config }: Props) {
           <div>
             <h5 style={colTitle}>{t.footerSocialTitle}</h5>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {config?.instagram && <SocialLink href={config.instagram} label="Instagram"><InstagramIcon /></SocialLink>}
-              {config?.facebook  && <SocialLink href={config.facebook}  label="Facebook"><FacebookIcon /></SocialLink>}
-              {config?.linkedin  && <SocialLink href={config.linkedin}  label="LinkedIn"><LinkedInIcon /></SocialLink>}
-              {config?.youtube   && <SocialLink href={config.youtube}   label="YouTube"><YouTubeIcon /></SocialLink>}
-              {config?.tiktok    && <SocialLink href={config.tiktok}    label="TikTok"><TikTokIcon /></SocialLink>}
-              {config?.twitter   && <SocialLink href={config.twitter}   label="X / Twitter"><XIcon /></SocialLink>}
+              {config?.instagram && <SocialLink href={config.instagram} label="Instagram"  hoverColor="#E4405F"><InstagramIcon /></SocialLink>}
+              {config?.facebook  && <SocialLink href={config.facebook}  label="Facebook"   hoverColor="#1877F2"><FacebookIcon /></SocialLink>}
+              {config?.linkedin  && <SocialLink href={config.linkedin}  label="LinkedIn"   hoverColor="#0A66C2"><LinkedInIcon /></SocialLink>}
+              {config?.youtube   && <SocialLink href={config.youtube}   label="YouTube"    hoverColor="#FF0000"><YouTubeIcon /></SocialLink>}
+              {config?.tiktok    && <SocialLink href={config.tiktok}    label="TikTok"     hoverColor="#010101"><TikTokIcon /></SocialLink>}
+              {config?.twitter   && <SocialLink href={config.twitter}   label="X / Twitter" hoverColor="#000000"><XIcon /></SocialLink>}
             </div>
           </div>
         ) : <div />}
@@ -199,14 +199,14 @@ function FooterLink({ href, external, children }: { href: string; external?: boo
     onMouseLeave={e => (e.currentTarget.style.color = '#555')}>{children}</Link>
 }
 
-function SocialLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+function SocialLink({ href, label, hoverColor, children }: { href: string; label: string; hoverColor: string; children: React.ReactNode }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label} style={{
       width: 32, height: 32, borderRadius: 6, border: '1px solid #ddd',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: '#888', textDecoration: 'none', background: '#fff',
+      color: '#888', textDecoration: 'none', background: '#fff', transition: 'color .15s, border-color .15s',
     }}
-      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--accent,#f5a623)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--accent,#f5a623)' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = hoverColor; (e.currentTarget as HTMLAnchorElement).style.borderColor = hoverColor }}
       onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#888'; (e.currentTarget as HTMLAnchorElement).style.borderColor = '#ddd' }}
     >{children}</a>
   )
