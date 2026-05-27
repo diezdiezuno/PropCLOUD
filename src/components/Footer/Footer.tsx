@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useUI } from '@/contexts/LanguageContext'
+import type { UIStrings } from '@/contexts/LanguageContext'
 import type { Tenant, TenantConfig, PageConfig } from '@/types'
 
 interface Props {
@@ -10,37 +12,53 @@ interface Props {
   config: TenantConfig | null
 }
 
+// Slug → UIStrings key mapping for predefined nav links
+const SLUG_KEY: Record<string, keyof UIStrings> = {
+  inicio:        'navHome',
+  propiedades:   'navProperties',
+  nosotros:      'navAbout',
+  listar:        'navListProperty',
+  contacto:      'navContact',
+  reclutamiento: 'navCareers',
+}
+
 // Fixed-order items always present; configurable items respect pagesConfig order
-const FIXED_NAV = [
-  { href: '/',         label: 'Inicio',      slug: 'inicio',      order: 0 },
-  { href: '/listings', label: 'Propiedades', slug: 'propiedades', order: 1 },
+const FIXED_NAV_DEFS = [
+  { href: '/',         slug: 'inicio',      order: 0 },
+  { href: '/listings', slug: 'propiedades', order: 1 },
 ]
-const CONFIGURABLE_NAV = [
-  { href: '/about',         label: 'Nosotros',         slug: 'nosotros',      defaultVisible: true,  defaultOrder: 2 },
-  { href: '/listar',        label: 'Listar propiedad', slug: 'listar',        defaultVisible: true,  defaultOrder: 3 },
-  { href: '/contact',       label: 'Contacto',         slug: 'contacto',      defaultVisible: true,  defaultOrder: 4 },
-  { href: '/reclutamiento', label: 'Reclutamiento',    slug: 'reclutamiento', defaultVisible: false, defaultOrder: 5 },
+const CONFIGURABLE_NAV_DEFS = [
+  { href: '/about',         slug: 'nosotros',      defaultVisible: true,  defaultOrder: 2 },
+  { href: '/listar',        slug: 'listar',        defaultVisible: true,  defaultOrder: 3 },
+  { href: '/contact',       slug: 'contacto',      defaultVisible: true,  defaultOrder: 4 },
+  { href: '/reclutamiento', slug: 'reclutamiento', defaultVisible: false, defaultOrder: 5 },
 ]
 
-function getNavLinks(pagesConfig: PageConfig[] | null) {
-  const configurable = CONFIGURABLE_NAV
+function getNavLinks(pagesConfig: PageConfig[] | null, t: UIStrings) {
+  const label = (slug: string, fallback: string) => {
+    const key = SLUG_KEY[slug]
+    return key ? (t[key] as string) : fallback
+  }
+
+  const configurable = CONFIGURABLE_NAV_DEFS
     .map(l => {
       const cfg = pagesConfig?.find(p => p.slug === l.slug)
       return {
         href: l.href,
-        label: l.label,
+        label: label(l.slug, l.slug),
         slug: l.slug,
         visible: cfg ? cfg.visible : l.defaultVisible,
-        order: cfg ? cfg.order + 10 : l.defaultOrder,  // +10 so fixed items always come first
+        order: cfg ? cfg.order + 10 : l.defaultOrder,
       }
     })
     .filter(l => l.visible)
-  // Custom pages from config
+
   const customs = (pagesConfig ?? [])
     .filter(p => p.custom && p.visible)
     .map(p => ({ href: `/${p.slug}`, label: p.title, slug: p.slug, visible: true, order: p.order + 10 }))
+
   return [
-    ...FIXED_NAV.map(l => ({ ...l, visible: true })),
+    ...FIXED_NAV_DEFS.map(l => ({ ...l, label: label(l.slug, l.slug), visible: true })),
     ...[...configurable, ...customs].sort((a, b) => a.order - b.order),
   ]
 }
@@ -48,11 +66,12 @@ function getNavLinks(pagesConfig: PageConfig[] | null) {
 export default function Footer({ tenant, config }: Props) {
   const pathname = usePathname()
   const isMobile = useIsMobile()
+  const t = useUI()
 
   const path = pathname ?? ''
   if (!tenant) return null
 
-  const navLinks  = getNavLinks(config?.pages_config ?? null)
+  const navLinks  = getNavLinks(config?.pages_config ?? null, t)
   const hasContact = config?.contact_email || config?.whatsapp || config?.address
   const hasSocial  = config?.instagram || config?.facebook || config?.linkedin ||
                      config?.youtube  || config?.tiktok   || config?.twitter
@@ -93,7 +112,7 @@ export default function Footer({ tenant, config }: Props) {
 
         {/* Col 2 — Navigation */}
         <div>
-          <h5 style={colTitle}>Navegación</h5>
+          <h5 style={colTitle}>{t.footerNavTitle}</h5>
           {navLinks.map(l => (
             <FooterLink key={l.slug} href={l.href}>{l.label}</FooterLink>
           ))}
@@ -102,7 +121,7 @@ export default function Footer({ tenant, config }: Props) {
         {/* Col 3 — Contact */}
         {hasContact ? (
           <div>
-            <h5 style={colTitle}>Contacto</h5>
+            <h5 style={colTitle}>{t.footerContactTitle}</h5>
             {config?.contact_email && (
               <FooterLink href={`mailto:${config.contact_email}`}>{config.contact_email}</FooterLink>
             )}
@@ -122,7 +141,7 @@ export default function Footer({ tenant, config }: Props) {
         {/* Col 4 — Social */}
         {hasSocial ? (
           <div>
-            <h5 style={colTitle}>Redes sociales</h5>
+            <h5 style={colTitle}>{t.footerSocialTitle}</h5>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {config?.instagram && <SocialLink href={config.instagram} label="Instagram"><InstagramIcon /></SocialLink>}
               {config?.facebook  && <SocialLink href={config.facebook}  label="Facebook"><FacebookIcon /></SocialLink>}
@@ -148,7 +167,7 @@ export default function Footer({ tenant, config }: Props) {
         gap: 4,
       }}>
         <p style={{ fontSize: 11, color: '#aaa', margin: 0 }}>
-          © {year} {tenant.name}. Todos los derechos reservados.
+          © {year} {tenant.name}. {t.allRights}
         </p>
         <p style={{ fontSize: 11, color: '#ccc', margin: 0, display: 'flex', gap: 12, alignItems: 'center' }}>
           <span>Powered by <a href="https://propcloud.app" target="_blank" rel="noopener noreferrer"

@@ -96,12 +96,18 @@ const ui_es = {
   ptOffice: 'Oficina',
   ptWarehouse: 'Bodega',
   // Nav — page links
+  navHome: 'Inicio',
   navMap: 'Mapa',
   navProperties: 'Propiedades',
   navAbout: 'Nosotros',
   navListProperty: 'Listar propiedad',
   navCareers: 'Reclutamiento',
   navContact: 'Contacto',
+  // Footer section headings
+  footerNavTitle: 'Navegación',
+  footerContactTitle: 'Contacto',
+  footerSocialTitle: 'Redes sociales',
+  allRights: 'Todos los derechos reservados.',
 }
 
 const ui_en: typeof ui_es = {
@@ -182,12 +188,18 @@ const ui_en: typeof ui_es = {
   ptOffice: 'Office',
   ptWarehouse: 'Warehouse',
   // Nav — page links
+  navHome: 'Home',
   navMap: 'Map',
   navProperties: 'Properties',
   navAbout: 'About',
   navListProperty: 'List property',
   navCareers: 'Careers',
   navContact: 'Contact',
+  // Footer section headings
+  footerNavTitle: 'Navigation',
+  footerContactTitle: 'Contact',
+  footerSocialTitle: 'Social media',
+  allRights: 'All rights reserved.',
 }
 
 export const UI = { es: ui_es, en: ui_en }
