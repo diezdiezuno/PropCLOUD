@@ -61,13 +61,14 @@ export default function Footer({ tenant, config }: Props) {
 
   return (
     <>
-      {/* ── Main footer — 1fr 1fr 1fr grid ── */}
+      {/* ── Main footer — 4-col grid ── */}
       <footer style={{
         background: '#f7f7f7',
         padding: isMobile ? '36px 16px 16px' : '44px 40px 24px',
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
-        gap: 36,
+        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr auto',
+        gap: isMobile ? 28 : 36,
+        alignItems: 'start',
       }}>
 
         {/* Col 1 — Navigation */}
@@ -79,7 +80,7 @@ export default function Footer({ tenant, config }: Props) {
         </div>
 
         {/* Col 2 — Contact */}
-        {hasContact && (
+        {hasContact ? (
           <div>
             <h5 style={colTitle}>Contacto</h5>
             {config?.contact_email && (
@@ -96,21 +97,12 @@ export default function Footer({ tenant, config }: Props) {
               </p>
             )}
           </div>
-        )}
+        ) : <div />}
 
-        {/* Col 3 — Brand + Social */}
-        <div>
-          {logoUrl ? (
-            <img src={logoUrl} alt={tenant.name}
-              style={{ height: 36, objectFit: 'contain', marginBottom: 14, display: 'block' }} />
-          ) : (
-            <div style={{ fontFamily: 'var(--font-heading,serif)', fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 14 }}>
-              {tenant.name}
-            </div>
-          )}
-
-          {/* Social icons */}
-          {hasSocial && (
+        {/* Col 3 — Social */}
+        {hasSocial ? (
+          <div>
+            <h5 style={colTitle}>Redes sociales</h5>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {config?.instagram && <SocialLink href={config.instagram} label="Instagram"><InstagramIcon /></SocialLink>}
               {config?.facebook  && <SocialLink href={config.facebook}  label="Facebook"><FacebookIcon /></SocialLink>}
@@ -118,6 +110,28 @@ export default function Footer({ tenant, config }: Props) {
               {config?.youtube   && <SocialLink href={config.youtube}   label="YouTube"><YouTubeIcon /></SocialLink>}
               {config?.tiktok    && <SocialLink href={config.tiktok}    label="TikTok"><TikTokIcon /></SocialLink>}
               {config?.twitter   && <SocialLink href={config.twitter}   label="X / Twitter"><XIcon /></SocialLink>}
+            </div>
+          </div>
+        ) : <div />}
+
+        {/* Col 4 — Logo */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'flex-start' : 'flex-end' }}>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={tenant.name}
+              style={{
+                maxHeight: 72,
+                maxWidth: 180,
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
+          ) : (
+            <div style={{ fontFamily: 'var(--font-heading,serif)', fontSize: 18, fontWeight: 700, color: '#111' }}>
+              {tenant.name}
             </div>
           )}
         </div>
