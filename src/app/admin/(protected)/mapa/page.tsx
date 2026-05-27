@@ -500,11 +500,10 @@ export default function MapaPage() {
         {/* ══ TAB: DISEÑO ══ */}
         {tab === 'diseno' && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start', marginBottom: 16 }}>
-              <Section title="Estilo del mapa" style={{ marginBottom: 0 }}>
-                <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.6 }}>
-                  Define la apariencia visual del mapa. No afecta qué propiedades se muestran ni su ubicación.
-                </p>
+            <Section title="Estilo del mapa">
+              {/* Two columns: presets | layer toggles */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 0 }}>
+                {/* Left — preset buttons */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {PRESET_STYLES.map(s => {
                     const active = !customStyleUrl.trim() && mapStyle === s.value
@@ -524,50 +523,46 @@ export default function MapaPage() {
                   })}
                 </div>
 
-                <StylePreview mapboxToken={mapboxToken} mapStyle={customStyleUrl.trim() || mapStyle} />
-              </Section>
-
-              <Section title="Capas visibles" style={{ marginBottom: 0 }}>
-                <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
-                  Controlá qué elementos se muestran en el mapa del sitio.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  {([
-                    ...(caps.show3dObjects ? [[show3dObjects, setShow3dObjects, '🏢', 'Objetos 3D', 'Edificios, árboles y estructuras en tres dimensiones']] : []),
-                    [showPoiLabels,      setShowPoiLabels,      '📍', 'Etiquetas de negocios',  'Nombres de restaurantes, tiendas, hoteles, etc.'],
-                    [showTransitLabels,  setShowTransitLabels,  '🚌', 'Transporte público',      'Paradas, líneas de bus y metro'],
-                    [showPlaceLabels,    setShowPlaceLabels,    '🗺️', 'Nombres de lugares',      'Barrios, ciudades, países'],
-                    [showRoadLabels,     setShowRoadLabels,     '🛣️', 'Nombres de calles',       'Etiquetas con el nombre de cada vía'],
-                  ] as [boolean, (v: boolean) => void, string, string, string][]).map(([value, setter, icon, label, desc], i, arr) => (
-                    <div key={label} style={{
-                      display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0',
-                      borderBottom: i < arr.length - 1 ? '1px solid #f0f0f0' : 'none',
-                    }}>
-                      <span style={{ fontSize: 18, width: 24, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 1 }}>{label}</div>
-                        <div style={{ fontSize: 11, color: '#bbb' }}>{desc}</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setter(!value)}
-                        style={{
+                {/* Right — layer toggles */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 12 }}>Capas visibles</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                    {([
+                      ...(caps.show3dObjects ? [[show3dObjects, setShow3dObjects, '🏢', 'Objetos 3D', 'Edificios y estructuras 3D']] : []),
+                      [showPoiLabels,      setShowPoiLabels,      '📍', 'Negocios',         'Restaurantes, tiendas, hoteles…'],
+                      [showTransitLabels,  setShowTransitLabels,  '🚌', 'Transporte',        'Paradas y líneas'],
+                      [showPlaceLabels,    setShowPlaceLabels,    '🗺️', 'Lugares',           'Barrios, ciudades, países'],
+                      [showRoadLabels,     setShowRoadLabels,     '🛣️', 'Calles',            'Nombre de cada vía'],
+                    ] as [boolean, (v: boolean) => void, string, string, string][]).map(([value, setter, icon, label, desc], i, arr) => (
+                      <div key={label} style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0',
+                        borderBottom: i < arr.length - 1 ? '1px solid #f0f0f0' : 'none',
+                      }}>
+                        <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 1 }}>{label}</div>
+                          <div style={{ fontSize: 11, color: '#bbb' }}>{desc}</div>
+                        </div>
+                        <button type="button" onClick={() => setter(!value)} style={{
                           flexShrink: 0, width: 44, height: 24, borderRadius: 12, border: 'none',
                           background: value ? '#111' : '#e0e0e0',
                           position: 'relative', cursor: 'pointer', transition: 'background .2s',
-                        }}
-                      >
-                        <span style={{
-                          position: 'absolute', top: 3, left: value ? 23 : 3,
-                          width: 18, height: 18, borderRadius: '50%', background: '#fff',
-                          transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.25)',
-                        }} />
-                      </button>
-                    </div>
-                  ))}
+                        }}>
+                          <span style={{
+                            position: 'absolute', top: 3, left: value ? 23 : 3,
+                            width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                            transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.25)',
+                          }} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </Section>
-            </div>
+              </div>
+
+              {/* Full-width map preview */}
+              <StylePreview mapboxToken={mapboxToken} mapStyle={customStyleUrl.trim() || mapStyle} />
+            </Section>
 
             <Section title="Estilo personalizado (Mapbox Studio)">
               <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 14, lineHeight: 1.6 }}>
