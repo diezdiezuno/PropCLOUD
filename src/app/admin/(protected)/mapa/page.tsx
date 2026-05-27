@@ -13,6 +13,15 @@ const PRESET_STYLES = [
 ]
 const PRESET_VALUES = new Set(PRESET_STYLES.map(s => s.value))
 
+// What each preset style actually supports via setConfigProperty
+const STYLE_CAPS: Record<string, { lightPreset: boolean; show3dObjects: boolean }> = {
+  'mapbox://styles/mapbox/streets-v12':           { lightPreset: true,  show3dObjects: false },
+  'mapbox://styles/mapbox/light-v11':             { lightPreset: true,  show3dObjects: false },
+  'mapbox://styles/mapbox/dark-v11':              { lightPreset: false, show3dObjects: false },
+  'mapbox://styles/mapbox/satellite-streets-v12': { lightPreset: false, show3dObjects: false },
+  'mapbox://styles/mapbox/outdoors-v12':          { lightPreset: true,  show3dObjects: false },
+}
+
 // Predefined zones included in every install
 const PREDEFINED: ZoneConfigItem[] = [
   { label: 'Curridabat',  key: 'Curridabat',   enabled: true },
@@ -400,6 +409,11 @@ export default function MapaPage() {
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000)
   }
 
+  const isCustomStyle = !!customStyleUrl.trim()
+  const caps = isCustomStyle
+    ? { lightPreset: true, show3dObjects: true }
+    : (STYLE_CAPS[mapStyle] ?? { lightPreset: true, show3dObjects: false })
+
   const predefinedZones = zones.filter(z => !z.custom)
   const customZones = zones.filter(z => z.custom)
   const enabledCount = zones.filter(z => z.enabled).length
@@ -545,7 +559,7 @@ export default function MapaPage() {
               </p>
             </Section>
 
-            <Section title="Iluminación automática">
+            {caps.lightPreset && <Section title="Iluminación automática">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#111', marginBottom: 4 }}>
@@ -553,7 +567,6 @@ export default function MapaPage() {
                   </div>
                   <p style={{ fontSize: 13, color: '#888', margin: 0, lineHeight: 1.6 }}>
                     Activa un preset de luz diferente de mañana, tarde, atardecer y noche para que el mapa se vea natural a cualquier hora.
-                    Solo funciona con los estilos Streets, Light y Outdoors.
                   </p>
                 </div>
                 {/* Toggle switch */}
@@ -588,15 +601,15 @@ export default function MapaPage() {
                   ))}
                 </div>
               )}
-            </Section>
+            </Section>}
 
             <Section title="Capas visibles">
               <p style={{ fontSize: 13, color: '#888', marginTop: 0, marginBottom: 16, lineHeight: 1.5 }}>
-                Controlá qué elementos se muestran en el mapa del sitio. Solo aplica con los estilos estándar de Mapbox.
+                Controlá qué elementos se muestran en el mapa del sitio.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {([
-                  ...(customStyleUrl.trim() ? [[show3dObjects, setShow3dObjects, '🏢', 'Objetos 3D', 'Edificios, árboles y estructuras en tres dimensiones']] : []),
+                  ...(caps.show3dObjects ? [[show3dObjects, setShow3dObjects, '🏢', 'Objetos 3D', 'Edificios, árboles y estructuras en tres dimensiones']] : []),
                   [showPoiLabels,      setShowPoiLabels,      '📍', 'Etiquetas de negocios',  'Nombres de restaurantes, tiendas, hoteles, etc.'],
                   [showTransitLabels,  setShowTransitLabels,  '🚌', 'Transporte público',      'Paradas, líneas de bus y metro'],
                   [showPlaceLabels,    setShowPlaceLabels,    '🗺️', 'Nombres de lugares',      'Barrios, ciudades, países'],
