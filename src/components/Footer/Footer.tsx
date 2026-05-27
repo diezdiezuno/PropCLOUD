@@ -50,8 +50,6 @@ export default function Footer({ tenant, config }: Props) {
   const isMobile = useIsMobile()
 
   const path = pathname ?? ''
-  // Detail pages only: full-screen split layout — hide footer
-  if (/^\/listings\/.+/.test(path)) return null
   if (!tenant) return null
 
   const navLinks  = getNavLinks(config?.pages_config ?? null)

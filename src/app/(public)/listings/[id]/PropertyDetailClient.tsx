@@ -316,6 +316,11 @@ export default function PropertyDetailClient({
         </div>
       </div>
 
+      {/* Spacer in normal flow (desktop only) so the footer is reachable by scrolling below the fixed split layout */}
+      {!isMobile && (
+        <div style={{ height: 'calc(100vh - var(--nav-h, 60px))', pointerEvents: 'none' }} aria-hidden="true" />
+      )}
+
       {/* ── Lightbox ── */}
       {lbOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.92)', zIndex: 50000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setLbOpen(false)}>
