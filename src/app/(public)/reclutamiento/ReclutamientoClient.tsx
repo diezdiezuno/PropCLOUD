@@ -87,10 +87,9 @@ export default function ReclutamientoClient() {
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section style={{
-        minHeight: '90vh',
         display: 'flex', flexDirection: 'column',
-        alignItems: 'flex-start', justifyContent: 'center',
-        padding: 'clamp(16px,2vw,28px) clamp(24px,5vw,72px)',
+        alignItems: 'flex-start',
+        padding: 'clamp(36px,4vw,56px) clamp(24px,5vw,72px) clamp(44px,5vw,68px)',
         maxWidth: 1200, margin: '0 auto',
       }}>
         <h1 style={{
