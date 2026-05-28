@@ -345,7 +345,8 @@ export default function ReclutamientoClient() {
           </div>
         ) : (
           <form onSubmit={submit} style={{
-            background: '#f7f6f4', border: '1px solid #e8e4df',
+            background: 'linear-gradient(160deg, #ffffff 0%, #eeece8 100%)',
+            border: '1px solid #e8e4df',
             borderRadius: 24, padding: 'clamp(32px,4vw,48px)',
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
