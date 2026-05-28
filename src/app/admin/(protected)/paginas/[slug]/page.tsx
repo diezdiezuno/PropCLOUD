@@ -30,6 +30,7 @@ export default function PageEditorPage() {
   const [saving, setSaving] = useState(false)
   const [savedMsg, setSavedMsg] = useState(false)
   const [tenantId, setTenantId] = useState('')
+  const [tenantSlug, setTenantSlug] = useState('')
   const [allPages, setAllPages] = useState<PageConfig[]>([])
   const [page, setPage] = useState<PageConfig | null>(null)
 
@@ -53,6 +54,10 @@ export default function PageEditorPage() {
         .from('tenant_admins').select('tenant_id').eq('user_id', user.id).single()
       if (!adminRec) return
       setTenantId(adminRec.tenant_id)
+
+      const { data: tenantRow } = await supabase
+        .from('tenants').select('slug').eq('id', adminRec.tenant_id).single()
+      setTenantSlug(tenantRow?.slug ?? '')
 
       const { data: cfg } = await supabase
         .from('tenant_config')
@@ -216,7 +221,7 @@ export default function PageEditorPage() {
         {/* ── RECLUTAMIENTO ── */}
         {slug === 'reclutamiento' && (
           <>
-            <Section title="Diseño de la página">
+            {tenantSlug === 'sunrise' && <Section title="Diseño de la página">
               <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
                 Seleccioná el diseño que se usará para esta página.
               </p>
@@ -244,7 +249,7 @@ export default function PageEditorPage() {
                   </label>
                 ))}
               </div>
-            </Section>
+            </Section>}
 
             <Section title="Texto introductorio">
               <Inp label="Párrafo de introducción" value={reclutamientoIntro} onChange={setReclutamientoIntro}
