@@ -4,6 +4,7 @@ import Nav from '@/components/Nav/Nav'
 import Footer from '@/components/Footer/Footer'
 import { FilterProvider } from '@/contexts/FilterContext'
 import { LanguageProvider } from '@/contexts/LanguageContext'
+import Script from 'next/script'
 import type { Metadata } from 'next'
 import type { Lang } from '@/contexts/LanguageContext'
 import type { Tenant, TenantConfig } from '@/types'
@@ -62,8 +63,16 @@ export default async function PublicLayout({ children }: { children: React.React
       <link href={fontsUrl} rel="stylesheet" />
       {gaId && (
         <>
-          <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
-          <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${gaId}');` }} />
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+            strategy="afterInteractive"
+          />
+          <Script id="ga-init" strategy="afterInteractive">{`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${gaId}');
+          `}</Script>
         </>
       )}
       <LanguageProvider defaultLang={(config?.default_language ?? 'es') as Lang}>
