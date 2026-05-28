@@ -88,34 +88,33 @@ export async function POST(request: NextRequest) {
 
       const tableRows = rows.map(([label, value]) => `
         <tr>
-          <td style="padding:10px 16px;font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;border-bottom:1px solid #f0f0f0;vertical-align:top;">${label}</td>
-          <td style="padding:10px 16px;font-size:15px;color:#111;border-bottom:1px solid #f0f0f0;">${value}</td>
+          <td style="padding:12px 20px;font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;border-bottom:1px solid #f0f0f0;vertical-align:top;width:140px;">${label}</td>
+          <td style="padding:12px 20px;font-size:14px;color:#111;border-bottom:1px solid #f0f0f0;line-height:1.6;word-break:break-word;">${value}</td>
         </tr>`).join('')
 
       const html = `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f5f5f7;font-family:system-ui,-apple-system,sans-serif;">
-  <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e8e8e8;">
+<body style="margin:0;padding:0;background:#f0f0f2;font-family:system-ui,-apple-system,sans-serif;">
+  <div style="max-width:720px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e0e0e0;">
     <!-- Header -->
-    <div style="background:#111;padding:32px 40px;">
-      <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">${tenant.name}</div>
-      <div style="font-size:22px;font-weight:700;color:#fff;line-height:1.2;">Nueva aplicación de reclutamiento</div>
+    <div style="background:#111;padding:32px 48px;">
+      <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.45);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;">${tenant.name}</div>
+      <div style="font-size:24px;font-weight:700;color:#fff;line-height:1.2;">Nueva aplicación de reclutamiento</div>
     </div>
     <!-- Body -->
-    <div style="padding:32px 40px;">
-      <p style="font-size:15px;color:#555;margin:0 0 24px;line-height:1.6;">
+    <div style="padding:36px 48px;">
+      <p style="font-size:14px;color:#666;margin:0 0 28px;line-height:1.7;">
         Se recibió una nueva aplicación. A continuación los datos del candidato:
       </p>
-      <table style="width:100%;border-collapse:collapse;background:#fafafa;border-radius:12px;overflow:hidden;border:1px solid #f0f0f0;">
+      <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid #ebebeb;">
         ${tableRows}
       </table>
     </div>
     <!-- Footer -->
-    <div style="padding:20px 40px;border-top:1px solid #f0f0f0;background:#fafafa;">
-      <p style="font-size:12px;color:#aaa;margin:0;line-height:1.6;">
-        Este mensaje fue enviado automáticamente desde ${tenant.name}.<br>
-        Para responder al candidato, respondé directamente a este email.
+    <div style="padding:20px 48px 28px;border-top:1px solid #f0f0f0;background:#fafafa;">
+      <p style="font-size:12px;color:#bbb;margin:0;line-height:1.6;">
+        Enviado automáticamente desde ${tenant.name}. Respondé este email para contactar al candidato.
       </p>
     </div>
   </div>
