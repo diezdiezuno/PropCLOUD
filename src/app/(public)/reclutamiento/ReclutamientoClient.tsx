@@ -358,11 +358,11 @@ export default function ReclutamientoClient() {
                 <FInp label="Correo electrónico *" value={email}    onChange={setEmail}    placeholder="tu@correo.com" type="email" />
               </div>
 
-              {/* Fila 2 — Zona + campo libre si es "Otra zona" */}
-              <div style={{ display: 'grid', gridTemplateColumns: isOtherZona ? '3fr 2fr' : '1fr', gap: 18 }}>
+              {/* Fila 2 — Zona dropdown + campo libre */}
+              <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 18 }}>
                 <div>
                   <label style={labelSt}>Zona donde vivís *</label>
-                  <select value={zona} onChange={e => { setZona(e.target.value); setZonaOtra('') }} style={inpSt} required>
+                  <select value={zona} onChange={e => setZona(e.target.value)} style={inpSt} required>
                     <option value="" disabled>Seleccioná tu zona</option>
                     <optgroup label="Este de San José (zona principal)">
                       {ZONES_EAST.map(z => <option key={z} value={z}>{z}</option>)}
@@ -372,13 +372,11 @@ export default function ReclutamientoClient() {
                     </optgroup>
                   </select>
                 </div>
-                {isOtherZona && (
-                  <FInp
-                    label="Especificá tu zona"
-                    value={zonaOtra} onChange={setZonaOtra}
-                    placeholder="Ej: Sabanilla, Alajuelita…"
-                  />
-                )}
+                <FInp
+                  label="Otra zona (si no está en la lista)"
+                  value={zonaOtra} onChange={setZonaOtra}
+                  placeholder="Ej: Sabanilla, Alajuelita…"
+                />
               </div>
 
               {/* Fila 3 — Perfil | Ocupación */}
