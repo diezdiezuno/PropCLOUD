@@ -343,7 +343,8 @@ export default function ReclutamientoClient() {
 
         {sent ? (
           <div style={{
-            background: '#f7f6f4', border: '1px solid #e8e4df',
+            background: 'linear-gradient(160deg, #ffffff 0%, #eeece8 100%)',
+            border: '1px solid #e8e4df',
             borderRadius: 24, padding: 'clamp(40px,6vw,60px)',
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', textAlign: 'center', gap: 18,
