@@ -83,7 +83,7 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
 
       {/* ── Main content ────────────────────────────────────────── */}
       <main style={{ marginLeft: 216, flex: 1, padding: '36px 44px', minHeight: '100vh' }}>
-        <div style={{ maxWidth: 760 }}>
+        <div style={{ maxWidth: 1100 }}>
           {children}
         </div>
       </main>

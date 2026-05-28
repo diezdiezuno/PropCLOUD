@@ -86,7 +86,7 @@ export default function AdminReclutamientoPage() {
           {/* Table header */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr 120px 140px 100px',
+            gridTemplateColumns: '1.5fr 1.5fr 140px 160px 150px',
             gap: 16, padding: '10px 20px',
             fontSize: 11, fontWeight: 600, color: '#aaa',
             textTransform: 'uppercase', letterSpacing: '.08em',
@@ -113,7 +113,7 @@ export default function AdminReclutamientoPage() {
                   onClick={() => toggle(app.id)}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr 1fr 120px 140px 100px',
+                    gridTemplateColumns: '1.5fr 1.5fr 140px 160px 150px',
                     gap: 16, padding: '16px 20px',
                     width: '100%', background: 'none', border: 'none',
                     cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
