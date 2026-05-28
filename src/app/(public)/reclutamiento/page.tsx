@@ -4,7 +4,10 @@ import ReclutamientoClient from './ReclutamientoClient'
 import type { Metadata } from 'next'
 import type { PageSettings } from '@/types'
 
-export const metadata: Metadata = { title: 'Reclutamiento' }
+export const metadata: Metadata = {
+  title: 'Reclutamiento',
+  description: 'Únete a nuestro equipo de profesionales en bienes raíces.',
+}
 
 export default async function ReclutamientoPage() {
   const h = await headers()

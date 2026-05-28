@@ -3,7 +3,10 @@ import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import ListingsClient from './ListingsClient'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Propiedades' }
+export const metadata: Metadata = {
+  title: 'Propiedades',
+  description: 'Explorá nuestro catálogo de propiedades en venta y alquiler.',
+}
 
 export default async function ListingsPage() {
   const headersList = await headers()

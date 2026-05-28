@@ -2,7 +2,10 @@ import { headers } from 'next/headers'
 import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Nosotros' }
+export const metadata: Metadata = {
+  title: 'Nosotros',
+  description: 'Conocé nuestra historia, misión y el equipo detrás de nuestra inmobiliaria.',
+}
 
 export default async function NosotrosPage() {
   const h = await headers()

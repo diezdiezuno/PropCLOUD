@@ -3,7 +3,10 @@ import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import ContactoClient from './ContactoClient'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Contacto' }
+export const metadata: Metadata = {
+  title: 'Contacto',
+  description: 'Ponete en contacto con nosotros. Estamos para ayudarte con tu próxima propiedad.',
+}
 
 export default async function ContactoPage() {
   const h = await headers()

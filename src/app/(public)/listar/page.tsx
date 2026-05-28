@@ -4,7 +4,10 @@ import ListarClient from './ListarClient'
 import type { Metadata } from 'next'
 import type { PageSettings } from '@/types'
 
-export const metadata: Metadata = { title: 'Listá tu propiedad' }
+export const metadata: Metadata = {
+  title: 'Listá tu propiedad',
+  description: 'Listá tu propiedad con nosotros. Completá el formulario y un agente te contactará.',
+}
 
 const DEFAULT_FIELDS = ['phone', 'type', 'address', 'price', 'description']
 

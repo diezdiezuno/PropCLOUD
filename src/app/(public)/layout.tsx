@@ -14,9 +14,24 @@ export async function generateMetadata(): Promise<Metadata> {
   const domain = headersList.get('x-tenant-domain') ?? 'localhost'
   try {
     const tenant = await getTenantByDomain(domain)
-    if (tenant?.name) return {
+    if (!tenant?.name) return { title: 'PropCLOUD' }
+    const config = await getTenantConfig(tenant.id).catch(() => null)
+    const siteUrl = `https://${tenant.domain}`
+    const description = tenant.tagline ?? `${tenant.name} — propiedades en venta y alquiler.`
+    const ogImage = tenant.logo_url ?? undefined
+    return {
       title: { default: tenant.name, template: `%s · ${tenant.name}` },
+      description,
       icons: tenant.favicon_url ? { icon: tenant.favicon_url } : undefined,
+      metadataBase: new URL(siteUrl),
+      openGraph: {
+        type: 'website',
+        siteName: tenant.name,
+        locale: config?.default_language === 'en' ? 'en_US' : 'es_CR',
+        description,
+        ...(ogImage && { images: [{ url: ogImage }] }),
+      },
+      twitter: { card: 'summary', description, ...(ogImage && { images: [ogImage] }) },
     }
   } catch {}
   return { title: 'PropCLOUD' }
