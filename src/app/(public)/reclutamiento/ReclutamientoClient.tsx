@@ -320,7 +320,7 @@ export default function ReclutamientoClient() {
             Da el primer paso hoy.
           </h2>
           <p style={{ fontSize: 17, color: '#888480', lineHeight: 1.6, maxWidth: 480, margin: '0 auto' }}>
-            Llenás el formulario, el Team Leader te contacta personalmente y conversamos sin ningún compromiso.
+            Llenás el formulario, te contactamos personalmente y conversamos sin ningún compromiso.
           </p>
         </div>
 
