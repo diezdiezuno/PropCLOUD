@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useLang, locProp, useUI } from '@/contexts/LanguageContext'
+import { track } from '@/lib/gtag'
 import type { Property } from '@/types'
 
 interface Props {
@@ -84,12 +85,14 @@ export default function PropertyDetailClient({
   function scrollToForm() { formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
   function openWhatsApp() {
     if (!officeWhatsapp) return
+    track('whatsapp_click', { property_id: id, property_title: property?.title })
     const msg = encodeURIComponent(`Hola, me interesa esta propiedad: ${property?.title ?? ''}\n${window.location.href}`)
     window.open(`https://wa.me/${officeWhatsapp.replace(/\D/g,'')}?text=${msg}`, '_blank')
   }
 
   function submitInquiry() {
     if (!formName.trim() || !formEmail.trim()) { showToast(t.fillNameEmail); return }
+    track('inquiry_submit', { property_id: id, property_title: property?.title, contact_mode: contactMode })
     const phone = contactMode === 'office' ? officeWhatsapp : property?.agent_phone
     if (phone) {
       const msg = encodeURIComponent(`Hola, me interesa esta propiedad: ${property?.title}\n\nNombre: ${formName}\nCorreo: ${formEmail}${formPhone ? `\nTel: ${formPhone}` : ''}${formMsg ? `\n\n${formMsg}` : ''}`)

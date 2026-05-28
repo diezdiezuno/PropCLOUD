@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { track } from '@/lib/gtag'
 
 interface Props {
   whatsapp: string | null
@@ -37,6 +38,7 @@ export default function ContactoClient({ whatsapp, email, address, instagram, fa
     e.preventDefault()
     if (!name.trim() || !formEmail.trim()) return
     setSending(true)
+    track('contact_form_submit', { source: 'contacto' })
     await fetch('/api/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

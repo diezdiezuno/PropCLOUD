@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { track } from '@/lib/gtag'
 
 interface Props {
   fields: string[]
@@ -36,6 +37,7 @@ export default function ListarClient({ fields, intro, submissionWhatsapp }: Prop
     e.preventDefault()
     if (!name.trim() || !email.trim()) return
     setSending(true)
+    track('contact_form_submit', { source: 'listar' })
 
     const details = Object.entries(values)
       .filter(([, v]) => v)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { track } from '@/lib/gtag'
 
 interface Props {
   positions: string[]
@@ -21,6 +22,7 @@ export default function ReclutamientoClient({ positions, intro, submissionWhatsa
     e.preventDefault()
     if (!name.trim() || !email.trim()) return
     setSending(true)
+    track('contact_form_submit', { source: 'reclutamiento', position })
 
     const details = [
       position && `Posición: ${position}`,
