@@ -340,7 +340,7 @@ export default function ReclutamientoClient() {
               ¡Aplicación recibida!
             </h3>
             <p style={{ fontSize: 15, color: '#888480', maxWidth: 380, lineHeight: 1.65, margin: 0 }}>
-              Gracias por tu interés en SUNRISE. El Team Leader te contactará en las próximas 24 horas.
+              Gracias por tu interés en SUNRISE. Te contactaremos en las próximas 24 horas.
             </p>
           </div>
         ) : (
