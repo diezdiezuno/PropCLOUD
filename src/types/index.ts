@@ -34,6 +34,7 @@ export interface PageSettings {
   reclutamiento_positions?: string[]
   reclutamiento_intro?: string
   seo_description?: string        // meta description override for this page
+  notification_emails?: string    // comma-separated emails for form notifications
 }
 
 export interface PageConfig {
@@ -160,5 +161,6 @@ export interface Lead {
   phone: string | null
   message: string | null
   source: string | null
+  metadata: Record<string, string> | null
   created_at: string
 }

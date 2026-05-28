@@ -42,6 +42,7 @@ export default function PageEditorPage() {
   const [reclutamientoPositions, setReclutamientoPositions] = useState<string[]>([])
   const [reclutamientoIntro, setReclutamientoIntro] = useState('')
   const [newPosition, setNewPosition] = useState('')
+  const [notificationEmails, setNotificationEmails] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -73,6 +74,7 @@ export default function PageEditorPage() {
       setSubmissionWhatsapp(s.submission_whatsapp ?? '')
       setReclutamientoPositions(s.reclutamiento_positions ?? [])
       setReclutamientoIntro(s.reclutamiento_intro ?? '')
+      setNotificationEmails(s.notification_emails ?? '')
 
       setLoading(false)
     })
@@ -115,6 +117,7 @@ export default function PageEditorPage() {
       settings.reclutamiento_positions = reclutamientoPositions
       settings.reclutamiento_intro = reclutamientoIntro
       if (submissionWhatsapp.trim()) settings.submission_whatsapp = submissionWhatsapp.trim()
+      if (notificationEmails.trim()) settings.notification_emails = notificationEmails.trim()
     }
 
     // Update pages_config array preserving all other pages
@@ -245,10 +248,14 @@ export default function PageEditorPage() {
               </div>
             </Section>
 
-            <Section title="Envío">
-              <Inp label="WhatsApp destino (opcional)" value={submissionWhatsapp} onChange={setSubmissionWhatsapp}
-                placeholder="+506 8888-8888"
-                hint="Si se define, el formulario abre WhatsApp al enviarse. Si no, se guarda solo como lead." />
+            <Section title="Notificaciones por email">
+              <Inp
+                label="Emails de notificación"
+                value={notificationEmails}
+                onChange={setNotificationEmails}
+                placeholder="ana@oficina.com, juan@oficina.com"
+                hint="Uno o más emails separados por coma. Recibirán un aviso por cada aplicación recibida."
+              />
             </Section>
           </>
         )}
