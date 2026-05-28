@@ -48,14 +48,14 @@ function getNavLinks(pagesConfig: PageConfig[] | null, t: UIStrings) {
         label: label(l.slug, l.slug),
         slug: l.slug,
         visible: cfg ? cfg.visible : l.defaultVisible,
-        order: cfg ? cfg.order + 10 : l.defaultOrder,
+        order: cfg ? cfg.order : l.defaultOrder,
       }
     })
     .filter(l => l.visible)
 
   const customs = (pagesConfig ?? [])
     .filter(p => p.custom && p.visible)
-    .map(p => ({ href: `/${p.slug}`, label: p.title, slug: p.slug, visible: true, order: p.order + 10 }))
+    .map(p => ({ href: `/${p.slug}`, label: p.title, slug: p.slug, visible: true, order: p.order }))
 
   return [
     ...FIXED_NAV_DEFS.map(l => ({ ...l, label: label(l.slug, l.slug), visible: true })),

@@ -54,16 +54,31 @@ function getPageLinks(pagesConfig: PageConfig[] | null | undefined, t: UIStrings
     { href: '/', label: t.navMap },
     { href: '/listings', label: t.navProperties },
   ]
-  const configurable = DEFAULT_LINK_DEFS.filter(link => {
-    if (!pagesConfig) return link.defaultVisible
-    const match = pagesConfig.find(p => p.slug === link.slug)
-    return match ? match.visible : link.defaultVisible
-  }).map(link => ({ href: link.href, label: slugLabel[link.slug] ?? link.slug }))
 
-  const customs = (pagesConfig ?? []).filter(p => p.custom && p.visible).map(p => ({
-    href: `/${p.slug}`, label: p.title,
-  }))
-  return [...fixed, ...configurable, ...customs]
+  // Predefined configurable links — filter by visibility, sort by saved order
+  const configurable = DEFAULT_LINK_DEFS
+    .filter(link => {
+      if (!pagesConfig) return link.defaultVisible
+      const match = pagesConfig.find(p => p.slug === link.slug)
+      return match ? match.visible : link.defaultVisible
+    })
+    .map(link => {
+      const match = pagesConfig?.find(p => p.slug === link.slug)
+      return {
+        href: link.href,
+        label: slugLabel[link.slug] ?? link.slug,
+        order: match?.order ?? 99,
+      }
+    })
+
+  // Custom pages — visible only, respect saved order
+  const customs = (pagesConfig ?? [])
+    .filter(p => p.custom && p.visible)
+    .map(p => ({ href: `/${p.slug}`, label: p.title, order: p.order }))
+
+  const sorted = [...configurable, ...customs].sort((a, b) => a.order - b.order)
+
+  return [...fixed, ...sorted.map(({ href, label }) => ({ href, label }))]
 }
 
 // Parse user-typed price string: "2M" → 2000000, "500K" → 500000
