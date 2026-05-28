@@ -87,19 +87,19 @@ export default function ReclutamientoClient() {
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section style={{
-        minHeight: '92vh',
+        minHeight: '90vh',
         display: 'flex', flexDirection: 'column',
         alignItems: 'flex-start', justifyContent: 'center',
-        padding: 'clamp(32px,4vw,56px) clamp(24px,5vw,72px)',
+        padding: 'clamp(16px,2vw,28px) clamp(24px,5vw,72px)',
         maxWidth: 1200, margin: '0 auto',
       }}>
         <h1 style={{
           fontFamily: 'var(--font-heading,serif)',
           fontSize: 'clamp(54px,7.5vw,96px)',
           fontWeight: 900, lineHeight: .93,
-          letterSpacing: '-.03em', marginBottom: 32,
+          letterSpacing: '-.03em', marginBottom: 28,
         }}>
-          Tu carrera en{' '}
+          Tu carrera en<br />
           <span style={{
             background: 'linear-gradient(90deg,var(--primary,#6b2fa0),#D44E2A,#E8920A)',
             WebkitBackgroundClip: 'text',
@@ -107,8 +107,8 @@ export default function ReclutamientoClient() {
             backgroundClip: 'text',
           }}>
             bienes raíces
-          </span>
-          <br />empieza aquí.
+          </span><br />
+          empieza aquí.
         </h1>
 
         <p style={{
@@ -152,7 +152,7 @@ export default function ReclutamientoClient() {
 
       {/* ── BENEFICIOS ───────────────────────────────────────── */}
       <section id="beneficios" style={{
-        padding: 'clamp(70px,8vw,100px) clamp(24px,5vw,72px)',
+        padding: 'clamp(44px,5vw,68px) clamp(24px,5vw,72px)',
         maxWidth: 1200, margin: '0 auto',
         borderTop: '1px solid #e8e4df',
       }}>
@@ -208,7 +208,7 @@ export default function ReclutamientoClient() {
 
       {/* ── PERFILES ─────────────────────────────────────────── */}
       <section id="perfiles" style={{
-        padding: 'clamp(70px,8vw,100px) clamp(24px,5vw,72px)',
+        padding: 'clamp(44px,5vw,68px) clamp(24px,5vw,72px)',
         maxWidth: 1200, margin: '0 auto',
         borderTop: '1px solid #e8e4df',
       }}>
@@ -304,7 +304,7 @@ export default function ReclutamientoClient() {
 
       {/* ── FORMULARIO ───────────────────────────────────────── */}
       <section id="aplicar" style={{
-        padding: 'clamp(70px,8vw,100px) 24px clamp(80px,10vw,120px)',
+        padding: 'clamp(44px,5vw,68px) 24px clamp(60px,6vw,80px)',
         maxWidth: 740, margin: '0 auto',
         borderTop: '1px solid #e8e4df',
       }}>
