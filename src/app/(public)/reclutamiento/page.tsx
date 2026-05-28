@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import ReclutamientoClient from './ReclutamientoClient'
+import ReclutamientoClientSunrise from './ReclutamientoClientSunrise'
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,6 +14,25 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: 'Reclutamiento', description }
 }
 
-export default function ReclutamientoPage() {
-  return <ReclutamientoClient />
+export default async function ReclutamientoPage() {
+  const h = await headers()
+  const domain = h.get('x-tenant-domain') ?? 'localhost'
+  const tenant = await getTenantByDomain(domain).catch(() => null)
+  const config = tenant ? await getTenantConfig(tenant.id).catch(() => null) : null
+  const pageCfg = config?.pages_config?.find(p => p.slug === 'reclutamiento')
+  const settings = pageCfg?.settings ?? {}
+
+  const template = settings.reclutamiento_template ?? 'default'
+
+  if (template === 'sunrise') {
+    return <ReclutamientoClientSunrise />
+  }
+
+  return (
+    <ReclutamientoClient
+      positions={settings.reclutamiento_positions ?? []}
+      intro={settings.reclutamiento_intro ?? ''}
+      submissionWhatsapp={settings.submission_whatsapp ?? null}
+    />
+  )
 }

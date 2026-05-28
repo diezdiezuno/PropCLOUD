@@ -43,6 +43,7 @@ export default function PageEditorPage() {
   const [reclutamientoIntro, setReclutamientoIntro] = useState('')
   const [newPosition, setNewPosition] = useState('')
   const [notificationEmails, setNotificationEmails] = useState('')
+  const [reclutamientoTemplate, setReclutamientoTemplate] = useState<'default' | 'sunrise'>('default')
 
   useEffect(() => {
     const supabase = createClient()
@@ -75,6 +76,7 @@ export default function PageEditorPage() {
       setReclutamientoPositions(s.reclutamiento_positions ?? [])
       setReclutamientoIntro(s.reclutamiento_intro ?? '')
       setNotificationEmails(s.notification_emails ?? '')
+      setReclutamientoTemplate(s.reclutamiento_template ?? 'default')
 
       setLoading(false)
     })
@@ -114,6 +116,7 @@ export default function PageEditorPage() {
       if (submissionWhatsapp.trim()) settings.submission_whatsapp = submissionWhatsapp.trim()
     }
     if (slug === 'reclutamiento') {
+      settings.reclutamiento_template = reclutamientoTemplate
       settings.reclutamiento_positions = reclutamientoPositions
       settings.reclutamiento_intro = reclutamientoIntro
       if (submissionWhatsapp.trim()) settings.submission_whatsapp = submissionWhatsapp.trim()
@@ -213,6 +216,36 @@ export default function PageEditorPage() {
         {/* ── RECLUTAMIENTO ── */}
         {slug === 'reclutamiento' && (
           <>
+            <Section title="Diseño de la página">
+              <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
+                Seleccioná el diseño que se usará para esta página.
+              </p>
+              <div style={{ display: 'flex', gap: 12 }}>
+                {([
+                  { value: 'default', label: 'Estándar', desc: 'Formulario simple con las posiciones configuradas.' },
+                  { value: 'sunrise', label: 'Sunrise', desc: 'Landing page completa con hero, beneficios y formulario detallado.' },
+                ] as const).map(opt => (
+                  <label key={opt.value} style={{
+                    flex: 1, border: `2px solid ${reclutamientoTemplate === opt.value ? '#111' : '#e0e0e0'}`,
+                    borderRadius: 10, padding: '14px 16px', cursor: 'pointer',
+                    background: reclutamientoTemplate === opt.value ? '#f5f5f7' : '#fff',
+                    transition: 'border-color .15s',
+                  }}>
+                    <input
+                      type="radio"
+                      name="reclutamiento_template"
+                      value={opt.value}
+                      checked={reclutamientoTemplate === opt.value}
+                      onChange={() => setReclutamientoTemplate(opt.value)}
+                      style={{ display: 'none' }}
+                    />
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 4 }}>{opt.label}</div>
+                    <div style={{ fontSize: 12, color: '#888' }}>{opt.desc}</div>
+                  </label>
+                ))}
+              </div>
+            </Section>
+
             <Section title="Texto introductorio">
               <Inp label="Párrafo de introducción" value={reclutamientoIntro} onChange={setReclutamientoIntro}
                 placeholder="Completá el formulario y nos pondremos en contacto." />

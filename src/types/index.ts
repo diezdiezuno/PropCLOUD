@@ -35,6 +35,7 @@ export interface PageSettings {
   reclutamiento_intro?: string
   seo_description?: string        // meta description override for this page
   notification_emails?: string    // comma-separated emails for form notifications
+  reclutamiento_template?: 'default' | 'sunrise'
 }
 
 export interface PageConfig {
