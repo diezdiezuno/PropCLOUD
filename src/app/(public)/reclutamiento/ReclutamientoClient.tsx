@@ -153,14 +153,14 @@ export default function ReclutamientoClient() {
         maxWidth: 1440, margin: '0 auto',
         borderTop: '1px solid #e8e4df',
       }}>
-        <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 14 }}>
+        <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 14, textAlign: 'center', width: '100%' }}>
           Por qué SUNRISE | REMAX Central
         </p>
         <h2 style={{
           fontFamily: 'var(--font-heading,serif)',
           fontSize: 'clamp(28px,3.5vw,46px)', fontWeight: 700,
           lineHeight: 1.1, letterSpacing: '-.02em',
-          marginBottom: 52, maxWidth: 600,
+          marginBottom: 52, textAlign: 'center', width: '100%',
         }}>
           Todo el respaldo que necesitás para vender y crecer.
         </h2>
