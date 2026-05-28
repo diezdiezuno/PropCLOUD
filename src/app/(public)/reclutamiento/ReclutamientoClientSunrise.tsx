@@ -380,7 +380,7 @@ export default function ReclutamientoClient() {
               <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 18 }}>
                 <div>
                   <label style={labelSt}>Zona donde vivís *</label>
-                  <select value={zona} onChange={e => setZona(e.target.value)} style={inpSt} required>
+                  <select value={zona} onChange={e => setZona(e.target.value)} style={inpSt}>
                     <option value="" disabled>Seleccioná tu zona</option>
                     <optgroup label="Este de San José (zona principal)">
                       {ZONES_EAST.map(z => <option key={z} value={z}>{z}</option>)}
