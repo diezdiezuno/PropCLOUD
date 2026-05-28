@@ -89,8 +89,8 @@ export default function ReclutamientoClient() {
       <section style={{
         display: 'flex', flexDirection: 'column',
         alignItems: 'flex-start',
-        padding: 'clamp(36px,4vw,56px) clamp(24px,5vw,72px) clamp(44px,5vw,68px)',
-        maxWidth: 1200, margin: '0 auto',
+        padding: 'clamp(36px,4vw,56px) clamp(24px,3vw,48px) clamp(44px,5vw,68px)',
+        maxWidth: 1440, margin: '0 auto',
       }}>
         <h1 style={{
           fontFamily: 'var(--font-heading,serif)',
@@ -151,8 +151,8 @@ export default function ReclutamientoClient() {
 
       {/* ── BENEFICIOS ───────────────────────────────────────── */}
       <section id="beneficios" style={{
-        padding: 'clamp(44px,5vw,68px) clamp(24px,5vw,72px)',
-        maxWidth: 1200, margin: '0 auto',
+        padding: 'clamp(44px,5vw,68px) clamp(24px,3vw,48px)',
+        maxWidth: 1440, margin: '0 auto',
         borderTop: '1px solid #e8e4df',
       }}>
         <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 14 }}>
@@ -207,8 +207,8 @@ export default function ReclutamientoClient() {
 
       {/* ── PERFILES ─────────────────────────────────────────── */}
       <section id="perfiles" style={{
-        padding: 'clamp(44px,5vw,68px) clamp(24px,5vw,72px)',
-        maxWidth: 1200, margin: '0 auto',
+        padding: 'clamp(44px,5vw,68px) clamp(24px,3vw,48px)',
+        maxWidth: 1440, margin: '0 auto',
         borderTop: '1px solid #e8e4df',
       }}>
         <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 14 }}>
