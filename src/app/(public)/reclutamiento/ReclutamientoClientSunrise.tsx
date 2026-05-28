@@ -62,9 +62,9 @@ export default function ReclutamientoClient() {
   const [hoveredBenefit, setHoveredBenefit] = useState<string | null>(null)
   const [hoveredProfile, setHoveredProfile] = useState<string | null>(null)
 
-  const isOtherZona = zona === 'Otra zona del este' || zona === 'Otra zona'
-  const finalZona   = isOtherZona && zonaOtra.trim() ? zonaOtra.trim() : zona
-  const canSubmit   = nombre.trim() && apellido.trim() && email.trim() && telefono.trim() && zona && perfil
+  const isOtherZona = zona === 'Otra zona del este' || zona === 'Otra zona' || !zona
+  const finalZona   = zonaOtra.trim() ? zonaOtra.trim() : zona
+  const canSubmit   = nombre.trim() && apellido.trim() && email.trim() && telefono.trim() && (zona || zonaOtra.trim()) && perfil
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()

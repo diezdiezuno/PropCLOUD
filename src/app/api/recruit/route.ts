@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { nombre, apellido, telefono, email, zona, perfil, ocupacion, motivacion, cv_link, linkedin } = body
 
-    if (!nombre || !apellido || !email || !telefono || !zona || !perfil) {
+    if (!nombre || !apellido || !email || !telefono || !perfil) {
       return NextResponse.json({ error: 'missing required fields' }, { status: 400 })
     }
 
