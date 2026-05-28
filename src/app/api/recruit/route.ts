@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (notifEmails.length === 0 && contactEmail) notifEmails.push(contactEmail)
 
     // Save lead to DB
-    await supabase.from('leads').insert({
+    const { error: insertError } = await supabase.from('leads').insert({
       tenant_id: tenant.id,
       property_id: null,
       name: `${nombre} ${apellido}`,
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         linkedin: linkedin ?? '',
       },
     })
+    if (insertError) console.error('[recruit] DB insert error:', JSON.stringify(insertError))
 
     // Send email notification
     if (resend && notifEmails.length > 0) {
