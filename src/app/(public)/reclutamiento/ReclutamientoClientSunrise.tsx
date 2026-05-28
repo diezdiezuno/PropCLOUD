@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { track } from '@/lib/gtag'
+import { createClient } from '@/lib/supabase-browser'
 
 const BENEFITS = [
   {
@@ -49,8 +50,9 @@ export default function ReclutamientoClient() {
   const [perfil,     setPerfil]     = useState('')
   const [ocupacion,  setOcupacion]  = useState('')
   const [motivacion, setMotivacion] = useState('')
-  const [cvLink,     setCvLink]     = useState('')
+  const [cvFile,     setCvFile]     = useState<File | null>(null)
   const [linkedin,   setLinkedin]   = useState('')
+  const cvInputRef = useRef<HTMLInputElement>(null)
   const [zonaOtra,   setZonaOtra]   = useState('')
   const [sending,    setSending]    = useState(false)
   const [sent,       setSent]       = useState(false)
@@ -71,6 +73,21 @@ export default function ReclutamientoClient() {
     setError('')
     track('contact_form_submit', { source: 'reclutamiento', perfil })
     try {
+      // Upload CV file if provided
+      let cvLink = ''
+      if (cvFile) {
+        const supabase = createClient()
+        const ext = cvFile.name.split('.').pop()
+        const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('cv-uploads')
+          .upload(path, cvFile, { upsert: false })
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('cv-uploads').getPublicUrl(path)
+          cvLink = urlData.publicUrl
+        }
+      }
+
       const res = await fetch('/api/recruit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -418,8 +435,40 @@ export default function ReclutamientoClient() {
 
               {/* Fila 5 — CV | LinkedIn */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
-                <FInp label="Link de tu CV (opcional)" value={cvLink} onChange={setCvLink} placeholder="Google Drive, Dropbox…" type="url" />
-                <FInp label="LinkedIn (opcional)"      value={linkedin} onChange={setLinkedin} placeholder="linkedin.com/in/tu-perfil" type="url" />
+                {/* CV file upload */}
+                <div>
+                  <label style={labelSt}>CV (opcional)</label>
+                  <input
+                    ref={cvInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    style={{ display: 'none' }}
+                    onChange={e => setCvFile(e.target.files?.[0] ?? null)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => cvInputRef.current?.click()}
+                    style={{
+                      ...inpSt, width: '100%', cursor: 'pointer', textAlign: 'left',
+                      color: cvFile ? '#111' : '#aaa',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <span style={{ fontSize: 15 }}>📎</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {cvFile ? cvFile.name : 'Adjuntar archivo PDF o Word…'}
+                    </span>
+                    {cvFile && (
+                      <span
+                        onClick={e => { e.stopPropagation(); setCvFile(null); if (cvInputRef.current) cvInputRef.current.value = '' }}
+                        style={{ fontSize: 16, color: '#bbb', lineHeight: 1, flexShrink: 0 }}
+                      >×</span>
+                    )}
+                  </button>
+                  <p style={{ fontSize: 11, color: '#aaa', margin: '5px 0 0' }}>PDF, DOC o DOCX · máx. 5 MB</p>
+                </div>
+                <FInp label="LinkedIn (opcional)" value={linkedin} onChange={setLinkedin} placeholder="linkedin.com/in/tu-perfil" type="url" />
               </div>
 
               {/* Submit */}
