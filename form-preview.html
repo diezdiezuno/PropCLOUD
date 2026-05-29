@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Form Background Options</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f0eeec; font-family: 'DM Sans', sans-serif; padding: 40px 24px; }
+  h1 { text-align: center; font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: #888; margin-bottom: 40px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; max-width: 1200px; margin: 0 auto; }
+
+  .option { border-radius: 20px; overflow: hidden; }
+  .option-label { text-align: center; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: #888; margin-bottom: 12px; }
+
+  /* ── Form card mockup ── */
+  .card { padding: 40px; border-radius: 20px; }
+
+  .card-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -.02em; }
+  .card-sub { font-size: 14px; margin-bottom: 28px; line-height: 1.5; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row-half { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+
+  .flabel { font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; display: block; margin-bottom: 5px; }
+  .finput { width: 100%; border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: inherit; outline: none; }
+  .fta { width: 100%; border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: inherit; outline: none; height: 70px; resize: none; }
+
+  .radio-row { display: flex; flex-direction: column; gap: 7px; }
+  .radio-opt { padding: 9px 12px; border-radius: 10px; font-size: 13px; text-align: center; cursor: pointer; }
+
+  .btn { width: 100%; padding: 14px; border-radius: 100px; border: none; font-size: 14px; font-weight: 500; letter-spacing: .02em; cursor: pointer; margin-top: 8px; font-family: inherit; }
+
+  /* ── Option A — Negro ── */
+  .opt-a .card { background: #111; }
+  .opt-a .card-title { color: #fff; }
+  .opt-a .card-sub { color: rgba(255,255,255,.45); }
+  .opt-a .flabel { color: rgba(255,255,255,.4); }
+  .opt-a .finput { background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.12); color: #fff; }
+  .opt-a .fta   { background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.12); color: #fff; }
+  .opt-a .radio-opt { background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.12); color: rgba(255,255,255,.55); }
+  .opt-a .radio-opt.sel { border-color: #fff; color: #fff; }
+  .opt-a .btn { background: #fff; color: #111; }
+
+  /* ── Option B — Gradiente Sunrise ── */
+  .opt-b .card { background: linear-gradient(135deg, #6B3FA0 0%, #D44E2A 55%, #E8920A 100%); }
+  .opt-b .card-title { color: #fff; }
+  .opt-b .card-sub { color: rgba(255,255,255,.7); }
+  .opt-b .flabel { color: rgba(255,255,255,.6); }
+  .opt-b .finput { background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.2); color: #fff; }
+  .opt-b .fta   { background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.2); color: #fff; }
+  .opt-b .radio-opt { background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.2); color: rgba(255,255,255,.7); }
+  .opt-b .radio-opt.sel { background: rgba(255,255,255,.25); border-color: #fff; color: #fff; }
+  .opt-b .btn { background: #fff; color: #111; }
+
+  /* ── Option C — Primary suave ── */
+  .opt-c .card { background: #6B3FA0; }
+  .opt-c .card-title { color: #fff; }
+  .opt-c .card-sub { color: rgba(255,255,255,.6); }
+  .opt-c .flabel { color: rgba(255,255,255,.55); }
+  .opt-c .finput { background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.18); color: #fff; }
+  .opt-c .fta   { background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.18); color: #fff; }
+  .opt-c .radio-opt { background: rgba(255,255,255,.1); border: 1.5px solid rgba(255,255,255,.18); color: rgba(255,255,255,.65); }
+  .opt-c .radio-opt.sel { background: rgba(255,255,255,.22); border-color: #fff; color: #fff; }
+  .opt-c .btn { background: #fff; color: #6B3FA0; }
+
+  /* ── Option D — Gradiente oscuro ── */
+  .opt-d .card { background: linear-gradient(160deg, #111 0%, #1e1040 100%); }
+  .opt-d .card-title { color: #fff; }
+  .opt-d .card-sub { color: rgba(255,255,255,.4); }
+  .opt-d .flabel { color: rgba(255,255,255,.35); }
+  .opt-d .finput { background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.1); color: #fff; }
+  .opt-d .fta   { background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.1); color: #fff; }
+  .opt-d .radio-opt { background: rgba(255,255,255,.06); border: 1.5px solid rgba(255,255,255,.1); color: rgba(255,255,255,.5); }
+  .opt-d .radio-opt.sel { border-color: rgba(107,63,160,.8); color: #fff; background: rgba(107,63,160,.25); }
+  .opt-d .btn { background: linear-gradient(90deg,#6B3FA0,#D44E2A); color: #fff; }
+</style>
+</head>
+<body>
+<h1>Opciones de fondo — Formulario de aplicación</h1>
+<div class="grid">
+
+  <!-- A: Negro -->
+  <div class="opt-a">
+    <div class="option-label">A — Negro</div>
+    <div class="card">
+      <div class="card-title">Da el primer paso hoy.</div>
+      <div class="card-sub">El Team Leader te contacta personalmente.</div>
+      <div class="form-row">
+        <div><span class="flabel">Nombre</span><input class="finput" placeholder="Tu nombre"></div>
+        <div><span class="flabel">Apellido</span><input class="finput" placeholder="Tu apellido"></div>
+        <div><span class="flabel">WhatsApp</span><input class="finput" placeholder="+506 8888 8888"></div>
+        <div><span class="flabel">Email</span><input class="finput" placeholder="tu@correo.com"></div>
+      </div>
+      <div class="form-row-2" style="margin-bottom:12px">
+        <div><span class="flabel">Zona donde vivís</span><input class="finput" placeholder="Seleccioná tu zona"></div>
+      </div>
+      <div class="form-row-half">
+        <div>
+          <span class="flabel">¿Cuál es tu perfil?</span>
+          <div class="radio-row">
+            <div class="radio-opt sel">Nuevo en bienes raíces</div>
+            <div class="radio-opt">Agente con experiencia</div>
+            <div class="radio-opt">Explorando opciones</div>
+          </div>
+        </div>
+        <div><span class="flabel">¿A qué te dedicás?</span><input class="finput" placeholder="Ej: vendedor..."></div>
+      </div>
+      <div style="margin-bottom:12px"><span class="flabel">¿Por qué te interesa?</span><textarea class="fta" placeholder="Contanos sobre tus motivaciones..."></textarea></div>
+      <div class="form-row-half" style="margin-bottom:16px">
+        <div><span class="flabel">Link de tu CV</span><input class="finput" placeholder="Google Drive..."></div>
+        <div><span class="flabel">LinkedIn</span><input class="finput" placeholder="linkedin.com/in/..."></div>
+      </div>
+      <button class="btn">Enviar mi aplicación →</button>
+    </div>
+  </div>
+
+  <!-- B: Gradiente Sunrise -->
+  <div class="opt-b">
+    <div class="option-label">B — Gradiente Sunrise</div>
+    <div class="card">
+      <div class="card-title">Da el primer paso hoy.</div>
+      <div class="card-sub">El Team Leader te contacta personalmente.</div>
+      <div class="form-row">
+        <div><span class="flabel">Nombre</span><input class="finput" placeholder="Tu nombre"></div>
+        <div><span class="flabel">Apellido</span><input class="finput" placeholder="Tu apellido"></div>
+        <div><span class="flabel">WhatsApp</span><input class="finput" placeholder="+506 8888 8888"></div>
+        <div><span class="flabel">Email</span><input class="finput" placeholder="tu@correo.com"></div>
+      </div>
+      <div class="form-row-2" style="margin-bottom:12px">
+        <div><span class="flabel">Zona donde vivís</span><input class="finput" placeholder="Seleccioná tu zona"></div>
+      </div>
+      <div class="form-row-half">
+        <div>
+          <span class="flabel">¿Cuál es tu perfil?</span>
+          <div class="radio-row">
+            <div class="radio-opt sel">Nuevo en bienes raíces</div>
+            <div class="radio-opt">Agente con experiencia</div>
+            <div class="radio-opt">Explorando opciones</div>
+          </div>
+        </div>
+        <div><span class="flabel">¿A qué te dedicás?</span><input class="finput" placeholder="Ej: vendedor..."></div>
+      </div>
+      <div style="margin-bottom:12px"><span class="flabel">¿Por qué te interesa?</span><textarea class="fta" placeholder="Contanos sobre tus motivaciones..."></textarea></div>
+      <div class="form-row-half" style="margin-bottom:16px">
+        <div><span class="flabel">Link de tu CV</span><input class="finput" placeholder="Google Drive..."></div>
+        <div><span class="flabel">LinkedIn</span><input class="finput" placeholder="linkedin.com/in/..."></div>
+      </div>
+      <button class="btn">Enviar mi aplicación →</button>
+    </div>
+  </div>
+
+  <!-- C: Primary -->
+  <div class="opt-c">
+    <div class="option-label">C — Primary (morado)</div>
+    <div class="card">
+      <div class="card-title">Da el primer paso hoy.</div>
+      <div class="card-sub">El Team Leader te contacta personalmente.</div>
+      <div class="form-row">
+        <div><span class="flabel">Nombre</span><input class="finput" placeholder="Tu nombre"></div>
+        <div><span class="flabel">Apellido</span><input class="finput" placeholder="Tu apellido"></div>
+        <div><span class="flabel">WhatsApp</span><input class="finput" placeholder="+506 8888 8888"></div>
+        <div><span class="flabel">Email</span><input class="finput" placeholder="tu@correo.com"></div>
+      </div>
+      <div class="form-row-2" style="margin-bottom:12px">
+        <div><span class="flabel">Zona donde vivís</span><input class="finput" placeholder="Seleccioná tu zona"></div>
+      </div>
+      <div class="form-row-half">
+        <div>
+          <span class="flabel">¿Cuál es tu perfil?</span>
+          <div class="radio-row">
+            <div class="radio-opt sel">Nuevo en bienes raíces</div>
+            <div class="radio-opt">Agente con experiencia</div>
+            <div class="radio-opt">Explorando opciones</div>
+          </div>
+        </div>
+        <div><span class="flabel">¿A qué te dedicás?</span><input class="finput" placeholder="Ej: vendedor..."></div>
+      </div>
+      <div style="margin-bottom:12px"><span class="flabel">¿Por qué te interesa?</span><textarea class="fta" placeholder="Contanos sobre tus motivaciones..."></textarea></div>
+      <div class="form-row-half" style="margin-bottom:16px">
+        <div><span class="flabel">Link de tu CV</span><input class="finput" placeholder="Google Drive..."></div>
+        <div><span class="flabel">LinkedIn</span><input class="finput" placeholder="linkedin.com/in/..."></div>
+      </div>
+      <button class="btn">Enviar mi aplicación →</button>
+    </div>
+  </div>
+
+  <!-- D: Gradiente oscuro -->
+  <div class="opt-d">
+    <div class="option-label">D — Gradiente oscuro (negro → morado)</div>
+    <div class="card">
+      <div class="card-title">Da el primer paso hoy.</div>
+      <div class="card-sub">El Team Leader te contacta personalmente.</div>
+      <div class="form-row">
+        <div><span class="flabel">Nombre</span><input class="finput" placeholder="Tu nombre"></div>
+        <div><span class="flabel">Apellido</span><input class="finput" placeholder="Tu apellido"></div>
+        <div><span class="flabel">WhatsApp</span><input class="finput" placeholder="+506 8888 8888"></div>
+        <div><span class="flabel">Email</span><input class="finput" placeholder="tu@correo.com"></div>
+      </div>
+      <div class="form-row-2" style="margin-bottom:12px">
+        <div><span class="flabel">Zona donde vivís</span><input class="finput" placeholder="Seleccioná tu zona"></div>
+      </div>
+      <div class="form-row-half">
+        <div>
+          <span class="flabel">¿Cuál es tu perfil?</span>
+          <div class="radio-row">
+            <div class="radio-opt sel">Nuevo en bienes raíces</div>
+            <div class="radio-opt">Agente con experiencia</div>
+            <div class="radio-opt">Explorando opciones</div>
+          </div>
+        </div>
+        <div><span class="flabel">¿A qué te dedicás?</span><input class="finput" placeholder="Ej: vendedor..."></div>
+      </div>
+      <div style="margin-bottom:12px"><span class="flabel">¿Por qué te interesa?</span><textarea class="fta" placeholder="Contanos sobre tus motivaciones..."></textarea></div>
+      <div class="form-row-half" style="margin-bottom:16px">
+        <div><span class="flabel">Link de tu CV</span><input class="finput" placeholder="Google Drive..."></div>
+        <div><span class="flabel">LinkedIn</span><input class="finput" placeholder="linkedin.com/in/..."></div>
+      </div>
+      <button class="btn">Enviar mi aplicación →</button>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

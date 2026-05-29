@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tenant = await getTenantByDomain(domain).catch(() => null)
   const config = tenant ? await getTenantConfig(tenant.id).catch(() => null) : null
   const pageCfg = config?.pages_config?.find(p => p.slug === slug)
-  return { title: pageCfg?.title ?? slug }
+  return { title: pageCfg?.title ?? slug, alternates: { canonical: `/${slug}` } }
 }
 
 export default async function CustomPage({ params }: Props) {
@@ -28,21 +28,16 @@ export default async function CustomPage({ params }: Props) {
   if (!pageCfg) notFound()
 
   const html = pageCfg.settings?.content_html ?? ''
+  if (!html) notFound()
 
   return (
     <div style={{ paddingTop: 'var(--nav-h,68px)', minHeight: '100vh' }}>
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '60px 24px 80px' }}>
-        {html ? (
-          <div
-            className="prose-content"
-            dangerouslySetInnerHTML={{ __html: html }}
-            style={{ fontSize: 16, lineHeight: 1.8, color: '#333' }}
-          />
-        ) : (
-          <div style={{ textAlign: 'center', color: '#bbb', padding: '80px 0' }}>
-            <p style={{ fontSize: 16 }}>Esta página aún no tiene contenido.</p>
-          </div>
-        )}
+        <div
+          className="prose-content"
+          dangerouslySetInnerHTML={{ __html: html }}
+          style={{ fontSize: 16, lineHeight: 1.8, color: '#333' }}
+        />
       </div>
     </div>
   )

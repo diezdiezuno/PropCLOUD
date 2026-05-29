@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const config = tenant ? await getTenantConfig(tenant.id).catch(() => null) : null
   const pageCfg = config?.pages_config?.find(p => p.slug === 'contacto')
   const description = pageCfg?.settings?.seo_description ?? 'Ponete en contacto con nosotros. Estamos para ayudarte con tu próxima propiedad.'
-  return { title: 'Contacto', description }
+  return { title: 'Contacto', description, alternates: { canonical: '/contacto' } }
 }
 
 export default async function ContactoPage() {

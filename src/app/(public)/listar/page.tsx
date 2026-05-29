@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const config = tenant ? await getTenantConfig(tenant.id).catch(() => null) : null
   const pageCfg = config?.pages_config?.find(p => p.slug === 'listar')
   const description = pageCfg?.settings?.seo_description ?? 'Listá tu propiedad con nosotros. Completá el formulario y un agente te contactará.'
-  return { title: 'Listá tu propiedad', description }
+  return { title: 'Listá tu propiedad', description, alternates: { canonical: '/listar' } }
 }
 
 export default async function ListarPage() {

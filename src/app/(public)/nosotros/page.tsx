@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import NosotrosClientSunrise from './NosotrosClientSunrise'
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -10,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const config = tenant ? await getTenantConfig(tenant.id).catch(() => null) : null
   const pageCfg = config?.pages_config?.find(p => p.slug === 'nosotros')
   const description = pageCfg?.settings?.seo_description ?? 'Conocé nuestra historia, misión y el equipo detrás de nuestra inmobiliaria.'
-  return { title: 'Nosotros', description }
+  return { title: 'Nosotros', description, alternates: { canonical: '/nosotros' } }
 }
 
 export default async function NosotrosPage() {
@@ -27,20 +28,16 @@ export default async function NosotrosPage() {
     return <NosotrosClientSunrise />
   }
 
+  if (!html) notFound()
+
   return (
     <div style={{ paddingTop: 'var(--nav-h,68px)', minHeight: '100vh' }}>
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '60px 24px 80px' }}>
-        {html ? (
-          <div
-            className="prose-content"
-            dangerouslySetInnerHTML={{ __html: html }}
-            style={{ fontSize: 16, lineHeight: 1.8, color: '#333' }}
-          />
-        ) : (
-          <div style={{ textAlign: 'center', color: '#bbb', padding: '80px 0' }}>
-            <p style={{ fontSize: 16 }}>Esta página aún no tiene contenido.</p>
-          </div>
-        )}
+        <div
+          className="prose-content"
+          dangerouslySetInnerHTML={{ __html: html }}
+          style={{ fontSize: 16, lineHeight: 1.8, color: '#333' }}
+        />
       </div>
     </div>
   )

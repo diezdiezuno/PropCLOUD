@@ -34,6 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
         ...(ogImage && { images: [{ url: ogImage, width: 1200, height: 630 }] }),
       },
       twitter: { card: 'summary_large_image', description, ...(ogImage && { images: [ogImage] }) },
+      alternates: { canonical: '/' },
       ...(scVerification && {
         verification: { google: scVerification },
       }),

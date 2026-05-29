@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const config = tenant ? await getTenantConfig(tenant.id).catch(() => null) : null
   const pageCfg = config?.pages_config?.find(p => p.slug === 'reclutamiento')
   const description = pageCfg?.settings?.seo_description ?? 'Únete a nuestro equipo de profesionales en bienes raíces.'
-  return { title: 'Reclutamiento', description }
+  return { title: 'Reclutamiento', description, alternates: { canonical: '/reclutamiento' } }
 }
 
 export default async function ReclutamientoPage() {

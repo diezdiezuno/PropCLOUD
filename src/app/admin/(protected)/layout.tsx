@@ -14,7 +14,10 @@ export async function generateMetadata(): Promise<Metadata> {
     .single()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tenantName = (adminRecord as any)?.tenants?.name
-  return { title: tenantName ? `PropCLOUD Admin — ${tenantName}` : 'PropCLOUD Admin' }
+  return {
+    title: tenantName ? `PropCLOUD Admin — ${tenantName}` : 'PropCLOUD Admin',
+    robots: { index: false, follow: false, noarchive: true, nosnippet: true },
+  }
 }
 
 export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
