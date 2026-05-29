@@ -53,7 +53,9 @@ export async function getTenantByDomain(domain: string): Promise<Tenant | null> 
 }
 
 export async function getTenantConfig(tenantId: string): Promise<TenantConfig | null> {
-  const supabase = await createServerSupabaseClient()
+  // Use the public anon client — tenant_config is read by public pages and
+  // must not require an authenticated session. RLS must have a public-read policy.
+  const supabase = publicClient()
   const { data } = await supabase
     .from('tenant_config')
     .select('*')
