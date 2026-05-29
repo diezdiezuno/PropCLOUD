@@ -67,7 +67,7 @@ export default function ListarClientSunrise() {
   const [finca,       setFinca]       = useState('')
   const [plano,       setPlano]       = useState('')
   const [planoPdf,    setPlanoPdf]    = useState<File | null>(null)
-  const [price,       setPrice]       = useState('')
+  const [lot,         setLot]         = useState('')
   const [area,        setArea]        = useState('')
   const [bedrooms,    setBedrooms]    = useState('')
   const [bathrooms,   setBathrooms]   = useState('')
@@ -92,6 +92,9 @@ export default function ListarClientSunrise() {
     setCanton(v)
     setDistrito('')
   }
+
+  // Contact preference
+  const [contactPref, setContactPref] = useState<string[]>([])
 
   // UI state
   const [sending,  setSending]  = useState(false)
@@ -228,12 +231,13 @@ export default function ListarClientSunrise() {
       if (finca)       metadata.finca       = finca
       if (plano)       metadata.plano       = plano
       if (planoUrl)    metadata.plano_url   = planoUrl
-      if (price)       metadata.price       = price
+      if (lot)         metadata.lot         = lot
       if (area)        metadata.area        = area
       if (bedrooms)    metadata.bedrooms    = bedrooms
       if (bathrooms)   metadata.bathrooms   = bathrooms
       if (timeline)    metadata.timeline    = timeline
       if (description) metadata.description = description
+      if (contactPref.length > 0) metadata.contact_pref = contactPref.join(', ')
       if (mapLng !== null && mapLat !== null) {
         metadata.coordinates = `${mapLat}, ${mapLng}`
       }
@@ -262,11 +266,12 @@ export default function ListarClientSunrise() {
         address   && `Dirección: ${address}`,
         finca     && `N° de finca: ${finca}`,
         plano     && `N° de plano: ${plano}`,
-        price     && `Precio: ${price}`,
         area      && `Área construida: ${area} m²`,
+        lot       && `Área de terreno: ${lot} m²`,
         bedrooms  && `Habitaciones: ${bedrooms}`,
         bathrooms && `Baños: ${bathrooms}`,
         timeline  && `¿Cuándo vender? ${timeline}`,
+        contactPref.length > 0 && `Contacto preferido: ${contactPref.join(', ')}`,
         description && `Descripción: ${description}`,
         mapLat !== null && `Coordenadas: ${mapLat}, ${mapLng}`,
       ].filter(Boolean).join('\n')
@@ -316,14 +321,6 @@ export default function ListarClientSunrise() {
         padding: 'clamp(36px,4vw,56px) clamp(24px,3vw,48px) clamp(44px,5vw,68px)',
         maxWidth: 1440, margin: '0 auto',
       }}>
-        <div style={{
-          fontSize: 11, fontWeight: 500, letterSpacing: '.16em',
-          textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)',
-          marginBottom: 18,
-        }}>
-          SUNRISE | REMAX Central
-        </div>
-
         <h1 style={{
           fontFamily: 'var(--font-heading,serif)',
           fontSize: 'clamp(48px,7vw,88px)',
@@ -656,10 +653,50 @@ export default function ListarClientSunrise() {
           <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
             <SectionLabel>Características (opcional)</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
-              <Inp label="Área construida (m²)" value={area}      onChange={setArea}      placeholder="120" type="number" />
-              <Inp label="Precio estimado"       value={price}     onChange={setPrice}     placeholder="$250,000" />
-              <Inp label="Habitaciones"          value={bedrooms}  onChange={setBedrooms}  placeholder="3" type="number" />
-              <Inp label="Baños"                 value={bathrooms} onChange={setBathrooms} placeholder="2" type="number" />
+              <Inp label="Área construida (m²)" value={area}      onChange={setArea}      placeholder="120"  type="number" />
+              <Inp label="Área de terreno (m²)" value={lot}       onChange={setLot}       placeholder="300"  type="number" />
+              <Inp label="Habitaciones"          value={bedrooms}  onChange={setBedrooms}  placeholder="3"    type="number" />
+              <Inp label="Baños"                 value={bathrooms} onChange={setBathrooms} placeholder="2"    type="number" />
+            </div>
+          </fieldset>
+
+          {/* Contacto preferido */}
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <SectionLabel>¿Cómo querés que te contactemos?</SectionLabel>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {[
+                { value: 'WhatsApp', icon: '💬' },
+                { value: 'Email',    icon: '📧' },
+                { value: 'Llamada',  icon: '📞' },
+              ].map(({ value, icon }) => {
+                const selected = contactPref.includes(value)
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setContactPref(prev =>
+                      prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+                    )}
+                    style={{
+                      padding: '12px 20px',
+                      borderRadius: 100,
+                      border: selected ? '2px solid var(--primary,#6b2fa0)' : '2px solid #e0e0e0',
+                      background: selected ? 'rgba(107,63,160,.07)' : '#fff',
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      transition: 'all .15s',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    <span style={{ fontSize: 16 }}>{icon}</span>
+                    <span style={{
+                      fontSize: 13, fontWeight: selected ? 600 : 400,
+                      color: selected ? 'var(--primary,#6b2fa0)' : '#555',
+                    }}>{value}</span>
+                    {selected && <span style={{ fontSize: 12, color: 'var(--primary,#6b2fa0)' }}>✓</span>}
+                  </button>
+                )
+              })}
             </div>
           </fieldset>
 

@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
         lot: 'Área del lote (m²)', bedrooms: 'Habitaciones',
         bathrooms: 'Baños', description: 'Descripción',
         timeline: '¿Cuándo vender?', coordinates: 'Coordenadas',
+        contact_pref: 'Contacto preferido',
       }
 
       const contactRows: [string, string][] = [
