@@ -30,6 +30,7 @@ export default function AgentesPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
   async function load(tid: string) {
@@ -80,6 +81,7 @@ export default function AgentesPage() {
   async function saveAgent(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
+    setSaveError(null)
     const supabase = createClient()
 
     let photoUrl = form.photo_url || null
@@ -108,10 +110,20 @@ export default function AgentesPage() {
       photo_url: photoUrl,
     }
 
+    let dbError
     if (editing) {
-      await supabase.from('agents').update(payload).eq('id', editing.id)
+      const { error } = await supabase.from('agents').update(payload).eq('id', editing.id)
+      dbError = error
     } else {
-      await supabase.from('agents').insert({ ...payload, is_active: true })
+      const { error } = await supabase.from('agents').insert({ ...payload, is_active: true })
+      dbError = error
+    }
+
+    if (dbError) {
+      console.error('[agents] save error:', dbError)
+      setSaveError(`Error: ${dbError.message}`)
+      setSaving(false)
+      return
     }
 
     await load(tenantId)
@@ -213,7 +225,13 @@ export default function AgentesPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+            {saveError && (
+              <div style={{ marginTop: 16, padding: '10px 14px', background: '#fff5f5', border: '1px solid #fca5a5', borderRadius: 8, fontSize: 13, color: '#e53e3e' }}>
+                {saveError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button type="submit" disabled={saving || uploadingPhoto}
                 style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: (saving || uploadingPhoto) ? 'not-allowed' : 'pointer', opacity: (saving || uploadingPhoto) ? 0.7 : 1, fontFamily: 'inherit' }}>
                 {uploadingPhoto ? 'Subiendo foto…' : saving ? 'Guardando…' : editing ? 'Guardar cambios' : 'Agregar agente'}
