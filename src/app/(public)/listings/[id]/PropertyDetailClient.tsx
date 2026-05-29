@@ -102,15 +102,9 @@ export default function PropertyDetailClient({
         name: formName, email: formEmail, phone: formPhone,
         message: formMsg, source: 'propiedad',
         property_id: id, property_title: property?.title ?? '',
+        property_url: window.location.href,
       }),
     }).catch(() => {})
-
-    // Open WhatsApp if available
-    const phone = contactMode === 'office' ? officeWhatsapp : property?.agent_phone
-    if (phone) {
-      const msg = encodeURIComponent(`Hola, me interesa esta propiedad: ${property?.title}\n\nNombre: ${formName}\nCorreo: ${formEmail}${formPhone ? `\nTel: ${formPhone}` : ''}${formMsg ? `\n\n${formMsg}` : ''}`)
-      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${msg}`, '_blank')
-    }
     setFormSent(true)
     showToast(`${t.contact}: ${property?.title}`)
   }

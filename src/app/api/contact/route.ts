@@ -13,19 +13,19 @@ export async function POST(request: NextRequest) {
   try {
     const domain = request.headers.get('x-tenant-domain') ?? 'localhost'
     const body = await request.json()
-    const { name, email, phone, message, source, property_id, property_title } = body
+    const { name, email, phone, message, source, property_id, property_title, property_url } = body
 
-    // Resolve tenant
+    // Resolve tenant (with logo)
     let { data: tenant } = await supabase
-      .from('tenants').select('id, name').eq('domain', domain).single()
+      .from('tenants').select('id, name, logo_url').eq('domain', domain).single()
     if (!tenant) {
       const { data: fallback } = await supabase
-        .from('tenants').select('id, name').limit(1).single()
+        .from('tenants').select('id, name, logo_url').limit(1).single()
       tenant = fallback
     }
     if (!tenant) return NextResponse.json({ error: 'no tenant' }, { status: 400 })
 
-    // Get contact_email from tenant config
+    // Get notification emails
     const { data: cfg } = await supabase
       .from('tenant_config')
       .select('contact_email, contact_email_2')
@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
       const isProperty = source === 'propiedad' && property_title
 
       const rows: [string, string][] = [
-        ['Nombre',  name ?? ''],
-        ['Email',   email ?? ''],
-        ...(phone   ? [['Teléfono', phone] as [string, string]] : []),
+        ['Nombre',   name ?? ''],
+        ['Email',    email ?? ''],
+        ...(phone   ? [['Teléfono', phone]   as [string, string]] : []),
         ...(message ? [['Mensaje',  message] as [string, string]] : []),
       ]
 
@@ -69,14 +69,17 @@ export async function POST(request: NextRequest) {
         ? `Nueva consulta — ${property_title}`
         : `Nuevo mensaje de contacto — ${name}`
 
-      const headerTitle = isProperty
-        ? `Consulta sobre propiedad`
-        : `Nuevo mensaje de contacto`
+      const logoHtml = (tenant as Record<string, string | null>).logo_url
+        ? `<img src="${(tenant as Record<string, string | null>).logo_url}" alt="${tenant.name}" style="height:36px;object-fit:contain;display:block;margin-bottom:16px;">`
+        : `<div style="font-size:18px;font-weight:700;color:#111;margin-bottom:16px;">${tenant.name}</div>`
 
-      const propertyRow = isProperty ? `
-        <div style="margin-bottom:28px;padding:16px 20px;background:#f5f5f7;border-radius:10px;border:1px solid #e8e8e8;">
-          <div style="font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Propiedad</div>
-          <div style="font-size:15px;font-weight:600;color:#111;">${property_title}</div>
+      const propertyBlock = isProperty ? `
+        <div style="margin-bottom:28px;border:1px solid #e8e8e8;border-radius:12px;overflow:hidden;">
+          <div style="padding:16px 20px 12px;">
+            <div style="font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Propiedad consultada</div>
+            <div style="font-size:17px;font-weight:700;color:#111;line-height:1.3;">${property_title}</div>
+            ${property_url ? `<a href="${property_url}" style="display:inline-block;margin-top:10px;font-size:13px;color:#6b2fa0;text-decoration:none;font-weight:500;">Ver propiedad →</a>` : ''}
+          </div>
         </div>` : ''
 
       const html = `<!DOCTYPE html>
@@ -84,19 +87,27 @@ export async function POST(request: NextRequest) {
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f0f0f2;font-family:system-ui,-apple-system,sans-serif;">
   <div style="max-width:720px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e0e0e0;">
-    <div style="background:#111;padding:32px 48px;">
-      <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.45);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;">${tenant.name}</div>
-      <div style="font-size:24px;font-weight:700;color:#fff;line-height:1.2;">${headerTitle}</div>
+
+    <!-- Header — blanco con logo -->
+    <div style="background:#fff;padding:28px 48px 24px;border-bottom:1px solid #ebebeb;">
+      ${logoHtml}
+      <div style="font-size:22px;font-weight:700;color:#111;line-height:1.2;">${isProperty ? 'Nueva consulta de propiedad' : 'Nuevo mensaje de contacto'}</div>
+      <div style="font-size:13px;color:#999;margin-top:4px;">${tenant.name}</div>
     </div>
+
+    <!-- Body -->
     <div style="padding:36px 48px;">
-      ${propertyRow}
+      ${propertyBlock}
+      <div style="font-size:13px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px;">Datos del contacto</div>
       <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid #ebebeb;">
         ${tableRows}
       </table>
     </div>
+
+    <!-- Footer -->
     <div style="padding:20px 48px 28px;border-top:1px solid #f0f0f0;background:#fafafa;">
       <p style="font-size:12px;color:#bbb;margin:0;line-height:1.6;">
-        Enviado automáticamente desde ${tenant.name}. Respondé este email para contactar al cliente.
+        Enviado automáticamente desde ${tenant.name}. Respondé este email para contactar al cliente directamente.
       </p>
     </div>
   </div>
