@@ -69,9 +69,11 @@ export async function POST(request: NextRequest) {
         type: 'Tipo de propiedad', transaction: 'Transacción',
         provincia: 'Provincia', canton: 'Cantón', distrito: 'Distrito',
         address: 'Dirección', finca: 'Número de finca',
+        plano: 'Número de plano', plano_url: 'Plano PDF',
         price: 'Precio estimado', area: 'Área construida (m²)',
         lot: 'Área del lote (m²)', bedrooms: 'Habitaciones',
         bathrooms: 'Baños', description: 'Descripción',
+        timeline: '¿Cuándo vender?', coordinates: 'Coordenadas',
       }
 
       const contactRows: [string, string][] = [
@@ -83,7 +85,14 @@ export async function POST(request: NextRequest) {
       const listarRows: [string, string][] = isListar && listar_metadata
         ? Object.entries(listar_metadata as Record<string, string>)
             .filter(([, v]) => v)
-            .map(([k, v]) => [FIELD_LABELS[k] ?? k, v] as [string, string])
+            .map(([k, v]) => {
+              const label = FIELD_LABELS[k] ?? k
+              // Render URLs as clickable links
+              const displayVal = (k === 'plano_url' || k === 'property_url')
+                ? `<a href="${v}" style="color:#6b2fa0;">Ver archivo →</a>`
+                : v
+              return [label, displayVal] as [string, string]
+            })
         : []
 
       const messageRows: [string, string][] = (!isListar && message)

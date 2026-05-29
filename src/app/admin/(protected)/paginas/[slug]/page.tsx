@@ -49,6 +49,7 @@ export default function PageEditorPage() {
   const [newPosition, setNewPosition] = useState('')
   const [notificationEmails, setNotificationEmails] = useState('')
   const [reclutamientoTemplate, setReclutamientoTemplate] = useState<'default' | 'sunrise'>('default')
+  const [listarTemplate, setListarTemplate] = useState<'default' | 'sunrise'>('default')
 
   useEffect(() => {
     const supabase = createClient()
@@ -86,6 +87,7 @@ export default function PageEditorPage() {
       setReclutamientoIntro(s.reclutamiento_intro ?? '')
       setNotificationEmails(s.notification_emails ?? '')
       setReclutamientoTemplate(s.reclutamiento_template ?? 'default')
+      setListarTemplate(s.listar_template ?? 'default')
 
       setLoading(false)
     })
@@ -120,6 +122,7 @@ export default function PageEditorPage() {
       settings.content_html = contentHtml
     }
     if (slug === 'listar') {
+      settings.listar_template = listarTemplate
       settings.listar_fields = listarFields
       settings.listar_intro = listarIntro
       if (submissionWhatsapp.trim()) settings.submission_whatsapp = submissionWhatsapp.trim()
@@ -190,6 +193,38 @@ export default function PageEditorPage() {
         {/* ── LISTAR ── */}
         {slug === 'listar' && (
           <>
+            {tenantSlug === 'sunrise' && (
+              <Section title="Diseño de la página">
+                <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
+                  Seleccioná el diseño que se usará para esta página.
+                </p>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  {([
+                    { value: 'default', label: 'Estándar', desc: 'Formulario simple configurable con los campos seleccionados.' },
+                    { value: 'sunrise', label: 'Sunrise', desc: 'Landing page completa con hero, beneficios, proceso y formulario avanzado.' },
+                  ] as const).map(opt => (
+                    <label key={opt.value} style={{
+                      flex: 1, border: `2px solid ${listarTemplate === opt.value ? '#111' : '#e0e0e0'}`,
+                      borderRadius: 10, padding: '14px 16px', cursor: 'pointer',
+                      background: listarTemplate === opt.value ? '#f5f5f7' : '#fff',
+                      transition: 'border-color .15s',
+                    }}>
+                      <input
+                        type="radio"
+                        name="listar_template"
+                        value={opt.value}
+                        checked={listarTemplate === opt.value}
+                        onChange={() => setListarTemplate(opt.value)}
+                        style={{ display: 'none' }}
+                      />
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 4 }}>{opt.label}</div>
+                      <div style={{ fontSize: 12, color: '#888' }}>{opt.desc}</div>
+                    </label>
+                  ))}
+                </div>
+              </Section>
+            )}
+
             <Section title="Texto introductorio">
               <Inp label="Párrafo de introducción" value={listarIntro} onChange={setListarIntro}
                 placeholder="Completá el formulario y un agente se comunicará con vos." />
