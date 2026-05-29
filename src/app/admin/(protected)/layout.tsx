@@ -1,6 +1,21 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase'
 import AdminShell from './AdminShell'
+import type { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { title: 'PropCLOUD Admin' }
+  const { data: adminRecord } = await supabase
+    .from('tenant_admins')
+    .select('tenants(name)')
+    .eq('user_id', user.id)
+    .single()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tenantName = (adminRecord as any)?.tenants?.name
+  return { title: tenantName ? `PropCLOUD Admin — ${tenantName}` : 'PropCLOUD Admin' }
+}
 
 export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient()
