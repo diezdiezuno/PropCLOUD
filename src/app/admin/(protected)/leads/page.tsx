@@ -135,12 +135,12 @@ export default function AdminLeadsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {/* Header */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 130px 120px 150px',
+            display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 2fr 120px 150px',
             gap: 16, padding: '10px 20px',
             fontSize: 11, fontWeight: 600, color: '#aaa',
             textTransform: 'uppercase', letterSpacing: '.08em',
           }}>
-            <span>Nombre</span><span>Email</span><span>Fuente</span><span>Teléfono</span><span>Fecha</span>
+            <span>Nombre</span><span>Email</span><span>Propiedad / Fuente</span><span>Teléfono</span><span>Fecha</span>
           </div>
 
           {leads.map(lead => {
@@ -157,7 +157,7 @@ export default function AdminLeadsPage() {
                 <button
                   onClick={() => { setExpanded(prev => prev === lead.id ? null : lead.id); setConfirmDelete(null) }}
                   style={{
-                    display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 130px 120px 150px',
+                    display: 'grid', gridTemplateColumns: '1.2fr 1.2fr 2fr 120px 150px',
                     gap: 16, padding: '16px 20px', width: '100%', background: 'none',
                     border: 'none', cursor: 'pointer', textAlign: 'left',
                     fontFamily: 'inherit', alignItems: 'center',
@@ -168,7 +168,13 @@ export default function AdminLeadsPage() {
                     {hasNote && <span style={{ fontSize: 10, background: 'rgba(107,63,160,.12)', color: 'var(--primary,#6b2fa0)', padding: '2px 7px', borderRadius: 100, fontWeight: 500 }}>nota</span>}
                   </span>
                   <span style={{ fontSize: 13, color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.email ?? '—'}</span>
-                  <span><span style={sourceBadgeStyle(lead.source)}>{sourceLabel(lead.source)}</span></span>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
+                    {propTitle
+                      ? <span style={{ fontSize: 13, fontWeight: 500, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{propTitle}</span>
+                      : <span style={{ fontSize: 13, color: '#aaa' }}>—</span>
+                    }
+                    <span style={sourceBadgeStyle(lead.source)}>{sourceLabel(lead.source)}</span>
+                  </span>
                   <span style={{ fontSize: 13, color: '#555' }}>{lead.phone ?? '—'}</span>
                   <span style={{ fontSize: 12, color: '#aaa' }}>{formatDate(lead.created_at)}</span>
                 </button>
