@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Get notification emails from tenant config
     const { data: cfg } = await supabase
       .from('tenant_config')
-      .select('pages_config, contact_email')
+      .select('pages_config, contact_email, contact_email_2')
       .eq('tenant_id', tenant.id)
       .single()
 
@@ -41,9 +41,12 @@ export async function POST(request: NextRequest) {
     const notifEmails = (reclutSettings.notification_emails ?? '')
       .split(',').map((e: string) => e.trim()).filter(Boolean)
 
-    // Fallback to contact_email
-    const contactEmail = (cfg as Record<string, string | null> | null)?.contact_email
-    if (notifEmails.length === 0 && contactEmail) notifEmails.push(contactEmail)
+    // Fallback to contact_email / contact_email_2
+    const cfgData = cfg as Record<string, string | null> | null
+    if (notifEmails.length === 0) {
+      if (cfgData?.contact_email) notifEmails.push(cfgData.contact_email)
+      if (cfgData?.contact_email_2) notifEmails.push(cfgData.contact_email_2)
+    }
 
     // Save lead to DB
     const { error: insertError } = await supabase.from('leads').insert({

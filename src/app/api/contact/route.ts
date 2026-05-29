@@ -28,11 +28,12 @@ export async function POST(request: NextRequest) {
     // Get contact_email from tenant config
     const { data: cfg } = await supabase
       .from('tenant_config')
-      .select('contact_email')
+      .select('contact_email, contact_email_2')
       .eq('tenant_id', tenant.id)
       .single()
 
-    const notifEmail = (cfg as Record<string, string | null> | null)?.contact_email
+    const cfgData = cfg as Record<string, string | null> | null
+    const notifEmails = [cfgData?.contact_email, cfgData?.contact_email_2].filter(Boolean) as string[]
 
     // Save lead
     const { error: insertError } = await supabase.from('leads').insert({
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (insertError) console.error('[contact] DB insert error:', JSON.stringify(insertError))
 
     // Send email notification
-    if (resend && notifEmail) {
+    if (resend && notifEmails.length > 0) {
       const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@propcloud.app'
       const isProperty = source === 'propiedad' && property_title
 
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
 
       await resend.emails.send({
         from: fromEmail,
-        to: notifEmail,
+        to: notifEmails,
         replyTo: email ?? undefined,
         subject,
         html,

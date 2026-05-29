@@ -55,6 +55,7 @@ export default function GeneralPage() {
   // Contacto
   const [whatsapp, setWhatsapp] = useState('')
   const [contactEmail, setContactEmail] = useState('')
+  const [contactEmail2, setContactEmail2] = useState('')
   const [address, setAddress] = useState('')
   const [instagram, setInstagram] = useState('')
   const [facebook, setFacebook] = useState('')
@@ -110,7 +111,7 @@ export default function GeneralPage() {
 
       const [{ data: tenant }, { data: cfg }] = await Promise.all([
         supabase.from('tenants').select('name, domain, tagline, logo_url, favicon_url, theme').eq('id', adminRec.tenant_id).single(),
-        supabase.from('tenant_config').select('footer_logo_url, default_language, whatsapp, contact_email, address, instagram, facebook, linkedin, youtube, tiktok, twitter, ga_id').eq('tenant_id', adminRec.tenant_id).single(),
+        supabase.from('tenant_config').select('footer_logo_url, default_language, whatsapp, contact_email, contact_email_2, address, instagram, facebook, linkedin, youtube, tiktok, twitter, ga_id').eq('tenant_id', adminRec.tenant_id).single(),
       ])
 
       if (tenant) {
@@ -132,6 +133,7 @@ export default function GeneralPage() {
       if (cfg) {
         setWhatsapp(cfg.whatsapp ?? '')
         setContactEmail(cfg.contact_email ?? '')
+        setContactEmail2((cfg as Record<string, string | null>).contact_email_2 ?? '')
         setAddress(cfg.address ?? '')
         setInstagram(cfg.instagram ?? '')
         setFacebook(cfg.facebook ?? '')
@@ -182,6 +184,7 @@ export default function GeneralPage() {
         tenant_id: tenantId,
         whatsapp: whatsapp.trim() || null,
         contact_email: contactEmail.trim() || null,
+        contact_email_2: contactEmail2.trim() || null,
         address: address.trim() || null,
         instagram: instagram.trim() || null,
         facebook: facebook.trim() || null,
@@ -505,6 +508,12 @@ export default function GeneralPage() {
               <Field label="Email de contacto">
                 <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)}
                   placeholder="info@tuinmobiliaria.com" style={inputStyle} />
+              </Field>
+              <div style={{ height: 14 }} />
+              <Field label="Email de contacto 2 (opcional)">
+                <input type="email" value={contactEmail2} onChange={e => setContactEmail2(e.target.value)}
+                  placeholder="ventas@tuinmobiliaria.com" style={inputStyle} />
+                <p style={hintStyle}>Si se define, las notificaciones de formularios también se envían a este email.</p>
               </Field>
               <div style={{ height: 14 }} />
               <Field label="Dirección">
