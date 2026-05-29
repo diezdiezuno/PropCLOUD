@@ -88,10 +88,14 @@ export async function POST(request: NextRequest) {
             .filter(([, v]) => v)
             .map(([k, v]) => {
               const label = FIELD_LABELS[k] ?? k
-              // Render URLs as clickable links
-              const displayVal = (k === 'plano_url' || k === 'property_url')
-                ? `<a href="${v}" style="color:#6b2fa0;">Ver archivo →</a>`
-                : v
+              // Render URLs and coordinates as clickable links
+              let displayVal = v
+              if (k === 'plano_url' || k === 'property_url') {
+                displayVal = `<a href="${v}" style="color:#6b2fa0;">Ver archivo →</a>`
+              } else if (k === 'coordinates') {
+                const mapsUrl = `https://www.google.com/maps?q=${encodeURIComponent(v)}`
+                displayVal = `<a href="${mapsUrl}" style="color:#6b2fa0;" target="_blank">Ver en Google Maps →</a><br><span style="color:#999;font-size:12px;">${v}</span>`
+              }
               return [label, displayVal] as [string, string]
             })
         : []

@@ -248,18 +248,45 @@ export default function AdminLeadsPage() {
                         type: 'Tipo', transaction: 'Transacción',
                         provincia: 'Provincia', canton: 'Cantón', distrito: 'Distrito',
                         address: 'Dirección', finca: 'N° de finca',
-                        price: 'Precio', area: 'Área construida', lot: 'Área lote',
-                        bedrooms: 'Habitaciones', bathrooms: 'Baños', description: 'Descripción',
+                        plano: 'N° de plano', plano_url: 'Plano PDF',
+                        area: 'Área construida', lot: 'Área de terreno',
+                        bedrooms: 'Habitaciones', bathrooms: 'Baños',
+                        timeline: '¿Cuándo vender?', contact_pref: 'Contacto preferido',
+                        description: 'Descripción', coordinates: 'Ubicación en mapa',
                       }
-                      const entries = Object.entries(lead.metadata).filter(([k, v]) => k !== 'notes' && v)
+                      // Separate coordinates from the rest
+                      const coords = lead.metadata.coordinates ?? null
+                      const mapsUrl = coords
+                        ? `https://www.google.com/maps?q=${encodeURIComponent(coords)}`
+                        : null
+                      const entries = Object.entries(lead.metadata).filter(([k, v]) => k !== 'notes' && k !== 'coordinates' && v)
                       return (
                         <div style={{ marginBottom: 20 }}>
                           <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>Datos de la propiedad</div>
+
+                          {/* Google Maps link */}
+                          {mapsUrl && (
+                            <div style={{ marginBottom: 14, padding: '10px 14px', background: '#fff', borderRadius: 8, border: '1px solid #ebebeb', display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ fontSize: 16 }}>📍</span>
+                              <div>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: '#bbb', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>Ubicación marcada</div>
+                                <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                                  style={{ fontSize: 13, color: 'var(--primary,#6b2fa0)', textDecoration: 'none', fontWeight: 500 }}>
+                                  Ver en Google Maps →
+                                </a>
+                                <span style={{ fontSize: 11, color: '#bbb', marginLeft: 8 }}>{coords}</span>
+                              </div>
+                            </div>
+                          )}
+
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                             {entries.map(([k, v]) => (
                               <div key={k}>
                                 <div style={{ fontSize: 10, fontWeight: 600, color: '#bbb', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 2 }}>{LABELS[k] ?? k}</div>
-                                <div style={{ fontSize: 13, color: '#333' }}>{v}</div>
+                                {k === 'plano_url'
+                                  ? <a href={v} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'var(--primary,#6b2fa0)', textDecoration: 'none' }}>Ver PDF →</a>
+                                  : <div style={{ fontSize: 13, color: '#333' }}>{v}</div>
+                                }
                               </div>
                             ))}
                           </div>
