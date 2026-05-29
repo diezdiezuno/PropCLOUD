@@ -37,7 +37,7 @@ const BENEFITS = [
 
 const STEPS = [
   { num: '01', title: 'Contanos sobre tu propiedad', desc: 'Completá el formulario con los datos básicos. Un agente te contactará en menos de 24 horas.' },
-  { num: '02', title: 'Valuación y estrategia', desc: 'Visitamos la propiedad, analizamos el mercado y definimos juntos el precio y el plan de venta.' },
+  { num: '02', title: 'Estudio registral y valoración', desc: 'Realizamos un estudio registral completo, una valoración técnica de la propiedad y analizamos el mercado para definir juntos el precio y el plan de venta.' },
   { num: '03', title: 'Publicación y compradores', desc: 'Publicamos en los mejores portales y activamos nuestra red de compradores activos.' },
   { num: '04', title: 'Cierre exitoso', desc: 'Negociamos en tu nombre y coordinamos todos los trámites hasta la firma de escritura.' },
 ]
@@ -552,7 +552,7 @@ export default function ListarClientSunrise() {
                 onClick={useMyLocation}
                 disabled={geoLoading}
                 style={{
-                  position: 'absolute', bottom: 12, left: 12,
+                  position: 'absolute', top: 12, left: 12,
                   background: '#fff', border: '1px solid #e0e0e0',
                   borderRadius: 8, padding: '8px 14px',
                   fontSize: 12, fontWeight: 500, cursor: geoLoading ? 'wait' : 'pointer',

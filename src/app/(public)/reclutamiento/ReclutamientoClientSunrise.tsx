@@ -343,7 +343,7 @@ export default function ReclutamientoClient() {
 
         {sent ? (
           <div style={{
-            background: 'linear-gradient(160deg, #ffffff 0%, #eeece8 100%)',
+            background: 'linear-gradient(135deg,#f5f0fa 0%,#faf5eb 50%,#f0f5fa 100%)',
             border: '1px solid #e8e4df',
             borderRadius: 24, padding: 'clamp(40px,6vw,60px)',
             display: 'flex', flexDirection: 'column',
@@ -363,7 +363,7 @@ export default function ReclutamientoClient() {
           </div>
         ) : (
           <form onSubmit={submit} style={{
-            background: 'linear-gradient(160deg, #ffffff 0%, #eeece8 100%)',
+            background: 'linear-gradient(135deg,#f5f0fa 0%,#faf5eb 50%,#f0f5fa 100%)',
             border: '1px solid #e8e4df',
             borderRadius: 24, padding: 'clamp(32px,4vw,48px)',
           }}>
