@@ -94,10 +94,15 @@ export default function AgentesPage() {
       const { error: uploadError } = await supabase.storage
         .from('agent-photos')
         .upload(path, photoFile, { upsert: true })
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage.from('agent-photos').getPublicUrl(path)
-        photoUrl = urlData.publicUrl
+      if (uploadError) {
+        console.error('[agent-photos] upload error:', uploadError)
+        setSaveError(`Error al subir foto: ${uploadError.message}`)
+        setSaving(false)
+        setUploadingPhoto(false)
+        return
       }
+      const { data: urlData } = supabase.storage.from('agent-photos').getPublicUrl(path)
+      photoUrl = urlData.publicUrl
       setUploadingPhoto(false)
     }
 
