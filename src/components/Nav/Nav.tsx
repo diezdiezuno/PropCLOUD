@@ -38,6 +38,7 @@ interface NavProps {
 // Default page link slugs / hrefs — labels are resolved from t at render time
 const DEFAULT_LINK_DEFS = [
   { href: '/nosotros',      slug: 'nosotros',       defaultVisible: true },
+  { href: '/agentes',       slug: 'agentes',        defaultVisible: false },
   { href: '/listar',        slug: 'listar',         defaultVisible: true },
   { href: '/reclutamiento', slug: 'reclutamiento',  defaultVisible: false },
   { href: '/contacto',      slug: 'contacto',       defaultVisible: true },
@@ -46,6 +47,7 @@ const DEFAULT_LINK_DEFS = [
 function getPageLinks(pagesConfig: PageConfig[] | null | undefined, t: UIStrings) {
   const slugLabel: Record<string, string> = {
     nosotros: t.navAbout,
+    agentes: 'Agentes',
     listar: t.navListProperty,
     reclutamiento: t.navCareers,
     contacto: t.navContact,

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import type { PageConfig, PageSettings } from '@/types'
 
-const PREDEFINED_SLUGS = ['nosotros', 'contacto', 'listar', 'reclutamiento']
+const PREDEFINED_SLUGS = ['nosotros', 'agentes', 'contacto', 'listar', 'reclutamiento']
 
 const LISTAR_FIELD_OPTIONS = [
   { key: 'phone',       label: 'Teléfono' },
@@ -219,6 +219,17 @@ export default function PageEditorPage() {
           </>
         )}
 
+        {/* ── AGENTES ── */}
+        {slug === 'agentes' && (
+          <Section title="Equipo de agentes">
+            <p style={{ fontSize: 13, color: '#888', margin: 0 }}>
+              Esta página muestra automáticamente los agentes activos configurados en{' '}
+              <a href="/admin/agentes" style={{ color: 'var(--primary,#6b2fa0)' }}>Agentes</a>.
+              Activá o desactivá agentes desde ahí para controlar quiénes aparecen.
+            </p>
+          </Section>
+        )}
+
         {/* ── NOSOTROS ── */}
         {slug === 'nosotros' && (
           <>
@@ -411,8 +422,8 @@ export default function PageEditorPage() {
           </Section>
         )}
 
-        {/* ── SEO description — shown for all pages except contacto ── */}
-        {slug !== 'contacto' && (
+        {/* ── SEO description — shown for all pages except contacto and agentes ── */}
+        {slug !== 'contacto' && slug !== 'agentes' && (
           <Section title="SEO">
             <Inp
               label="Meta descripción (opcional)"
@@ -425,7 +436,7 @@ export default function PageEditorPage() {
         )}
 
         {/* Save bar */}
-        {(slug !== 'contacto' || tenantSlug === 'sunrise') && (
+        {slug !== 'agentes' && (slug !== 'contacto' || tenantSlug === 'sunrise') && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingTop: 4 }}>
             <button type="submit" disabled={saving}
               style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 24px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>

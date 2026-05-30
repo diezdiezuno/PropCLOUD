@@ -6,9 +6,10 @@ import type { PageConfig } from '@/types'
 
 const PREDEFINED_PAGES: PageConfig[] = [
   { slug: 'nosotros',      title: 'Nosotros',             visible: true,  order: 1, custom: false },
-  { slug: 'contacto',      title: 'Contacto',             visible: true,  order: 2, custom: false },
-  { slug: 'listar',        title: 'Listar mi propiedad',  visible: true,  order: 3, custom: false },
-  { slug: 'reclutamiento', title: 'Reclutamiento',        visible: false, order: 4, custom: false },
+  { slug: 'agentes',       title: 'Agentes',              visible: false, order: 2, custom: false },
+  { slug: 'contacto',      title: 'Contacto',             visible: true,  order: 3, custom: false },
+  { slug: 'listar',        title: 'Listar mi propiedad',  visible: true,  order: 4, custom: false },
+  { slug: 'reclutamiento', title: 'Reclutamiento',        visible: false, order: 5, custom: false },
 ]
 
 function mergePagesConfig(saved: PageConfig[] | null): PageConfig[] {
