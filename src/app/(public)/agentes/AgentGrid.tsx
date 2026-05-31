@@ -38,7 +38,7 @@ export default function AgentGrid({ agents }: { agents: Agent[] }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+      gridTemplateColumns: `repeat(${Math.min(agents.length, 4)}, minmax(0, 1fr))`,
       gap: 2, background: '#e8e4df',
       border: '1px solid #e8e4df', borderRadius: 20, overflow: 'hidden',
       marginTop: 'clamp(36px,4vw,52px)',
@@ -88,8 +88,8 @@ function AgentCard({ agent }: { agent: Agent }) {
             )}
             {agent.email && (
               <a href={`mailto:${agent.email}`}
-                style={{ fontSize: 13, color: '#555', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <span>✉️</span> {agent.email}
+                style={{ fontSize: 12, color: '#555', textDecoration: 'none', display: 'flex', alignItems: 'flex-start', gap: 6, wordBreak: 'break-all' }}>
+                <span style={{ flexShrink: 0 }}>✉️</span> {agent.email}
               </a>
             )}
           </div>
