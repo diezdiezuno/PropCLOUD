@@ -53,6 +53,20 @@ export default async function AgentesPage() {
     agents = []
   }
 
+  // Sort by position hierarchy
+  const POSITION_ORDER: Record<string, number> = {
+    'Broker': 0,
+    'Team Leader': 1,
+    'Asesor Inmobiliario': 2,
+    'Asistente': 3,
+  }
+  agents.sort((a, b) => {
+    const aOrder = POSITION_ORDER[a.position ?? ''] ?? 99
+    const bOrder = POSITION_ORDER[b.position ?? ''] ?? 99
+    if (aOrder !== bOrder) return aOrder - bOrder
+    return (a.name ?? '').localeCompare(b.name ?? '')
+  })
+
   return (
     <div style={{ paddingTop: 'var(--nav-h,68px)', fontFamily: 'var(--font-body,system-ui,sans-serif)' }}>
 
