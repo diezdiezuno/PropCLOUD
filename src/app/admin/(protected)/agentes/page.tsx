@@ -13,10 +13,20 @@ interface Agent {
   email: string | null
   phone: string | null
   photo_url: string | null
+  instagram: string | null
+  facebook: string | null
+  linkedin: string | null
+  tiktok: string | null
+  twitter: string | null
+  youtube: string | null
+  threads: string | null
   is_active: boolean
 }
 
-const emptyForm = () => ({ name: '', position: '' as Position | '', email: '', phone: '', photo_url: '' })
+const emptyForm = () => ({
+  name: '', position: '' as Position | '', email: '', phone: '', photo_url: '',
+  instagram: '', facebook: '', linkedin: '', tiktok: '', twitter: '', youtube: '', threads: '',
+})
 
 export default function AgentesPage() {
   const [loading,  setLoading]  = useState(true)
@@ -63,7 +73,11 @@ export default function AgentesPage() {
 
   function openEdit(a: Agent) {
     setEditing(a)
-    setForm({ name: a.name, position: a.position ?? '', email: a.email ?? '', phone: a.phone ?? '', photo_url: a.photo_url ?? '' })
+    setForm({
+      name: a.name, position: a.position ?? '', email: a.email ?? '', phone: a.phone ?? '', photo_url: a.photo_url ?? '',
+      instagram: a.instagram ?? '', facebook: a.facebook ?? '', linkedin: a.linkedin ?? '',
+      tiktok: a.tiktok ?? '', twitter: a.twitter ?? '', youtube: a.youtube ?? '', threads: a.threads ?? '',
+    })
     setPhotoFile(null)
     setPhotoPreview(a.photo_url ?? null)
     setShowForm(true)
@@ -113,6 +127,13 @@ export default function AgentesPage() {
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
       photo_url: photoUrl,
+      instagram: form.instagram.trim() || null,
+      facebook:  form.facebook.trim()  || null,
+      linkedin:  form.linkedin.trim()  || null,
+      tiktok:    form.tiktok.trim()    || null,
+      twitter:   form.twitter.trim()   || null,
+      youtube:   form.youtube.trim()   || null,
+      threads:   form.threads.trim()   || null,
     }
 
     let dbError
@@ -227,6 +248,34 @@ export default function AgentesPage() {
                   <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
                     placeholder="+506 8888-8888" style={inputSt} />
                 </Field>
+              </div>
+
+            </div>
+
+            {/* Social media — full width below the photo+fields grid */}
+            <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #f0f0f0' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 12 }}>
+                Redes sociales <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(URL completa)</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                {[
+                  { key: 'instagram', label: '📸 Instagram' },
+                  { key: 'facebook',  label: '👥 Facebook' },
+                  { key: 'linkedin',  label: 'in LinkedIn' },
+                  { key: 'tiktok',    label: '♪ TikTok' },
+                  { key: 'twitter',   label: '𝕏 X / Twitter' },
+                  { key: 'youtube',   label: '▶ YouTube' },
+                  { key: 'threads',   label: '@ Threads' },
+                ].map(({ key, label }) => (
+                  <Field key={key} label={label}>
+                    <input
+                      value={form[key as keyof typeof form] as string}
+                      onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
+                      placeholder="https://..."
+                      style={inputSt}
+                    />
+                  </Field>
+                ))}
               </div>
             </div>
 
