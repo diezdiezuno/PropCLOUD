@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 
-const POSITIONS = ['Broker', 'Team Leader', 'Asesor Inmobiliario', 'Asistente', 'Administrativo'] as const
+const POSITIONS = ['Broker', 'Team Leader', 'Asesor Inmobiliario', 'Administrativo', 'Asistente'] as const
 type Position = typeof POSITIONS[number]
 
 interface Agent {

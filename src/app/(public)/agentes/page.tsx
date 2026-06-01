@@ -58,8 +58,8 @@ export default async function AgentesPage() {
     'Broker': 0,
     'Team Leader': 1,
     'Asesor Inmobiliario': 2,
-    'Asistente': 3,
-    'Administrativo': 4,
+    'Administrativo': 3,
+    'Asistente': 4,
   }
   agents.sort((a, b) => {
     const aOrder = POSITION_ORDER[a.position ?? ''] ?? 99
