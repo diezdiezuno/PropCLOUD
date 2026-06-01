@@ -26,6 +26,14 @@ const SOCIALS: { key: keyof Agent; label: string; color: string; icon: React.Rea
   { key: 'threads',   label: 'Threads',   color: '#000000', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.196 9.49c.456-.73 1.33-2.658 4.795-2.693h.03c3.47 0 5.343 2.055 5.728 5.317a9.335 9.335 0 0 1 1.376.802c1.359.97 2.157 2.278 2.48 3.987.45 2.42-.516 5.007-2.516 6.937C17.347 23.218 15.065 24 12.186 24zm.25-9.646c-.105 0-.211.003-.317.009-1.205.07-2.087.42-2.557.838-.383.33-.55.737-.524 1.24.077 1.399 1.426 1.782 2.714 1.712 1.266-.069 2.078-.567 2.411-1.483.14-.39.213-.866.22-1.415a13.912 13.912 0 0 0-1.947-.901z"/></svg> },
 ]
 
+const POSITION_BADGE: Record<string, React.CSSProperties> = {
+  'Broker':             { background: '#111',                    color: '#fff',     border: '1px solid #111' },
+  'Team Leader':        { background: 'rgba(107,47,160,.1)',     color: '#6b2fa0',  border: '1px solid rgba(107,47,160,.2)' },
+  'Asesor Inmobiliario':{ background: 'rgba(37,99,235,.08)',     color: '#1d4ed8',  border: '1px solid rgba(37,99,235,.18)' },
+  'Asistente':          { background: 'rgba(5,150,105,.08)',     color: '#047857',  border: '1px solid rgba(5,150,105,.18)' },
+  'Administrativo':     { background: 'rgba(217,119,6,.08)',     color: '#b45309',  border: '1px solid rgba(217,119,6,.18)' },
+}
+
 export default function AgentGrid({ agents }: { agents: Agent[] }) {
   if (agents.length === 0) {
     return (
@@ -68,11 +76,7 @@ function AgentCard({ agent }: { agent: Agent }) {
             {agent.name}
           </div>
           {agent.position && (
-            <span style={{
-              display: 'inline-block', fontSize: 11, fontWeight: 500,
-              background: 'rgba(107,47,160,.08)', color: 'var(--primary,#6b2fa0)',
-              border: '1px solid rgba(107,47,160,.15)', borderRadius: 100, padding: '3px 10px',
-            }}>
+            <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, borderRadius: 100, padding: '3px 10px', ...POSITION_BADGE[agent.position] }}>
               {agent.position}
             </span>
           )}
