@@ -28,16 +28,21 @@ export default async function CustomPage({ params }: Props) {
   if (!pageCfg) notFound()
 
   const html = pageCfg.settings?.content_html ?? ''
-  if (!html) notFound()
 
   return (
     <div style={{ paddingTop: 'var(--nav-h,68px)', minHeight: '100vh' }}>
       <div style={{ maxWidth: 860, margin: '0 auto', padding: '60px 24px 80px' }}>
-        <div
-          className="prose-content"
-          dangerouslySetInnerHTML={{ __html: html }}
-          style={{ fontSize: 16, lineHeight: 1.8, color: '#333' }}
-        />
+        {html ? (
+          <div
+            className="prose-content"
+            dangerouslySetInnerHTML={{ __html: html }}
+            style={{ fontSize: 16, lineHeight: 1.8, color: '#333' }}
+          />
+        ) : (
+          <p style={{ color: '#bbb', fontSize: 15, textAlign: 'center', paddingTop: 60 }}>
+            Contenido próximamente.
+          </p>
+        )}
       </div>
     </div>
   )

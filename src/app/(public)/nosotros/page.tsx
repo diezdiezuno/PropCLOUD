@@ -28,7 +28,9 @@ export default async function NosotrosPage() {
     return <NosotrosClientSunrise />
   }
 
-  if (!html) notFound()
+  // Only 404 if the page is explicitly hidden — don't 404 just for missing content
+  // (Google may have indexed this URL; returning 404 sends a bad signal)
+  if (pageCfg && pageCfg.visible === false) notFound()
 
   return (
     <div style={{ paddingTop: 'var(--nav-h,68px)', minHeight: '100vh' }}>
