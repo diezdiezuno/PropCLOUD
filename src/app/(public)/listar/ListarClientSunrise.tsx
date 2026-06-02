@@ -5,6 +5,7 @@ import { track } from '@/lib/gtag'
 import { createClient } from '@/lib/supabase-browser'
 import { getCantons, getDistricts } from '@/data/cr-divisions'
 import type mapboxgl from 'mapbox-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
 
 /* ─── Constants ────────────────────────────────────────────── */
 
@@ -121,7 +122,6 @@ export default function ListarClientSunrise() {
     let marker: mapboxgl.Marker
 
     import('mapbox-gl').then(({ default: mapboxgl }) => {
-      import('mapbox-gl/dist/mapbox-gl.css').catch(() => {})
       mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!
 
       map = new mapboxgl.Map({

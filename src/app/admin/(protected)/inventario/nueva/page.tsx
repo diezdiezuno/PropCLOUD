@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { getCantons, getDistricts } from '@/data/cr-divisions'
 import type mapboxgl from 'mapbox-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
 
 /* ── Constants ───────────────────────────────────────────────── */
 const PROVINCIAS = ['San José', 'Alajuela', 'Cartago', 'Heredia', 'Guanacaste', 'Puntarenas', 'Limón']
@@ -109,7 +110,6 @@ export default function NuevaPropiedadPage() {
     let map: mapboxgl.Map
 
     import('mapbox-gl').then(({ default: mb }) => {
-      import('mapbox-gl/dist/mapbox-gl.css').catch(() => {})
       mb.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!
       map = new mb.Map({
         container: mapContainerRef.current!,
