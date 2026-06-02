@@ -105,12 +105,15 @@ export default function NuevaPropiedadPage() {
 
   /* ── Mapbox init ── */
   useEffect(() => {
-    console.log('[map] container:', !!mapContainerRef.current, 'token:', !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN)
+    // Wait until loading is done — the map container div doesn't exist until then
+    if (loading) return
     if (!mapContainerRef.current || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) return
+    // Don't re-initialize if already running
+    if (mapRef.current) return
     let map: mapboxgl.Map
 
     import('mapbox-gl').then(({ default: mb }) => {
-      console.log('[map] mapbox-gl loaded, initializing…')
+      if (!mapContainerRef.current) return
       mb.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!
       map = new mb.Map({
         container: mapContainerRef.current!,
@@ -141,7 +144,7 @@ export default function NuevaPropiedadPage() {
       mapRef.current = map
     })
     return () => { if (map) map.remove() }
-  }, [])
+  }, [loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const flyToLocation = useCallback((lng: number, lat: number) => {
     if (!mapRef.current) return
