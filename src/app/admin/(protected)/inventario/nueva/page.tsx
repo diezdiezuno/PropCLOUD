@@ -322,16 +322,53 @@ export default function NuevaPropiedadPage() {
 
   if (loading) return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>
 
+  const TABS = [
+    { id: 1, label: 'Captación',       icon: '📋' },
+    { id: 2, label: 'Características', icon: '📐' },
+    { id: 3, label: 'Amenidades',      icon: '✨' },
+    { id: 4, label: 'Precio',          icon: '💰' },
+    { id: 5, label: 'Descripción',     icon: '📝' },
+    { id: 6, label: 'Fotos y videos',  icon: '📸' },
+  ]
+
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 24 }}>
         <button onClick={() => router.push('/admin/inventario')}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 13, padding: 0, fontFamily: 'inherit', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
           ← Inventario
         </button>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>Nueva propiedad</h1>
-        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Completá los datos de la propiedad. Podés guardar como borrador en cualquier momento.</p>
+        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Completá cada sección. Los demás pasos se habilitan al guardar el primero.</p>
+      </div>
+
+      {/* Tab bar */}
+      <div style={{
+        display: 'flex', gap: 0,
+        borderBottom: '2px solid #ebebeb',
+        marginBottom: 24, overflowX: 'auto',
+      }}>
+        {TABS.map((t, i) => {
+          const isActive  = t.id === 1
+          const isLocked  = t.id > 1
+          return (
+            <div key={t.id} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '11px 20px', cursor: isLocked ? 'default' : 'pointer',
+              borderBottom: isActive ? '2px solid #111' : '2px solid transparent',
+              marginBottom: -2, whiteSpace: 'nowrap',
+              color: isActive ? '#111' : isLocked ? '#ccc' : '#666',
+              fontWeight: isActive ? 600 : 400,
+              fontSize: 13,
+              transition: 'color .15s',
+            }}>
+              <span style={{ fontSize: 15 }}>{t.icon}</span>
+              {i + 1}. {t.label}
+              {isLocked && <span style={{ fontSize: 10, color: '#ddd' }}>🔒</span>}
+            </div>
+          )
+        })}
       </div>
 
       <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -525,16 +562,15 @@ export default function NuevaPropiedadPage() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', paddingTop: 8 }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', paddingTop: 8, paddingBottom: 16 }}>
           <button type="submit" disabled={saving}
             style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
-            {saving ? 'Guardando…' : 'Guardar y continuar →'}
+            {saving ? 'Guardando…' : 'Guardar y pasar al siguiente tab →'}
           </button>
           <button type="button" onClick={() => router.push('/admin/inventario')}
             style={{ background: 'none', border: '1px solid #e0e0e0', borderRadius: 10, padding: '11px 20px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', color: '#555' }}>
             Cancelar
           </button>
-          <span style={{ fontSize: 12, color: '#bbb' }}>Las siguientes secciones (características, fotos, descripción) se completan en el paso siguiente.</span>
         </div>
       </form>
     </div>
