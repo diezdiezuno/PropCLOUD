@@ -7,14 +7,15 @@ const NAV = [
   { href: '/admin/general',      icon: '⚙️',  label: 'General' },
   { href: '/admin/mapa',         icon: '🗺️',  label: 'Mapa' },
   { href: '/admin/inventario',   icon: '🏘️',  label: 'Inventario' },
+  { href: '/admin/clientes',     icon: '👤',  label: 'Clientes' },
   { href: '/admin/propiedades',  icon: '🏠',  label: 'Propiedades' },
   { href: '/admin/paginas',      icon: '📄',  label: 'Páginas' },
-  { href: '/admin/fuentes',        icon: '🔗',  label: 'Fuentes' },
-  { href: '/admin/agentes',         icon: '👥',  label: 'Agentes' },
-  { href: '/admin/leads',          icon: '📬',  label: 'Leads' },
-  { href: '/admin/metricas',       icon: '📊',  label: 'Métricas' },
-  { href: '/admin/reclutamiento',  icon: '🤝',  label: 'Reclutamiento' },
-  { href: '/admin/seo',            icon: '🔍',  label: 'SEO' },
+  { href: '/admin/fuentes',      icon: '🔗',  label: 'Fuentes' },
+  { href: '/admin/agentes',      icon: '👥',  label: 'Agentes' },
+  { href: '/admin/leads',        icon: '📬',  label: 'Leads' },
+  { href: '/admin/metricas',     icon: '📊',  label: 'Métricas' },
+  { href: '/admin/reclutamiento',icon: '🤝',  label: 'Reclutamiento' },
+  { href: '/admin/seo',          icon: '🔍',  label: 'SEO' },
 ]
 
 interface Tenant { id: string; name: string; slug: string; logo_url: string | null; theme: Record<string, string> }
@@ -90,6 +91,32 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
           {children}
         </div>
       </main>
+
+      {/* ── Global "+" button — add client from anywhere ─────── */}
+      <a
+        href="/admin/clientes?new=1"
+        title="Nuevo cliente"
+        style={{
+          position: 'fixed', bottom: 28, right: 28,
+          width: 48, height: 48, borderRadius: '50%',
+          background: '#111', color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 24, textDecoration: 'none',
+          boxShadow: '0 4px 16px rgba(0,0,0,.25)',
+          zIndex: 200, lineHeight: 1,
+          transition: 'transform .15s, box-shadow .15s',
+        }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.08)'
+          ;(e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 6px 20px rgba(0,0,0,.32)'
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1)'
+          ;(e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 16px rgba(0,0,0,.25)'
+        }}
+      >
+        +
+      </a>
     </div>
   )
 }
