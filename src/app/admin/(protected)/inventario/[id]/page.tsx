@@ -57,11 +57,33 @@ interface PropertyFull {
 }
 interface PropertyType { id: string; label: string; value: string; icon: string | null }
 interface Agent        { id: string; name: string }
-interface LinkedContact { id: string; name: string; last_name: string | null; cedula: string | null }
+interface LinkedContact { id: string; name: string; last_name: string | null; cedula: string | null; photo_url: string | null }
 interface OwnerResult  {
   type: 'contact' | 'company'
   id: string; name: string; subtitle: string
   linkedContacts?: LinkedContact[]
+}
+
+/* ── Avatar helpers (same palette as ClientesClient) ─────────────── */
+const AVATAR_PALETTE = [
+  '#5B7FFF', '#E85D75', '#F59E0B', '#10B981',
+  '#8B5CF6', '#EF4444', '#06B6D4', '#F97316',
+  '#84CC16', '#EC4899', '#14B8A6', '#6366F1',
+]
+function nameToColor(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length]
+}
+function ownerInitials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return fullName.slice(0, 2).toUpperCase()
+}
+function coInitials(name: string): string {
+  const words = name.trim().split(/\s+/)
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+  return (words[0][0] + words[1][0]).toUpperCase()
 }
 
 /* ── Shared style ─────────────────────────────────────────────── */
@@ -824,7 +846,7 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
   async function fetchLinkedContacts(companyId: string): Promise<LinkedContact[]> {
     const { data } = await createClient()
       .from('crm_contact_companies')
-      .select('crm_contacts(id,name,last_name,cedula)')
+      .select('crm_contacts(id,name,last_name,cedula,photo_url)')
       .eq('company_id', companyId)
     if (!data) return []
     return (data as unknown as { crm_contacts: LinkedContact | null }[])
@@ -926,42 +948,61 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
       {/* ── Owners list ── */}
       {owners.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-          {owners.map(o => (
+          {owners.map(o => {
+            const ac = nameToColor(o.name)
+            return (
             <div key={o.id} style={{ borderRadius: 10, border: '1px solid #e2e5ea', overflow: 'hidden' }}>
               {/* Owner header row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f9fafb' }}>
-                <div style={{ width: 36, height: 36, borderRadius: o.type === 'company' ? 8 : '50%', background: o.type === 'contact' ? '#5B7FFF22' : '#F59E0B22', border: `2px solid ${o.type === 'contact' ? '#5B7FFF44' : '#F59E0B44'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-                  {o.type === 'contact' ? '👤' : '🏢'}
+                {/* Avatar */}
+                <div style={{ width: 36, height: 36, borderRadius: o.type === 'company' ? 8 : '50%', background: ac + '20', border: `2px solid ${ac}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: ac, flexShrink: 0, letterSpacing: '-0.5px' }}>
+                  {o.type === 'company' ? coInitials(o.name) : ownerInitials(o.name)}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Name — link to vcard/drawer */}
+                <a href={o.type === 'contact' ? `/admin/clientes?id=${o.id}` : `/admin/empresas?id=${o.id}`}
+                  style={{ flex: 1, minWidth: 0, textDecoration: 'none' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#0d0f12', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.name}</div>
                   <div style={{ fontSize: 11, color: '#9ca3af' }}>{o.subtitle}</div>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: o.type === 'contact' ? '#5B7FFF18' : '#F59E0B18', color: o.type === 'contact' ? '#5B7FFF' : '#D97706', flexShrink: 0 }}>
+                </a>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: ac + '18', color: ac, flexShrink: 0 }}>
                   {o.type === 'contact' ? 'Físico' : 'Jurídico'}
                 </span>
                 <button type="button" onClick={() => removeOwner(o.id)}
                   style={{ width: 26, height: 26, borderRadius: '50%', background: '#fff', border: '1px solid #e2e5ea', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#e53e3e', flexShrink: 0, fontFamily: 'inherit' }}>×</button>
               </div>
 
-              {/* Linked contacts (companies only) */}
+              {/* Linked contacts (jurídico only) */}
               {o.type === 'company' && (
                 <div style={{ background: '#fff', borderTop: '1px solid #f0f0f0' }}>
                   {o.linkedContacts && o.linkedContacts.length > 0 ? (
-                    o.linkedContacts.map((c, ci) => (
-                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px 9px 24px', borderTop: ci > 0 ? '1px solid #f9fafb' : 'none' }}>
-                        <span style={{ color: '#ddd', fontSize: 12, flexShrink: 0 }}>└</span>
-                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#5B7FFF18', border: '1.5px solid #5B7FFF33', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>👤</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>
-                            {[c.name, c.last_name].filter(Boolean).join(' ')}
-                          </span>
-                          {c.cedula && <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 8, fontFamily: 'monospace' }}>{c.cedula}</span>}
-                        </div>
-                      </div>
-                    ))
+                    o.linkedContacts.map((c, ci) => {
+                      const cac  = nameToColor(c.name + (c.last_name ?? ''))
+                      const init = ownerInitials([c.name, c.last_name].filter(Boolean).join(' '))
+                      return (
+                        <a key={c.id} href={`/admin/clientes?id=${c.id}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px 9px 22px', borderTop: ci > 0 ? '1px solid #f9fafb' : 'none', textDecoration: 'none' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = '#f9fafb'}
+                          onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'}
+                        >
+                          <span style={{ color: '#ddd', fontSize: 12, flexShrink: 0 }}>└</span>
+                          {/* Avatar físico */}
+                          <div style={{ width: 28, height: 28, borderRadius: '50%', overflow: 'hidden', background: c.photo_url ? 'transparent' : cac + '22', border: `2px solid ${cac}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: cac, flexShrink: 0 }}>
+                            {c.photo_url
+                              ? <img src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : init}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>
+                              {[c.name, c.last_name].filter(Boolean).join(' ')}
+                            </span>
+                            {c.cedula && <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 8, fontFamily: 'monospace' }}>{c.cedula}</span>}
+                          </div>
+                          <span style={{ fontSize: 11, color: '#c5cad3', flexShrink: 0 }}>→</span>
+                        </a>
+                      )
+                    })
                   ) : (
-                    <div style={{ padding: '9px 14px 9px 24px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ padding: '9px 14px 9px 22px', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ color: '#ddd', fontSize: 12 }}>└</span>
                       <span style={{ fontSize: 12, color: '#bbb', fontStyle: 'italic' }}>Sin personas físicas vinculadas a esta empresa</span>
                     </div>
@@ -969,7 +1010,7 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
                 </div>
               )}
             </div>
-          ))}
+          )})}
         </div>
       )}
 
