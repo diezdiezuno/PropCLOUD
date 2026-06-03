@@ -30,6 +30,7 @@ const CURRENCIES = [
 /* ── Types ───────────────────────────────────────────────────── */
 interface PropertyType { id: string; label: string; value: string; icon: string | null }
 interface Agent        { id: string; name: string }
+interface OwnerResult  { type: 'contact' | 'company'; id: string; name: string; subtitle: string }
 
 /* ── Component ───────────────────────────────────────────────── */
 export default function NuevaPropiedadPage() {
@@ -65,6 +66,33 @@ export default function NuevaPropiedadPage() {
   const [gmapsLink,    setGmapsLink]    = useState('')
   const [gmapsError,   setGmapsError]   = useState('')
   const [geocoding,    setGeocoding]    = useState(false)
+
+  /* ── Owner ── */
+  const [ownerSelected,  setOwnerSelected]  = useState<OwnerResult | null>(null)
+  const [ownerQuery,     setOwnerQuery]     = useState('')
+  const [ownerResults,   setOwnerResults]   = useState<OwnerResult[]>([])
+  const [ownerSearching, setOwnerSearching] = useState(false)
+  const [ownerDropOpen,  setOwnerDropOpen]  = useState(false)
+  const [ownerNoResults, setOwnerNoResults] = useState(false)
+  const [ownerMode,      setOwnerMode]      = useState<'search' | 'create-contact' | 'create-company'>('search')
+  const ownerWrapRef  = useRef<HTMLDivElement>(null)
+  const ownerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // create-contact fields
+  const [cName,     setCName]     = useState('')
+  const [cLastName, setCLastName] = useState('')
+  const [cCedula,   setCCedula]   = useState('')
+  const [cPhone,    setCPhone]    = useState('')
+  const [cEmail,    setCEmail]    = useState('')
+  const [cSaving,   setCSaving]   = useState(false)
+  const [cError,    setCError]    = useState('')
+  // create-company fields
+  const [coName,       setCoName]       = useState('')
+  const [coTrade,      setCoTrade]      = useState('')
+  const [coCedJur,     setCoCedJur]     = useState('')
+  const [coLooking,    setCoLooking]    = useState(false)
+  const [coLookResult, setCoLookResult] = useState<{ name: string } | null>(null)
+  const [coSaving,     setCoSaving]     = useState(false)
+  const [coError,      setCoError]      = useState('')
 
   /* File uploads */
   const [informeFile,  setInformeFile]  = useState<File | null>(null)
@@ -262,6 +290,70 @@ export default function NuevaPropiedadPage() {
     )
   }
 
+  /* ── Owner search & create ── */
+  useEffect(() => {
+    function handle(e: MouseEvent) { if (ownerWrapRef.current && !ownerWrapRef.current.contains(e.target as Node)) setOwnerDropOpen(false) }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [])
+
+  async function searchOwner(q: string) {
+    if (q.trim().length < 2) { setOwnerResults([]); setOwnerNoResults(false); return }
+    setOwnerSearching(true); setOwnerNoResults(false)
+    const sb   = createClient()
+    const term = `%${q.trim()}%`
+    const [{ data: contacts }, { data: companies }] = await Promise.all([
+      sb.from('crm_contacts').select('id,name,last_name,cedula,email').eq('tenant_id', tenantId)
+        .or(`name.ilike.${term},last_name.ilike.${term},cedula.ilike.${term}`).limit(5),
+      sb.from('crm_companies').select('id,name,trade_name,cedula_juridica').eq('tenant_id', tenantId)
+        .or(`name.ilike.${term},trade_name.ilike.${term},cedula_juridica.ilike.${term}`).limit(5),
+    ])
+    const out: OwnerResult[] = []
+    for (const c of contacts  ?? []) out.push({ type: 'contact', id: c.id, name: [c.name, c.last_name].filter(Boolean).join(' '), subtitle: c.email ?? c.cedula ?? 'Persona física' })
+    for (const co of companies ?? []) out.push({ type: 'company', id: co.id, name: co.trade_name || co.name, subtitle: co.trade_name ? co.name : (co.cedula_juridica ?? 'Empresa') })
+    setOwnerResults(out); setOwnerNoResults(out.length === 0); setOwnerSearching(false)
+  }
+
+  function handleOwnerQuery(v: string) {
+    setOwnerQuery(v); setOwnerDropOpen(true)
+    if (ownerTimerRef.current) clearTimeout(ownerTimerRef.current)
+    ownerTimerRef.current = setTimeout(() => searchOwner(v), 300)
+  }
+
+  async function createContact(e: React.FormEvent) {
+    e.preventDefault(); setCSaving(true); setCError('')
+    if (!cName.trim()) { setCError('El nombre es requerido.'); setCSaving(false); return }
+    const { data, error } = await createClient().from('crm_contacts')
+      .insert({ tenant_id: tenantId, name: cName.trim(), last_name: cLastName.trim() || null, cedula: cCedula.trim() || null, cedula_tipo: 'nacional', phone: cPhone.trim() || null, email: cEmail.trim() || null, active: true })
+      .select('id,name,last_name,email,cedula').single()
+    if (error) { setCError(`Error: ${error.message}`); setCSaving(false); return }
+    setOwnerSelected({ type: 'contact', id: data.id, name: [data.name, data.last_name].filter(Boolean).join(' '), subtitle: data.email ?? data.cedula ?? 'Persona física' })
+    setOwnerMode('search'); setCSaving(false); setCName(''); setCLastName(''); setCCedula(''); setCPhone(''); setCEmail('')
+  }
+
+  async function lookupCedJur(v: string) {
+    setCoCedJur(v); setCoLookResult(null)
+    const digits = v.replace(/\D/g, '')
+    if (digits.length < 9) return
+    setCoLooking(true)
+    try {
+      const res = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${digits}`)
+      if (res.ok) { const j = await res.json(); if (j.nombre) { setCoLookResult({ name: j.nombre }); if (!coName) setCoName(j.nombre) } }
+    } catch { /* silent */ }
+    setCoLooking(false)
+  }
+
+  async function createCompany(e: React.FormEvent) {
+    e.preventDefault(); setCoSaving(true); setCoError('')
+    if (!coName.trim()) { setCoError('La razón social es requerida.'); setCoSaving(false); return }
+    const { data, error } = await createClient().from('crm_companies')
+      .insert({ tenant_id: tenantId, name: coName.trim(), trade_name: coTrade.trim() || null, cedula_juridica: coCedJur.replace(/\D/g, '') || null })
+      .select('id,name,trade_name,cedula_juridica').single()
+    if (error) { setCoError(`Error: ${error.message}`); setCoSaving(false); return }
+    setOwnerSelected({ type: 'company', id: data.id, name: data.trade_name || data.name, subtitle: data.trade_name ? data.name : (data.cedula_juridica ?? 'Empresa') })
+    setOwnerMode('search'); setCoSaving(false); setCoName(''); setCoTrade(''); setCoCedJur(''); setCoLookResult(null)
+  }
+
   /* ── Save (draft) ── */
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -305,9 +397,10 @@ export default function NuevaPropiedadPage() {
       images:       [],
       title:        '',
       features: {
-        ...(informeUrl  ? { informe_registral_url: informeUrl }  : {}),
-        ...(planoDocUrl ? { plano_catastrado_url: planoDocUrl }   : {}),
-        ...(gmapsLink   ? { gmaps_link: gmapsLink }               : {}),
+        ...(informeUrl    ? { informe_registral_url: informeUrl }          : {}),
+        ...(planoDocUrl   ? { plano_catastrado_url: planoDocUrl }           : {}),
+        ...(gmapsLink     ? { gmaps_link: gmapsLink }                       : {}),
+        ...(ownerSelected ? { owner_id: ownerSelected.id, owner_type: ownerSelected.type, owner_name: ownerSelected.name, owner_subtitle: ownerSelected.subtitle } : {}),
       },
     }).select('id').single()
 
@@ -317,7 +410,7 @@ export default function NuevaPropiedadPage() {
       return
     }
 
-    router.push(`/admin/inventario/${data.id}?tab=2`)
+    router.push(`/admin/inventario/${data.id}?tab=1`)
   }
 
   if (loading) return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>
@@ -372,6 +465,123 @@ export default function NuevaPropiedadPage() {
       </div>
 
       <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* ── SECCIÓN 0: Dueño ── */}
+        <FormSection title="Información del dueño">
+          {ownerSelected ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: '#f9fafb', borderRadius: 10, border: '1px solid #e2e5ea' }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: ownerSelected.type === 'contact' ? '#5B7FFF22' : '#F59E0B22', border: `2px solid ${ownerSelected.type === 'contact' ? '#5B7FFF44' : '#F59E0B44'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
+                {ownerSelected.type === 'contact' ? '👤' : '🏢'}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>{ownerSelected.name}</div>
+                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>{ownerSelected.subtitle}</div>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: ownerSelected.type === 'contact' ? '#5B7FFF18' : '#F59E0B18', color: ownerSelected.type === 'contact' ? '#5B7FFF' : '#D97706' }}>
+                {ownerSelected.type === 'contact' ? 'Persona física' : 'Empresa'}
+              </span>
+              <button type="button" onClick={() => setOwnerSelected(null)}
+                style={{ fontSize: 12, color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Cambiar</button>
+            </div>
+
+          ) : ownerMode === 'search' ? (
+            <>
+              <div ref={ownerWrapRef} style={{ position: 'relative', marginBottom: ownerNoResults ? 12 : 0 }}>
+                <input value={ownerQuery} onChange={e => handleOwnerQuery(e.target.value)}
+                  onFocus={() => ownerQuery.length >= 2 && setOwnerDropOpen(true)}
+                  placeholder="Buscar por nombre, cédula o empresa…"
+                  style={{ ...inputSt, paddingLeft: 36 }} />
+                <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#aaa', fontSize: 14, pointerEvents: 'none' }}>🔍</span>
+                {ownerSearching && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#aaa' }}>…</span>}
+                {ownerDropOpen && ownerResults.length > 0 && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: '1px solid #e2e5ea', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', zIndex: 50, overflow: 'hidden' }}>
+                    {ownerResults.map((r, i) => (
+                      <div key={r.id} onClick={() => { setOwnerSelected(r); setOwnerDropOpen(false); setOwnerQuery(''); setOwnerResults([]) }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', borderTop: i > 0 ? '1px solid #f4f5f7' : 'none', transition: 'background .1s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f9fafb'}
+                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                        <span style={{ fontSize: 18 }}>{r.type === 'contact' ? '👤' : '🏢'}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#0d0f12', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                          <div style={{ fontSize: 11, color: '#9ca3af' }}>{r.subtitle}</div>
+                        </div>
+                        <span style={{ fontSize: 11, color: '#aaa', whiteSpace: 'nowrap' }}>{r.type === 'contact' ? 'Persona' : 'Empresa'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {ownerNoResults && (
+                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '14px 16px' }}>
+                  <p style={{ fontSize: 13, color: '#92400e', margin: '0 0 10px', fontWeight: 500 }}>No se encontró &ldquo;{ownerQuery}&rdquo; en el CRM.</p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" onClick={() => setOwnerMode('create-contact')}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #e0e0e0', background: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      👤 Registrar como persona
+                    </button>
+                    <button type="button" onClick={() => setOwnerMode('create-company')}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #e0e0e0', background: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      🏢 Registrar como empresa
+                    </button>
+                  </div>
+                </div>
+              )}
+              <p style={{ fontSize: 11, color: '#aaa', margin: ownerNoResults ? '10px 0 0' : '8px 0 0' }}>Escribí 2 caracteres para buscar. El dueño es opcional al crear.</p>
+            </>
+
+          ) : ownerMode === 'create-contact' ? (
+            <div style={{ background: '#f9fafb', borderRadius: 10, border: '1px solid #e2e5ea', padding: '18px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>👤 Registrar persona física</div>
+                <button type="button" onClick={() => { setOwnerMode('search'); setCError('') }}
+                  style={{ fontSize: 12, color: '#888', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>← Volver</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div><FieldLabel>Nombre *</FieldLabel><input value={cName} onChange={e => setCName(e.target.value)} placeholder="Nombre" style={inputSt} /></div>
+                <div><FieldLabel>Apellido</FieldLabel><input value={cLastName} onChange={e => setCLastName(e.target.value)} placeholder="Apellido" style={inputSt} /></div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div><FieldLabel>Cédula / DIMEX</FieldLabel><input value={cCedula} onChange={e => setCCedula(e.target.value)} placeholder="Ej: 1-0000-0000" style={inputSt} /></div>
+                <div><FieldLabel>Teléfono</FieldLabel><input value={cPhone} onChange={e => setCPhone(e.target.value)} placeholder="Ej: 8888-8888" style={inputSt} /></div>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <FieldLabel>Correo electrónico</FieldLabel>
+                <input value={cEmail} onChange={e => setCEmail(e.target.value)} placeholder="correo@ejemplo.com" style={inputSt} />
+              </div>
+              {cError && <p style={{ fontSize: 12, color: '#e53e3e', margin: '0 0 10px' }}>{cError}</p>}
+              <button type="button" onClick={e => createContact(e as unknown as React.FormEvent)} disabled={cSaving}
+                style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: cSaving ? 'not-allowed' : 'pointer', opacity: cSaving ? 0.7 : 1, fontFamily: 'inherit' }}>
+                {cSaving ? 'Guardando…' : 'Registrar y vincular'}
+              </button>
+            </div>
+
+          ) : (
+            <div style={{ background: '#f9fafb', borderRadius: 10, border: '1px solid #e2e5ea', padding: '18px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>🏢 Registrar empresa</div>
+                <button type="button" onClick={() => { setOwnerMode('search'); setCoError('') }}
+                  style={{ fontSize: 12, color: '#888', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>← Volver</button>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <FieldLabel>Cédula jurídica</FieldLabel>
+                <div style={{ position: 'relative' }}>
+                  <input value={coCedJur} onChange={e => lookupCedJur(e.target.value)} placeholder="Ej: 3-101-123456" style={inputSt} />
+                  {coLooking && <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#aaa' }}>Consultando…</span>}
+                </div>
+                {coLookResult && <p style={{ fontSize: 12, color: '#059669', margin: '5px 0 0', fontWeight: 500 }}>✓ {coLookResult.name}</p>}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                <div><FieldLabel>Razón social *</FieldLabel><input value={coName} onChange={e => setCoName(e.target.value)} placeholder="Nombre legal" style={inputSt} /></div>
+                <div><FieldLabel>Nombre fantasía</FieldLabel><input value={coTrade} onChange={e => setCoTrade(e.target.value)} placeholder="Nombre comercial" style={inputSt} /></div>
+              </div>
+              {coError && <p style={{ fontSize: 12, color: '#e53e3e', margin: '0 0 10px' }}>{coError}</p>}
+              <button type="button" onClick={e => createCompany(e as unknown as React.FormEvent)} disabled={coSaving}
+                style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: coSaving ? 'not-allowed' : 'pointer', opacity: coSaving ? 0.7 : 1, fontFamily: 'inherit' }}>
+                {coSaving ? 'Guardando…' : 'Registrar y vincular'}
+              </button>
+            </div>
+          )}
+        </FormSection>
 
         {/* ── SECCIÓN 1: Datos registrales y ubicación ── */}
         <FormSection title="Datos registrales y ubicación">
