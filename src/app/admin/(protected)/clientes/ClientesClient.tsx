@@ -475,9 +475,11 @@ export default function ClientesClient() {
       if (d.nombre) {
         const parts = d.nombre.trim().split(/\s+/)
         let name = toTitleCase(d.nombre), last_name = ''
-        if (form.cedula_tipo === 'fisica' && parts.length >= 3) {
-          last_name = toTitleCase(parts.slice(0, 2).join(' '))
-          name      = toTitleCase(parts.slice(2).join(' '))
+        // Hacienda devuelve: NOMBRE(S) APELLIDO1 APELLIDO2
+        // Las últimas 2 palabras son siempre los apellidos (estándar CR)
+        if ((form.cedula_tipo === 'fisica' || form.cedula_tipo === 'dimex') && parts.length >= 3) {
+          name      = toTitleCase(parts.slice(0, -2).join(' '))
+          last_name = toTitleCase(parts.slice(-2).join(' '))
         }
         setForm(prev => ({ ...prev, name, last_name }))
         const moroso = d.situacion?.moroso === 'SI' ? ' · ⚠ Moroso en Hacienda' : ''
