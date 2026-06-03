@@ -8,6 +8,7 @@ const NAV = [
   { href: '/admin/mapa',         icon: '🗺️',  label: 'Mapa' },
   { href: '/admin/inventario',   icon: '🏘️',  label: 'Inventario' },
   { href: '/admin/clientes',     icon: '👤',  label: 'Clientes' },
+  { href: '/admin/empresas',     icon: '🏢',  label: 'Empresas' },
   { href: '/admin/propiedades',  icon: '🏠',  label: 'Propiedades' },
   { href: '/admin/paginas',      icon: '📄',  label: 'Páginas' },
   { href: '/admin/fuentes',      icon: '🔗',  label: 'Fuentes' },
