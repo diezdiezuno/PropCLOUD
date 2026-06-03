@@ -739,11 +739,11 @@ function CompanyForm({ tenantId, initial, onCreated, onClose }: Omit<Props, 'typ
       setLookResult({ type: 'err', msg: 'Sin resultado — ingresá el nombre manualmente' })
     }
 
-    // Dupe check
+    // Dupe check — usar val formateado (con guiones) igual que EmpresasClient
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (createClient() as any)
       .from('crm_companies').select('id,name,trade_name')
-      .eq('tenant_id', tenantId).eq('cedula_juridica', digits).limit(1)
+      .eq('tenant_id', tenantId).eq('cedula_juridica', val.trim()).limit(1)
     setCedJurDupe(data?.[0] ?? null)
     setLooking(false)
   }
@@ -754,14 +754,14 @@ function CompanyForm({ tenantId, initial, onCreated, onClose }: Omit<Props, 'typ
     if (cedJurDupe) { setError('Ya existe una empresa con esta cédula jurídica.'); return }
 
     setSaving(true)
-    const digits = cedJur.replace(/\D/g, '')
+    const formatted = cedJur.trim()   // ya viene formateado con guiones (3-101-XXXXXX)
 
     // Final dupe check
-    if (digits) {
+    if (formatted) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (createClient() as any)
         .from('crm_companies').select('id,name')
-        .eq('tenant_id', tenantId).eq('cedula_juridica', digits).limit(1)
+        .eq('tenant_id', tenantId).eq('cedula_juridica', formatted).limit(1)
       if (data?.[0]) {
         setCedJurDupe(data[0])
         setError('Ya existe una empresa con esta cédula jurídica.')
@@ -773,7 +773,7 @@ function CompanyForm({ tenantId, initial, onCreated, onClose }: Omit<Props, 'typ
       tenant_id:       tenantId,
       name:            name.trim(),
       trade_name:      tradeName.trim() || null,
-      cedula_juridica: digits || null,
+      cedula_juridica: formatted || null,   // guardado con guiones: 3-101-XXXXXX
     }).select('id,name,trade_name,cedula_juridica').single()
 
     if (dbErr) { setError(`Error: ${dbErr.message}`); setSaving(false); return }
