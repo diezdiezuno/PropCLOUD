@@ -63,6 +63,16 @@ interface OwnerResult  {
   id: string; name: string; subtitle: string
   linkedContacts?: LinkedContact[]
 }
+interface ContactView {
+  id: string; name: string; last_name: string | null; photo_url: string | null
+  cedula: string | null; cedula_tipo: string; phone: string | null; phone_alt: string | null
+  email: string | null; notes: string | null
+  contact_types: { name: string; color: string } | null
+  crm_contact_companies: { crm_companies: { id: string; name: string; trade_name: string | null } | null }[] | null
+}
+interface CompanyView {
+  id: string; name: string; trade_name: string | null; cedula_juridica: string | null
+}
 
 /* ── Avatar helpers (same palette as ClientesClient) ─────────────── */
 const AVATAR_PALETTE = [
@@ -797,6 +807,7 @@ function Tab6Fotos({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Propert
 ══════════════════════════════════════════════════════════════ */
 function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: PropertyFull) => void }) {
   const [owners,       setOwners]       = useState<OwnerResult[]>([])
+  const [inlineView,   setInlineView]   = useState<{ type: 'contact'|'company'; id: string } | null>(null)
   const [query,        setQuery]        = useState('')
   const [results,      setResults]      = useState<OwnerResult[]>([])
   const [searching,    setSearching]    = useState(false)
@@ -943,6 +954,7 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
   }
 
   return (
+    <>
     <FormSection title={`Dueños de la propiedad${owners.length > 0 ? ` (${owners.length})` : ''}`}>
 
       {/* ── Owners list ── */}
@@ -958,12 +970,11 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
                 <div style={{ width: 36, height: 36, borderRadius: o.type === 'company' ? 8 : '50%', background: ac + '20', border: `2px solid ${ac}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: ac, flexShrink: 0, letterSpacing: '-0.5px' }}>
                   {o.type === 'company' ? coInitials(o.name) : ownerInitials(o.name)}
                 </div>
-                {/* Name — link to vcard/drawer */}
-                <a href={o.type === 'contact' ? `/admin/clientes?id=${o.id}` : `/admin/empresas?id=${o.id}`}
-                  style={{ flex: 1, minWidth: 0, textDecoration: 'none' }}>
+                {/* Name — opens inline modal */}
+                <div onClick={() => setInlineView({ type: o.type, id: o.id })} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#0d0f12', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.name}</div>
                   <div style={{ fontSize: 11, color: '#9ca3af' }}>{o.subtitle}</div>
-                </a>
+                </div>
                 <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: ac + '18', color: ac, flexShrink: 0 }}>
                   {o.type === 'contact' ? 'Físico' : 'Jurídico'}
                 </span>
@@ -979,10 +990,11 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
                       const cac  = nameToColor(c.name + (c.last_name ?? ''))
                       const init = ownerInitials([c.name, c.last_name].filter(Boolean).join(' '))
                       return (
-                        <a key={c.id} href={`/admin/clientes?id=${c.id}`}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px 9px 22px', borderTop: ci > 0 ? '1px solid #f9fafb' : 'none', textDecoration: 'none' }}
-                          onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = '#f9fafb'}
-                          onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'}
+                        <div key={c.id}
+                          onClick={() => setInlineView({ type: 'contact', id: c.id })}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px 9px 22px', borderTop: ci > 0 ? '1px solid #f9fafb' : 'none', cursor: 'pointer' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f9fafb'}
+                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                         >
                           <span style={{ color: '#ddd', fontSize: 12, flexShrink: 0 }}>└</span>
                           {/* Avatar físico */}
@@ -998,7 +1010,7 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
                             {c.cedula && <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 8, fontFamily: 'monospace' }}>{c.cedula}</span>}
                           </div>
                           <span style={{ fontSize: 11, color: '#c5cad3', flexShrink: 0 }}>→</span>
-                        </a>
+                        </div>
                       )
                     })
                   ) : (
@@ -1139,6 +1151,183 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
       )}
 
     </FormSection>
+
+    {inlineView && (
+      <OwnerViewModal type={inlineView.type} id={inlineView.id} onClose={() => setInlineView(null)} />
+    )}
+    </>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════════
+   OWNER VIEW MODAL — inline overlay, no page navigation
+══════════════════════════════════════════════════════════════ */
+function OwnerViewModal({ type, id, onClose }: { type: 'contact' | 'company'; id: string; onClose: () => void }) {
+  const [contactData,  setContactData]  = useState<ContactView | null>(null)
+  const [companyData,  setCompanyData]  = useState<CompanyView | null>(null)
+  const [compContacts, setCompContacts] = useState<LinkedContact[]>([])
+  const [loading,      setLoading]      = useState(true)
+
+  useEffect(() => {
+    const sb = createClient()
+    if (type === 'contact') {
+      sb.from('crm_contacts')
+        .select('id,name,last_name,photo_url,cedula,cedula_tipo,phone,phone_alt,email,notes,contact_types(name,color),crm_contact_companies(crm_companies(id,name,trade_name))')
+        .eq('id', id).single()
+        .then(({ data }) => { setContactData(data as unknown as ContactView); setLoading(false) })
+    } else {
+      Promise.all([
+        sb.from('crm_companies').select('id,name,trade_name,cedula_juridica').eq('id', id).single(),
+        sb.from('crm_contact_companies').select('crm_contacts(id,name,last_name,cedula,photo_url)').eq('company_id', id),
+      ]).then(([{ data: co }, { data: links }]) => {
+        setCompanyData(co as CompanyView)
+        setCompContacts((links as unknown as { crm_contacts: LinkedContact | null }[]).map(r => r.crm_contacts).filter(Boolean) as LinkedContact[])
+        setLoading(false)
+      })
+    }
+  }, [id, type])
+
+  // Close on Escape
+  useEffect(() => {
+    function handle(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handle)
+    return () => window.removeEventListener('keydown', handle)
+  }, [onClose])
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+    >
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, width: 400, maxWidth: '100%', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,.28)', fontFamily: 'system-ui, sans-serif' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f0f0f0' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#111', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+            {type === 'contact' ? 'Ficha del contacto' : 'Ficha de la empresa'}
+          </span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#aaa', lineHeight: 1, padding: 0 }}>×</button>
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: '#aaa', fontSize: 14 }}>Cargando…</div>
+        ) : type === 'contact' && contactData ? (
+          <div style={{ overflowY: 'auto', padding: '20px' }}>
+            {/* Avatar + name */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+              {(() => {
+                const ac = nameToColor(contactData.name + (contactData.last_name ?? ''))
+                return (
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', overflow: 'hidden', background: contactData.photo_url ? 'transparent' : ac + '22', border: `3px solid ${ac}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 800, color: ac, flexShrink: 0 }}>
+                    {contactData.photo_url
+                      ? <img src={contactData.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : ownerInitials([contactData.name, contactData.last_name].filter(Boolean).join(' '))}
+                  </div>
+                )
+              })()}
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#0d0f12', lineHeight: 1.2 }}>
+                  {contactData.name}{contactData.last_name ? ' ' + contactData.last_name : ''}
+                </div>
+                {contactData.contact_types?.name && (
+                  <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 10px', borderRadius: 20, background: (contactData.contact_types.color || '#5B7FFF') + '22', color: contactData.contact_types.color || '#5B7FFF', display: 'inline-block', marginTop: 4 }}>
+                    {contactData.contact_types.name}
+                  </span>
+                )}
+              </div>
+            </div>
+            {/* Details */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {contactData.cedula && <InfoRow icon="🪪" label={contactData.cedula_tipo === 'dimex' ? 'DIMEX' : contactData.cedula_tipo === 'pasaporte' ? 'Pasaporte' : 'Cédula'} value={contactData.cedula} />}
+              {contactData.phone   && <InfoRow icon="📱" label="Teléfono"  value={contactData.phone} />}
+              {contactData.phone_alt && <InfoRow icon="📞" label="Tel. alt."  value={contactData.phone_alt} />}
+              {contactData.email   && <InfoRow icon="✉️" label="Email"     value={contactData.email} />}
+              {(contactData.crm_contact_companies ?? []).length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.06em' }}>Empresas</div>
+                  {(contactData.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean).map(co => (
+                    <div key={co!.id} style={{ fontSize: 13, color: '#374151', padding: '4px 0' }}>🏢 {co!.trade_name || co!.name}</div>
+                  ))}
+                </div>
+              )}
+              {contactData.notes && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.06em' }}>Notas</div>
+                  <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5, background: '#f9fafb', borderRadius: 8, padding: '8px 12px' }}>{contactData.notes}</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+        ) : type === 'company' && companyData ? (
+          <div style={{ overflowY: 'auto', padding: '20px' }}>
+            {/* Avatar + name */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+              {(() => {
+                const ac = nameToColor(companyData.trade_name || companyData.name)
+                return (
+                  <div style={{ width: 56, height: 56, borderRadius: 12, background: ac + '20', border: `3px solid ${ac}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: ac, flexShrink: 0, letterSpacing: '-0.5px' }}>
+                    {coInitials(companyData.trade_name || companyData.name)}
+                  </div>
+                )
+              })()}
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#0d0f12', lineHeight: 1.2 }}>{companyData.trade_name || companyData.name}</div>
+                {companyData.trade_name && <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{companyData.name}</div>}
+              </div>
+            </div>
+            {companyData.cedula_juridica && <InfoRow icon="🪪" label="Cédula jurídica" value={companyData.cedula_juridica} />}
+            {/* Linked contacts */}
+            {compContacts.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#aaa', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.06em' }}>Personas físicas ({compContacts.length})</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {compContacts.map(c => {
+                    const cac  = nameToColor(c.name + (c.last_name ?? ''))
+                    const init = ownerInitials([c.name, c.last_name].filter(Boolean).join(' '))
+                    return (
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f9fafb', borderRadius: 8 }}>
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', background: c.photo_url ? 'transparent' : cac + '22', border: `2px solid ${cac}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: cac, flexShrink: 0 }}>
+                          {c.photo_url ? <img src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : init}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#0d0f12' }}>{[c.name, c.last_name].filter(Boolean).join(' ')}</div>
+                          {c.cedula && <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>{c.cedula}</div>}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {/* Footer */}
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <a href={type === 'contact' ? `/admin/clientes?id=${id}` : `/admin/empresas?id=${id}`} target="_blank"
+            style={{ fontSize: 13, color: '#5B7FFF', textDecoration: 'none', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: '1px solid #5B7FFF22', background: '#5B7FFF0A' }}>
+            Abrir ficha completa ↗
+          </a>
+          <button onClick={onClose}
+            style={{ fontSize: 13, color: '#666', background: 'none', border: '1px solid #e0e0e0', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontFamily: 'inherit' }}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function InfoRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</div>
+        <div style={{ fontSize: 13, color: '#374151', fontWeight: 500 }}>{value}</div>
+      </div>
+    </div>
   )
 }
 
