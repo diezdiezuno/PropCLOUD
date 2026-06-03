@@ -317,7 +317,7 @@ export default function NuevaPropiedadPage() {
       return
     }
 
-    router.push(`/admin/inventario/${data.id}`)
+    router.push(`/admin/inventario/${data.id}?tab=2`)
   }
 
   if (loading) return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>
