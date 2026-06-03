@@ -457,12 +457,18 @@ export default function ClientesClient() {
     // Upload photo
     let finalPhotoUrl = form.photo_url || null
     if (photoFile && contactId) {
-      const ext = photoFile.name.split('.').pop() ?? 'jpg'
+      const ext = photoFile.name.split('.').pop()?.toLowerCase() ?? 'jpg'
       const path = `${contactId}/avatar.${ext}`
-      const { error: upErr } = await supabase.storage.from('contact-photos').upload(path, photoFile, { upsert: true, contentType: photoFile.type })
-      if (!upErr) {
-        finalPhotoUrl = supabase.storage.from('contact-photos').getPublicUrl(path).data.publicUrl
+      const contentType = photoFile.type || 'image/jpeg'
+      const { error: upErr } = await supabase.storage
+        .from('contact-photos')
+        .upload(path, photoFile, { upsert: true, contentType })
+      if (upErr) {
+        showToast(`Error al subir foto: ${upErr.message}`, 'error')
+        setSaving(false)
+        return   // contact already saved — user can re-abrir y reintentar
       }
+      finalPhotoUrl = supabase.storage.from('contact-photos').getPublicUrl(path).data.publicUrl
     }
 
     // Upload docs
