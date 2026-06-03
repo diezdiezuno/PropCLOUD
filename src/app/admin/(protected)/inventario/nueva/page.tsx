@@ -68,7 +68,7 @@ export default function NuevaPropiedadPage() {
   const [geocoding,    setGeocoding]    = useState(false)
 
   /* ── Owner ── */
-  const [ownerSelected,  setOwnerSelected]  = useState<OwnerResult | null>(null)
+  const [owners,         setOwners]         = useState<OwnerResult[]>([])
   const [ownerQuery,     setOwnerQuery]     = useState('')
   const [ownerResults,   setOwnerResults]   = useState<OwnerResult[]>([])
   const [ownerSearching, setOwnerSearching] = useState(false)
@@ -311,7 +311,8 @@ export default function NuevaPropiedadPage() {
     const out: OwnerResult[] = []
     for (const c of contacts  ?? []) out.push({ type: 'contact', id: c.id, name: [c.name, c.last_name].filter(Boolean).join(' '), subtitle: c.email ?? c.cedula ?? 'Persona física' })
     for (const co of companies ?? []) out.push({ type: 'company', id: co.id, name: co.trade_name || co.name, subtitle: co.trade_name ? co.name : (co.cedula_juridica ?? 'Empresa') })
-    setOwnerResults(out); setOwnerNoResults(out.length === 0); setOwnerSearching(false)
+    const filtered = out.filter(o => !owners.some(x => x.id === o.id))
+    setOwnerResults(filtered); setOwnerNoResults(filtered.length === 0 && out.length === 0); setOwnerSearching(false)
   }
 
   function handleOwnerQuery(v: string) {
@@ -327,7 +328,8 @@ export default function NuevaPropiedadPage() {
       .insert({ tenant_id: tenantId, name: cName.trim(), last_name: cLastName.trim() || null, cedula: cCedula.trim() || null, cedula_tipo: 'nacional', phone: cPhone.trim() || null, email: cEmail.trim() || null, active: true })
       .select('id,name,last_name,email,cedula').single()
     if (error) { setCError(`Error: ${error.message}`); setCSaving(false); return }
-    setOwnerSelected({ type: 'contact', id: data.id, name: [data.name, data.last_name].filter(Boolean).join(' '), subtitle: data.email ?? data.cedula ?? 'Persona física' })
+    const o: OwnerResult = { type: 'contact', id: data.id, name: [data.name, data.last_name].filter(Boolean).join(' '), subtitle: data.email ?? data.cedula ?? 'Persona física' }
+    setOwners(prev => prev.some(x => x.id === o.id) ? prev : [...prev, o])
     setOwnerMode('search'); setCSaving(false); setCName(''); setCLastName(''); setCCedula(''); setCPhone(''); setCEmail('')
   }
 
@@ -350,7 +352,8 @@ export default function NuevaPropiedadPage() {
       .insert({ tenant_id: tenantId, name: coName.trim(), trade_name: coTrade.trim() || null, cedula_juridica: coCedJur.replace(/\D/g, '') || null })
       .select('id,name,trade_name,cedula_juridica').single()
     if (error) { setCoError(`Error: ${error.message}`); setCoSaving(false); return }
-    setOwnerSelected({ type: 'company', id: data.id, name: data.trade_name || data.name, subtitle: data.trade_name ? data.name : (data.cedula_juridica ?? 'Empresa') })
+    const o: OwnerResult = { type: 'company', id: data.id, name: data.trade_name || data.name, subtitle: data.trade_name ? data.name : (data.cedula_juridica ?? 'Empresa') }
+    setOwners(prev => prev.some(x => x.id === o.id) ? prev : [...prev, o])
     setOwnerMode('search'); setCoSaving(false); setCoName(''); setCoTrade(''); setCoCedJur(''); setCoLookResult(null)
   }
 
@@ -400,7 +403,7 @@ export default function NuevaPropiedadPage() {
         ...(informeUrl    ? { informe_registral_url: informeUrl }          : {}),
         ...(planoDocUrl   ? { plano_catastrado_url: planoDocUrl }           : {}),
         ...(gmapsLink     ? { gmaps_link: gmapsLink }                       : {}),
-        ...(ownerSelected ? { owner_id: ownerSelected.id, owner_type: ownerSelected.type, owner_name: ownerSelected.name, owner_subtitle: ownerSelected.subtitle } : {}),
+        ...(owners.length > 0 ? { owners: JSON.stringify(owners) } : {}),
       },
     }).select('id').single()
 
@@ -466,25 +469,32 @@ export default function NuevaPropiedadPage() {
 
       <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* ── SECCIÓN 0: Dueño ── */}
-        <FormSection title="Información del dueño">
-          {ownerSelected ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: '#f9fafb', borderRadius: 10, border: '1px solid #e2e5ea' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: ownerSelected.type === 'contact' ? '#5B7FFF22' : '#F59E0B22', border: `2px solid ${ownerSelected.type === 'contact' ? '#5B7FFF44' : '#F59E0B44'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
-                {ownerSelected.type === 'contact' ? '👤' : '🏢'}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>{ownerSelected.name}</div>
-                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>{ownerSelected.subtitle}</div>
-              </div>
-              <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: ownerSelected.type === 'contact' ? '#5B7FFF18' : '#F59E0B18', color: ownerSelected.type === 'contact' ? '#5B7FFF' : '#D97706' }}>
-                {ownerSelected.type === 'contact' ? 'Persona física' : 'Empresa'}
-              </span>
-              <button type="button" onClick={() => setOwnerSelected(null)}
-                style={{ fontSize: 12, color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Cambiar</button>
-            </div>
+        {/* ── SECCIÓN 0: Dueños ── */}
+        <FormSection title={`Dueños de la propiedad${owners.length > 0 ? ` (${owners.length})` : ''}`}>
 
-          ) : ownerMode === 'search' ? (
+          {/* Lista de dueños agregados */}
+          {owners.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {owners.map(o => (
+                <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f9fafb', borderRadius: 10, border: '1px solid #e2e5ea' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: o.type === 'contact' ? '#5B7FFF22' : '#F59E0B22', border: `2px solid ${o.type === 'contact' ? '#5B7FFF44' : '#F59E0B44'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+                    {o.type === 'contact' ? '👤' : '🏢'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#0d0f12', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.name}</div>
+                    <div style={{ fontSize: 11, color: '#9ca3af' }}>{o.subtitle}</div>
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: o.type === 'contact' ? '#5B7FFF18' : '#F59E0B18', color: o.type === 'contact' ? '#5B7FFF' : '#D97706', flexShrink: 0 }}>
+                    {o.type === 'contact' ? 'Persona' : 'Empresa'}
+                  </span>
+                  <button type="button" onClick={() => setOwners(prev => prev.filter(x => x.id !== o.id))}
+                    style={{ width: 26, height: 26, borderRadius: '50%', background: '#fff', border: '1px solid #e2e5ea', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#e53e3e', flexShrink: 0, fontFamily: 'inherit' }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {ownerMode === 'search' ? (
             <>
               <div ref={ownerWrapRef} style={{ position: 'relative', marginBottom: ownerNoResults ? 12 : 0 }}>
                 <input value={ownerQuery} onChange={e => handleOwnerQuery(e.target.value)}
@@ -496,7 +506,7 @@ export default function NuevaPropiedadPage() {
                 {ownerDropOpen && ownerResults.length > 0 && (
                   <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: '1px solid #e2e5ea', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', zIndex: 50, overflow: 'hidden' }}>
                     {ownerResults.map((r, i) => (
-                      <div key={r.id} onClick={() => { setOwnerSelected(r); setOwnerDropOpen(false); setOwnerQuery(''); setOwnerResults([]) }}
+                      <div key={r.id} onClick={() => { setOwners(prev => prev.some(x => x.id === r.id) ? prev : [...prev, r]); setOwnerDropOpen(false); setOwnerQuery(''); setOwnerResults([]) }}
                         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', borderTop: i > 0 ? '1px solid #f4f5f7' : 'none', transition: 'background .1s' }}
                         onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f9fafb'}
                         onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>

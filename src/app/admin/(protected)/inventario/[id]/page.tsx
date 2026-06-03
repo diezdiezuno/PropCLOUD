@@ -772,13 +772,12 @@ function Tab6Fotos({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Propert
    OWNER SECTION — Información del dueño
 ══════════════════════════════════════════════════════════════ */
 function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: PropertyFull) => void }) {
+  const [owners,       setOwners]       = useState<OwnerResult[]>([])
   const [query,        setQuery]        = useState('')
   const [results,      setResults]      = useState<OwnerResult[]>([])
   const [searching,    setSearching]    = useState(false)
   const [dropOpen,     setDropOpen]     = useState(false)
-  const [selected,     setSelected]     = useState<OwnerResult | null>(null)
   const [mode,         setMode]         = useState<'search' | 'create-contact' | 'create-company'>('search')
-  const [saving,       setSaving]       = useState(false)
   const [noResults,    setNoResults]    = useState(false)
 
   // Quick-create contact fields
@@ -799,14 +798,17 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
   const [coSaving,     setCoSaving]     = useState(false)
   const [coError,      setCoError]      = useState('')
 
-  const wrapRef   = useRef<HTMLDivElement>(null)
-  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrapRef  = useRef<HTMLDivElement>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Load existing owner on mount
+  // Load existing owners on mount — supports both new array format and legacy single owner
   useEffect(() => {
     const f = prop.features
-    if (f?.owner_id && f?.owner_type && f?.owner_name) {
-      setSelected({ type: f.owner_type as 'contact' | 'company', id: f.owner_id, name: f.owner_name, subtitle: f.owner_subtitle ?? '' })
+    if (!f) return
+    if (f.owners) {
+      try { setOwners(JSON.parse(f.owners)) } catch { /* ignore */ }
+    } else if (f.owner_id && f.owner_type && f.owner_name) {
+      setOwners([{ type: f.owner_type as 'contact' | 'company', id: f.owner_id, name: f.owner_name, subtitle: f.owner_subtitle ?? '' }])
     }
   }, [prop.features])
 
@@ -817,6 +819,28 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
     return () => document.removeEventListener('mousedown', handle)
   }, [])
 
+  async function saveOwners(updated: OwnerResult[]) {
+    const base = { ...(prop.features ?? {}) } as Record<string, string>
+    // Remove legacy single-owner keys
+    const { owner_id: _a, owner_type: _b, owner_name: _c, owner_subtitle: _d, ...rest } = base
+    const newFeatures = { ...rest, owners: JSON.stringify(updated) }
+    const { data, error } = await createClient().from('properties').update({ features: newFeatures }).eq('id', prop.id).select('*').single()
+    if (!error && data) onSaved(data as PropertyFull)
+  }
+
+  async function addOwner(o: OwnerResult) {
+    if (owners.some(x => x.id === o.id)) return
+    const updated = [...owners, o]
+    setOwners(updated); setDropOpen(false); setQuery(''); setResults([]); setNoResults(false)
+    await saveOwners(updated)
+  }
+
+  async function removeOwner(id: string) {
+    const updated = owners.filter(o => o.id !== id)
+    setOwners(updated)
+    await saveOwners(updated)
+  }
+
   async function search(q: string) {
     if (q.trim().length < 2) { setResults([]); setNoResults(false); return }
     setSearching(true); setNoResults(false)
@@ -824,21 +848,16 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
     const term = `%${q.trim()}%`
     const tid  = prop.tenant_id
     const [{ data: contacts }, { data: companies }] = await Promise.all([
-      sb.from('crm_contacts').select('id,name,last_name,cedula,email')
-        .eq('tenant_id', tid)
-        .or(`name.ilike.${term},last_name.ilike.${term},cedula.ilike.${term}`)
-        .limit(5),
-      sb.from('crm_companies').select('id,name,trade_name,cedula_juridica')
-        .eq('tenant_id', tid)
-        .or(`name.ilike.${term},trade_name.ilike.${term},cedula_juridica.ilike.${term}`)
-        .limit(5),
+      sb.from('crm_contacts').select('id,name,last_name,cedula,email').eq('tenant_id', tid)
+        .or(`name.ilike.${term},last_name.ilike.${term},cedula.ilike.${term}`).limit(5),
+      sb.from('crm_companies').select('id,name,trade_name,cedula_juridica').eq('tenant_id', tid)
+        .or(`name.ilike.${term},trade_name.ilike.${term},cedula_juridica.ilike.${term}`).limit(5),
     ])
     const out: OwnerResult[] = []
-    for (const c of contacts ?? [])  out.push({ type: 'contact', id: c.id, name: [c.name, c.last_name].filter(Boolean).join(' '), subtitle: c.email ?? c.cedula ?? 'Persona física' })
+    for (const c of contacts  ?? []) out.push({ type: 'contact', id: c.id, name: [c.name, c.last_name].filter(Boolean).join(' '), subtitle: c.email ?? c.cedula ?? 'Persona física' })
     for (const co of companies ?? []) out.push({ type: 'company', id: co.id, name: co.trade_name || co.name, subtitle: co.trade_name ? co.name : (co.cedula_juridica ?? 'Empresa') })
-    setResults(out)
-    setNoResults(out.length === 0)
-    setSearching(false)
+    const filtered = out.filter(o => !owners.some(x => x.id === o.id))
+    setResults(filtered); setNoResults(filtered.length === 0 && out.length === 0); setSearching(false)
   }
 
   function handleQueryChange(v: string) {
@@ -847,30 +866,16 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
     timerRef.current = setTimeout(() => search(v), 300)
   }
 
-  async function linkOwner(o: OwnerResult) {
-    setSelected(o); setDropOpen(false); setQuery(''); setResults([]); setNoResults(false)
-    const newFeatures = { ...(prop.features ?? {}), owner_id: o.id, owner_type: o.type, owner_name: o.name, owner_subtitle: o.subtitle }
-    const { data, error } = await createClient().from('properties').update({ features: newFeatures }).eq('id', prop.id).select('*').single()
-    if (!error && data) onSaved(data as PropertyFull)
-  }
-
-  async function unlinkOwner() {
-    setSelected(null)
-    const newFeatures = { ...(prop.features ?? {}) }
-    delete newFeatures.owner_id; delete newFeatures.owner_type; delete newFeatures.owner_name; delete newFeatures.owner_subtitle
-    const { data, error } = await createClient().from('properties').update({ features: newFeatures }).eq('id', prop.id).select('*').single()
-    if (!error && data) onSaved(data as PropertyFull)
-  }
-
   // Quick create contact
   async function createContact(e: React.FormEvent) {
     e.preventDefault(); setCSaving(true); setCError('')
     if (!cName.trim()) { setCError('El nombre es requerido.'); setCSaving(false); return }
-    const sb = createClient()
-    const { data, error } = await sb.from('crm_contacts').insert({ tenant_id: prop.tenant_id, name: cName.trim(), last_name: cLastName.trim() || null, cedula: cCedula.trim() || null, cedula_tipo: 'nacional', phone: cPhone.trim() || null, email: cEmail.trim() || null, active: true }).select('id,name,last_name,email,cedula').single()
+    const { data, error } = await createClient().from('crm_contacts')
+      .insert({ tenant_id: prop.tenant_id, name: cName.trim(), last_name: cLastName.trim() || null, cedula: cCedula.trim() || null, cedula_tipo: 'nacional', phone: cPhone.trim() || null, email: cEmail.trim() || null, active: true })
+      .select('id,name,last_name,email,cedula').single()
     if (error) { setCError(`Error: ${error.message}`); setCSaving(false); return }
     const o: OwnerResult = { type: 'contact', id: data.id, name: [data.name, data.last_name].filter(Boolean).join(' '), subtitle: data.email ?? data.cedula ?? 'Persona física' }
-    await linkOwner(o)
+    await addOwner(o)
     setMode('search'); setCSaving(false); setCName(''); setCLastName(''); setCCedula(''); setCPhone(''); setCEmail('')
   }
 
@@ -882,10 +887,7 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
     setCoLooking(true)
     try {
       const res  = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${digits}`)
-      if (res.ok) {
-        const json = await res.json()
-        if (json.nombre) { setCoLookResult({ name: json.nombre }); if (!coName) setCoName(json.nombre) }
-      }
+      if (res.ok) { const j = await res.json(); if (j.nombre) { setCoLookResult({ name: j.nombre }); if (!coName) setCoName(j.nombre) } }
     } catch { /* silent */ }
     setCoLooking(false)
   }
@@ -894,36 +896,41 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
   async function createCompany(e: React.FormEvent) {
     e.preventDefault(); setCoSaving(true); setCoError('')
     if (!coName.trim()) { setCoError('La razón social es requerida.'); setCoSaving(false); return }
-    const sb = createClient()
-    const { data, error } = await sb.from('crm_companies').insert({ tenant_id: prop.tenant_id, name: coName.trim(), trade_name: coTrade.trim() || null, cedula_juridica: coCedJur.replace(/\D/g, '') || null }).select('id,name,trade_name,cedula_juridica').single()
+    const { data, error } = await createClient().from('crm_companies')
+      .insert({ tenant_id: prop.tenant_id, name: coName.trim(), trade_name: coTrade.trim() || null, cedula_juridica: coCedJur.replace(/\D/g, '') || null })
+      .select('id,name,trade_name,cedula_juridica').single()
     if (error) { setCoError(`Error: ${error.message}`); setCoSaving(false); return }
     const o: OwnerResult = { type: 'company', id: data.id, name: data.trade_name || data.name, subtitle: data.trade_name ? data.name : (data.cedula_juridica ?? 'Empresa') }
-    await linkOwner(o)
+    await addOwner(o)
     setMode('search'); setCoSaving(false); setCoName(''); setCoTrade(''); setCoCedJur(''); setCoLookResult(null)
   }
 
   return (
-    <FormSection title="Información del dueño">
+    <FormSection title={`Dueños de la propiedad${owners.length > 0 ? ` (${owners.length})` : ''}`}>
 
-      {/* ── Owner linked ── */}
-      {selected ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: '#f9fafb', borderRadius: 10, border: '1px solid #e2e5ea' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: selected.type === 'contact' ? '#5B7FFF22' : '#F59E0B22', border: `2px solid ${selected.type === 'contact' ? '#5B7FFF44' : '#F59E0B44'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
-            {selected.type === 'contact' ? '👤' : '🏢'}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>{selected.name}</div>
-            <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>{selected.subtitle}</div>
-          </div>
-          <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: selected.type === 'contact' ? '#5B7FFF18' : '#F59E0B18', color: selected.type === 'contact' ? '#5B7FFF' : '#D97706' }}>
-            {selected.type === 'contact' ? 'Persona física' : 'Empresa'}
-          </span>
-          <button type="button" onClick={unlinkOwner}
-            style={{ fontSize: 12, color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
-            Cambiar
-          </button>
+      {/* ── Owners list ── */}
+      {owners.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+          {owners.map(o => (
+            <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#f9fafb', borderRadius: 10, border: '1px solid #e2e5ea' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: o.type === 'contact' ? '#5B7FFF22' : '#F59E0B22', border: `2px solid ${o.type === 'contact' ? '#5B7FFF44' : '#F59E0B44'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+                {o.type === 'contact' ? '👤' : '🏢'}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#0d0f12', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.name}</div>
+                <div style={{ fontSize: 11, color: '#9ca3af' }}>{o.subtitle}</div>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: o.type === 'contact' ? '#5B7FFF18' : '#F59E0B18', color: o.type === 'contact' ? '#5B7FFF' : '#D97706', flexShrink: 0 }}>
+                {o.type === 'contact' ? 'Persona' : 'Empresa'}
+              </span>
+              <button type="button" onClick={() => removeOwner(o.id)}
+                style={{ width: 26, height: 26, borderRadius: '50%', background: '#fff', border: '1px solid #e2e5ea', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#e53e3e', flexShrink: 0, fontFamily: 'inherit' }}>×</button>
+            </div>
+          ))}
         </div>
-      ) : mode === 'search' ? (
+      )}
+
+      {mode === 'search' ? (
         <>
           {/* ── Search input ── */}
           <div ref={wrapRef} style={{ position: 'relative', marginBottom: noResults ? 12 : 0 }}>
@@ -931,7 +938,7 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
               value={query}
               onChange={e => handleQueryChange(e.target.value)}
               onFocus={() => query.length >= 2 && setDropOpen(true)}
-              placeholder="Buscar por nombre, cédula o empresa…"
+              placeholder={owners.length > 0 ? 'Agregar otro dueño…' : 'Buscar por nombre, cédula o empresa…'}
               style={{ ...inputSt, paddingLeft: 36 }}
             />
             <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#aaa', fontSize: 14, pointerEvents: 'none' }}>🔍</span>
@@ -941,7 +948,7 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
             {dropOpen && results.length > 0 && (
               <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: '1px solid #e2e5ea', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', zIndex: 50, overflow: 'hidden' }}>
                 {results.map((r, i) => (
-                  <div key={r.id} onClick={() => linkOwner(r)}
+                  <div key={r.id} onClick={() => addOwner(r)}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', borderTop: i > 0 ? '1px solid #f4f5f7' : 'none', transition: 'background .1s' }}
                     onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f9fafb'}
                     onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
@@ -978,7 +985,7 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
           )}
 
           <p style={{ fontSize: 11, color: '#aaa', margin: noResults ? '10px 0 0' : '8px 0 0' }}>
-            Escribí 2 caracteres para buscar en clientes y empresas del CRM.
+            {owners.length > 0 ? 'Podés agregar más dueños buscando abajo.' : 'Escribí 2 caracteres para buscar en clientes y empresas del CRM.'}
           </p>
         </>
 
