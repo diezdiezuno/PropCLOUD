@@ -469,21 +469,24 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
         <div ref={plusRef} style={{ position: 'relative' }}>
           <button
             onClick={() => setPlusOpen(p => !p)}
+            title="Crear nuevo"
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              height: 36, padding: '0 14px',
+              width: 38, height: 38,
+              borderRadius: '50%',
               background: plusOpen ? '#222' : '#111',
               color: '#fff',
-              border: 'none', borderRadius: 10,
-              fontSize: 13, fontWeight: 600,
+              border: 'none',
+              fontSize: 24, lineHeight: 1, fontWeight: 300,
               cursor: 'pointer', fontFamily: 'inherit',
-              transition: 'background .15s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,.18)',
+              transition: 'background .15s, transform .15s, box-shadow .15s',
+              flexShrink: 0,
             }}
-            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#222'}
-            onMouseLeave={e => { if (!plusOpen) (e.currentTarget as HTMLButtonElement).style.background = '#111' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#222'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0,0,0,.28)' }}
+            onMouseLeave={e => { if (!plusOpen) (e.currentTarget as HTMLButtonElement).style.background = '#111'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 8px rgba(0,0,0,.18)' }}
           >
-            <span style={{ fontSize: 16, lineHeight: 1, marginTop: -1 }}>+</span>
-            Nuevo
+            +
           </button>
 
           {plusOpen && (
