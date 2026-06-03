@@ -74,8 +74,10 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
     })
   }
 
-  // ── Nav group collapse ─────────────────────────────────────
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  // ── Nav group collapse — all closed by default ────────────
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(NAV_GROUPS.map(g => [g.key, true]))
+  )
   useEffect(() => {
     for (const group of NAV_GROUPS) {
       const hasActive = group.items.some(item => pathname.startsWith(item.href))
@@ -263,8 +265,8 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
             return (
               <div key={group.key} style={{ marginBottom: 4 }}>
                 <button
-                  onClick={() => open ? toggle(group.key) : undefined}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: open ? 'space-between' : 'center', padding: open ? '7px 20px 7px 16px' : '6px 0 4px', background: 'none', border: 'none', cursor: open ? 'pointer' : 'default', fontFamily: 'inherit' }}
+                  onClick={() => toggle(group.key)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: open ? 'space-between' : 'center', padding: open ? '7px 20px 7px 16px' : '6px 0 4px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
                 >
                   {open ? (
                     <>
@@ -280,11 +282,12 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                       <span style={{ fontSize: 15 }}>{group.icon}</span>
                       <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: hasActive ? '#111' : '#aaa', whiteSpace: 'nowrap' }}>{group.label}</span>
+                      <span style={{ fontSize: 7, color: '#ccc', lineHeight: 1, transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform .15s', display: 'inline-block' }}>▾</span>
                     </div>
                   )}
                 </button>
 
-                {(open ? isOpen : true) && (
+                {isOpen && (
                   <div>
                     {group.items.map(({ href, icon, label }) => {
                       const active = pathname.startsWith(href)
