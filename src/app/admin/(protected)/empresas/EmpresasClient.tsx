@@ -59,6 +59,7 @@ export default function EmpresasClient() {
 
   const [lookupResult, setLookupResult] = useState<LookupState>(null)
   const [lookingUp,    setLookingUp]    = useState(false)
+  const [cedJurDupe,   setCedJurDupe]   = useState<{ id: string; name: string } | null>(null)
 
   // ── Linked contacts state ─────────────────────────────────
   const [linkedContacts,    setLinkedContacts]    = useState<LinkedContact[]>([])
@@ -161,6 +162,7 @@ export default function EmpresasClient() {
   function openDrawer(company: Company | null) {
     setEditingId(company?.id ?? null)
     setLookupResult(null)
+    setCedJurDupe(null)
     setContactQuery('')
     setContactResults([])
     setLinkedContacts([])
@@ -173,6 +175,19 @@ export default function EmpresasClient() {
       loadLinkedContacts(company.id, tenantId)
     }
     setDrawerOpen(true)
+  }
+
+  // ── Duplicate check ───────────────────────────────────────
+  async function checkCedJurDupe() {
+    const raw = form.cedula_juridica.trim()
+    if (!raw) { setCedJurDupe(null); return }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (createClient() as any)
+      .from('crm_companies').select('id,name')
+      .eq('tenant_id', tenantId).eq('cedula_juridica', raw)
+    if (editingId) q = q.neq('id', editingId)
+    const { data } = await q.limit(1)
+    setCedJurDupe(data?.[0] ?? null)
   }
 
   // ── Hacienda lookup ───────────────────────────────────────
@@ -267,6 +282,24 @@ export default function EmpresasClient() {
   // ── Save ──────────────────────────────────────────────────
   async function save() {
     if (!form.name.trim()) { showToast('El nombre es obligatorio', 'error'); return }
+
+    // Fresh duplicate check on save
+    if (form.cedula_juridica.trim()) {
+      setSaving(true)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (createClient() as any)
+        .from('crm_companies').select('id,name')
+        .eq('tenant_id', tenantId).eq('cedula_juridica', form.cedula_juridica.trim())
+      if (editingId) q = q.neq('id', editingId)
+      const { data } = await q.limit(1)
+      if (data?.[0]) {
+        setCedJurDupe(data[0])
+        showToast(`Cédula ya registrada: ${data[0].name}`, 'error')
+        setSaving(false); return
+      }
+      setSaving(false)
+    }
+
     setSaving(true)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = createClient() as any
@@ -501,11 +534,13 @@ export default function EmpresasClient() {
                     type="text" placeholder="3-101-123456" maxLength={12}
                     value={form.cedula_juridica}
                     onChange={e => {
-                      setForm(prev => ({ ...prev, cedula_juridica: formatCedulaJuridica(e.target.value) }))
+                      setCedJurDupe(null)
                       setLookupResult(null)
+                      setForm(prev => ({ ...prev, cedula_juridica: formatCedulaJuridica(e.target.value) }))
                     }}
+                    onBlur={checkCedJurDupe}
                     onKeyDown={e => { if (e.key === 'Enter') lookupCedula() }}
-                    style={sInput} />
+                    style={{ ...sInput, borderColor: cedJurDupe ? '#FDE68A' : '#e2e5ea', background: cedJurDupe ? '#FFFBEB' : '#fff' }} />
                 </div>
                 <div style={{ ...sField, paddingTop: 22 }}>
                   <button onClick={lookupCedula} disabled={lookingUp}
@@ -517,6 +552,12 @@ export default function EmpresasClient() {
               {lookupResult && (
                 <div style={{ fontSize: 12, padding: '6px 10px', borderRadius: 6, marginTop: 8, ...(lookupResult.type === 'ok' ? { background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d' } : { background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c' }) }}>
                   {lookupResult.msg}
+                </div>
+              )}
+              {cedJurDupe && (
+                <div style={{ fontSize: 12, padding: '7px 10px', borderRadius: 6, marginTop: 6, background: '#FEF3C7', border: '1px solid #FDE68A', color: '#92610A', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>⚠</span>
+                  <span>Ya existe una empresa con esta cédula: <strong>{cedJurDupe.name}</strong></span>
                 </div>
               )}
               <span style={{ fontSize: 11, color: '#9ca3af', marginTop: 6, display: 'block' }}>

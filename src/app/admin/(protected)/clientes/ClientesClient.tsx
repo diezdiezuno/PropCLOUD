@@ -284,6 +284,10 @@ export default function ClientesClient() {
   const [deleting,      setDeleting]      = useState<string | null>(null)
   const [docDragging,   setDocDragging]   = useState(false)
 
+  // Duplicate detection
+  const [cedulaDupe, setCedulaDupe] = useState<{ id: string; name: string; last_name: string | null } | null>(null)
+  const [emailDupe,  setEmailDupe]  = useState<{ id: string; name: string; last_name: string | null } | null>(null)
+
   // Hover state for list cards
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
   // Hover state for action buttons (key = `${contactId}-${btnType}`)
@@ -410,6 +414,8 @@ export default function ClientesClient() {
     setLookupResult(null)
     setEmpresaResult(null)
     setEmailError(false)
+    setCedulaDupe(null)
+    setEmailDupe(null)
     setCompanySuggestions([])
     setShowSuggestions(false)
     setPhotoFile(null)
@@ -497,10 +503,65 @@ export default function ClientesClient() {
     setForm(prev => ({ ...prev, doc_urls: prev.doc_urls.filter(d => d.path !== doc.path) }))
   }
 
+  // ── Duplicate checks ─────────────────────────────────────
+  async function checkCedulaDupe() {
+    const raw = form.cedula.trim()
+    if (!raw) { setCedulaDupe(null); return }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (createClient() as any)
+      .from('crm_contacts').select('id,name,last_name')
+      .eq('tenant_id', tenantId).eq('cedula', raw).eq('active', true)
+    if (editingId) q = q.neq('id', editingId)
+    const { data } = await q.limit(1)
+    setCedulaDupe(data?.[0] ?? null)
+  }
+
+  async function checkEmailDupe() {
+    const email = form.email.trim()
+    if (!email || !isValidEmail(email)) { setEmailDupe(null); return }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (createClient() as any)
+      .from('crm_contacts').select('id,name,last_name')
+      .eq('tenant_id', tenantId).eq('email', email).eq('active', true)
+    if (editingId) q = q.neq('id', editingId)
+    const { data } = await q.limit(1)
+    setEmailDupe(data?.[0] ?? null)
+  }
+
   // ── Save ──────────────────────────────────────────────────
   async function saveContact() {
     if (!form.name.trim()) { showToast('El nombre es obligatorio', 'error'); return }
     if (form.email && !isValidEmail(form.email)) { setEmailError(true); showToast('Email no válido', 'error'); return }
+
+    // Fresh duplicate check on save (catches fast submits that bypass blur)
+    setSaving(true)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb0 = createClient() as any
+    if (form.cedula.trim()) {
+      let q = sb0.from('crm_contacts').select('id,name,last_name')
+        .eq('tenant_id', tenantId).eq('cedula', form.cedula.trim()).eq('active', true)
+      if (editingId) q = q.neq('id', editingId)
+      const { data } = await q.limit(1)
+      if (data?.[0]) {
+        const d = data[0]
+        setCedulaDupe(d)
+        showToast(`Cédula ya registrada: ${d.name}${d.last_name ? ' ' + d.last_name : ''}`, 'error')
+        setSaving(false); return
+      }
+    }
+    if (form.email.trim() && isValidEmail(form.email)) {
+      let q = sb0.from('crm_contacts').select('id,name,last_name')
+        .eq('tenant_id', tenantId).eq('email', form.email.trim()).eq('active', true)
+      if (editingId) q = q.neq('id', editingId)
+      const { data } = await q.limit(1)
+      if (data?.[0]) {
+        const d = data[0]
+        setEmailDupe(d)
+        showToast(`Email ya registrado: ${d.name}${d.last_name ? ' ' + d.last_name : ''}`, 'error')
+        setSaving(false); return
+      }
+    }
+    setSaving(false)
     setSaving(true)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createClient()
@@ -1189,8 +1250,12 @@ export default function ClientesClient() {
                     placeholder={getCedulaPlaceholder(form.cedula_tipo)}
                     maxLength={getCedulaMaxLength(form.cedula_tipo)}
                     value={form.cedula}
-                    onChange={e => setForm(prev => ({ ...prev, cedula: formatCedula(e.target.value, prev.cedula_tipo) }))}
-                    style={sInput}
+                    onChange={e => {
+                      setCedulaDupe(null)
+                      setForm(prev => ({ ...prev, cedula: formatCedula(e.target.value, prev.cedula_tipo) }))
+                    }}
+                    onBlur={checkCedulaDupe}
+                    style={{ ...sInput, borderColor: cedulaDupe ? '#FDE68A' : '#e2e5ea', background: cedulaDupe ? '#FFFBEB' : '#fff' }}
                   />
                 </div>
                 {/* Consultar */}
@@ -1205,6 +1270,12 @@ export default function ClientesClient() {
               {lookupResult && (
                 <div style={{ fontSize: 12, padding: '6px 10px', borderRadius: 6, marginTop: 8, ...(lookupResult.type === 'ok' ? { background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d' } : { background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c' }) }}>
                   {lookupResult.msg}
+                </div>
+              )}
+              {cedulaDupe && (
+                <div style={{ fontSize: 12, padding: '7px 10px', borderRadius: 6, marginTop: 6, background: '#FEF3C7', border: '1px solid #FDE68A', color: '#92610A', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>⚠</span>
+                  <span>Ya existe un cliente con esta cédula: <strong>{cedulaDupe.name}{cedulaDupe.last_name ? ' ' + cedulaDupe.last_name : ''}</strong></span>
                 </div>
               )}
               <span style={{ fontSize: 11, color: '#9ca3af', marginTop: 6, display: 'block' }}>
@@ -1289,13 +1360,21 @@ export default function ClientesClient() {
                     onChange={e => {
                       const val = e.target.value
                       setEmailError(val.length > 0 && !isValidEmail(val))
+                      setEmailDupe(null)
                       setForm(prev => ({ ...prev, email: val }))
                     }}
                     onBlur={e => {
                       if (e.target.value && !isValidEmail(e.target.value)) setEmailError(true)
+                      checkEmailDupe()
                     }}
-                    style={{ ...sInput, borderColor: emailError ? '#fca5a5' : '#e2e5ea', background: emailError ? '#fef2f2' : '#fff' }} />
+                    style={{ ...sInput, borderColor: emailError ? '#fca5a5' : emailDupe ? '#FDE68A' : '#e2e5ea', background: emailError ? '#fef2f2' : emailDupe ? '#FFFBEB' : '#fff' }} />
                   {emailError && <span style={{ fontSize: 11, color: '#DC2626' }}>Ingresá un email válido</span>}
+                  {!emailError && emailDupe && (
+                    <div style={{ fontSize: 12, padding: '7px 10px', borderRadius: 6, marginTop: 2, background: '#FEF3C7', border: '1px solid #FDE68A', color: '#92610A', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>⚠</span>
+                      <span>Ya existe un cliente con este email: <strong>{emailDupe.name}{emailDupe.last_name ? ' ' + emailDupe.last_name : ''}</strong></span>
+                    </div>
+                  )}
                 </div>
                 <div style={sField}>
                   <label style={sLabel}>Teléfono / WhatsApp</label>
