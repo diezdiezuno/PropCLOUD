@@ -39,7 +39,7 @@ const NAV_STANDALONE = [
 ]
 
 const SIDEBAR_W_OPEN   = 216
-const SIDEBAR_W_CLOSED = 60
+const SIDEBAR_W_CLOSED = 72
 
 // ── Types ─────────────────────────────────────────────────────
 interface Tenant { id: string; name: string; slug: string; logo_url: string | null; theme: Record<string, string> }
@@ -138,39 +138,45 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
                 {/* Group header */}
                 <button
                   onClick={() => open ? toggle(group.key) : undefined}
-                  title={!open ? group.label : undefined}
                   style={{
                     width: '100%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: open ? 'space-between' : 'center',
-                    padding: open ? '7px 20px 7px 16px' : '8px 0',
-                    background: 'none', border: 'none', cursor: 'pointer',
+                    padding: open ? '7px 20px 7px 16px' : '6px 0 4px',
+                    background: 'none', border: 'none', cursor: open ? 'pointer' : 'default',
                     fontFamily: 'inherit',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: open ? 7 : 0 }}>
-                    <span style={{ fontSize: 14 }}>{group.icon}</span>
-                    {open && (
+                  {open ? (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <span style={{ fontSize: 14 }}>{group.icon}</span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, letterSpacing: '.05em',
+                          textTransform: 'uppercase',
+                          color: hasActive ? '#111' : '#999',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {group.label}
+                        </span>
+                      </div>
                       <span style={{
-                        fontSize: 11, fontWeight: 700, letterSpacing: '.05em',
-                        textTransform: 'uppercase',
-                        color: hasActive ? '#111' : '#999',
-                        whiteSpace: 'nowrap',
+                        fontSize: 9, color: '#bbb',
+                        transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                        transition: 'transform .15s',
+                        display: 'inline-block',
                       }}>
+                        ▼
+                      </span>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                      <span style={{ fontSize: 15 }}>{group.icon}</span>
+                      <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: hasActive ? '#111' : '#aaa', whiteSpace: 'nowrap' }}>
                         {group.label}
                       </span>
-                    )}
-                  </div>
-                  {open && (
-                    <span style={{
-                      fontSize: 9, color: '#bbb',
-                      transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                      transition: 'transform .15s',
-                      display: 'inline-block',
-                    }}>
-                      ▼
-                    </span>
+                    </div>
                   )}
                 </button>
 
@@ -183,19 +189,19 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
                         <a
                           key={href}
                           href={href}
-                          title={!open ? label : undefined}
                           style={{
                             display: 'flex',
+                            flexDirection: open ? 'row' : 'column',
                             alignItems: 'center',
                             justifyContent: open ? 'flex-start' : 'center',
-                            gap: open ? 9 : 0,
-                            padding: open ? '8px 20px 8px 28px' : '9px 0',
+                            gap: open ? 9 : 2,
+                            padding: open ? '8px 20px 8px 28px' : '6px 0',
                             textDecoration: 'none',
                             fontSize: 13,
                             color: active ? '#111' : '#666',
                             background: active ? '#f5f5f7' : 'transparent',
                             fontWeight: active ? 600 : 400,
-                            borderLeft: open ? `3px solid ${active ? '#111' : 'transparent'}` : `3px solid ${active ? '#111' : 'transparent'}`,
+                            borderLeft: `3px solid ${active ? '#111' : 'transparent'}`,
                             transition: 'background .1s',
                             whiteSpace: 'nowrap',
                           }}
@@ -203,7 +209,10 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
                           onMouseLeave={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
                         >
                           <span style={{ fontSize: open ? 14 : 16 }}>{icon}</span>
-                          {open && label}
+                          {open
+                            ? label
+                            : <span style={{ fontSize: 9, color: active ? '#111' : '#888', fontWeight: active ? 700 : 400, letterSpacing: '.01em', maxWidth: 62, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+                          }
                         </a>
                       )
                     })}
@@ -223,13 +232,13 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
               <a
                 key={href}
                 href={href}
-                title={!open ? label : undefined}
                 style={{
                   display: 'flex',
+                  flexDirection: open ? 'row' : 'column',
                   alignItems: 'center',
                   justifyContent: open ? 'flex-start' : 'center',
-                  gap: open ? 9 : 0,
-                  padding: open ? '8px 20px' : '9px 0',
+                  gap: open ? 9 : 2,
+                  padding: open ? '8px 20px' : '6px 0',
                   textDecoration: 'none',
                   fontSize: 13,
                   color: active ? '#111' : '#666',
@@ -243,7 +252,10 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
                 onMouseLeave={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
               >
                 <span style={{ fontSize: open ? 14 : 16 }}>{icon}</span>
-                {open && label}
+                {open
+                  ? label
+                  : <span style={{ fontSize: 9, color: active ? '#111' : '#888', fontWeight: active ? 700 : 400, letterSpacing: '.01em', maxWidth: 62, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+                }
               </a>
             )
           })}
@@ -266,8 +278,14 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
             </>
           ) : (
             <>
-              <a href="/" target="_blank" title="Ver sitio" style={{ fontSize: 16, textDecoration: 'none', lineHeight: 1, padding: '4px 0' }}>🌍</a>
-              <button onClick={signOut} title="Cerrar sesión" style={{ fontSize: 16, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', lineHeight: 1 }}>🚪</button>
+              <a href="/" target="_blank" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, textDecoration: 'none', padding: '2px 0' }}>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>🌍</span>
+                <span style={{ fontSize: 8, color: '#aaa', whiteSpace: 'nowrap' }}>Sitio</span>
+              </a>
+              <button onClick={signOut} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'inherit' }}>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>🚪</span>
+                <span style={{ fontSize: 8, color: '#e53e3e', whiteSpace: 'nowrap' }}>Salir</span>
+              </button>
             </>
           )}
         </div>
