@@ -104,7 +104,7 @@ function formatCedula(val: string, tipo: string): string {
 
 function getCedulaPlaceholder(tipo: string): string {
   switch (tipo) {
-    case 'dimex':     return '111-111111111'
+    case 'dimex':     return '123-456789012'
     case 'juridica':  return '3-101-123456'
     case 'pasaporte': return 'A12345678'
     default:          return '1-2345-6789'
@@ -757,7 +757,6 @@ export default function ClientesClient() {
                     style={sInput}>
                     <option value="fisica">Física</option>
                     <option value="dimex">DIMEX</option>
-                    <option value="juridica">Jurídica</option>
                     <option value="pasaporte">Pasaporte</option>
                   </select>
                 </div>
