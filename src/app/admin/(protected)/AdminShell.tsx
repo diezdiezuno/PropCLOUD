@@ -38,6 +38,9 @@ const NAV_STANDALONE = [
   { href: '/admin/reclutamiento', icon: '🤝', label: 'Reclutamiento' },
 ]
 
+const SIDEBAR_W_OPEN   = 216
+const SIDEBAR_W_CLOSED = 60
+
 // ── Types ─────────────────────────────────────────────────────
 interface Tenant { id: string; name: string; slug: string; logo_url: string | null; theme: Record<string, string> }
 interface Props   { tenant: Tenant; userEmail: string; children: React.ReactNode }
@@ -47,7 +50,21 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
 
-  // Collapsed state — keys match NAV_GROUPS[].key. true = collapsed.
+  // Sidebar open/closed — persisted in localStorage
+  const [open, setOpen] = useState(true)
+  useEffect(() => {
+    const stored = localStorage.getItem('sidebar_open')
+    if (stored !== null) setOpen(stored === '1')
+  }, [])
+  function toggleSidebar() {
+    setOpen(prev => {
+      const next = !prev
+      localStorage.setItem('sidebar_open', next ? '1' : '0')
+      return next
+    })
+  }
+
+  // Collapsed state for nav groups — keys match NAV_GROUPS[].key. true = collapsed.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   // Auto-expand the group that contains the active route
@@ -69,87 +86,124 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
     router.push('/admin/login')
   }
 
+  const sidebarW = open ? SIDEBAR_W_OPEN : SIDEBAR_W_CLOSED
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f5f7', fontFamily: 'system-ui, sans-serif' }}>
 
       {/* ── Sidebar ─────────────────────────────────────────────── */}
       <aside style={{
-        width: 216, background: '#fff', borderRight: '1px solid #ebebeb',
-        display: 'flex', flexDirection: 'column',
-        position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 300,
+        width: sidebarW,
+        background: '#fff',
+        borderRight: '1px solid #ebebeb',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'fixed',
+        top: 0, bottom: 0, left: 0,
+        zIndex: 300,
+        overflow: 'hidden',
+        transition: 'width .2s cubic-bezier(.4,0,.2,1)',
       }}>
 
         {/* Brand */}
-        <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid #f0f0f0' }}>
-          {tenant.logo_url && (
-            <img src={tenant.logo_url} alt="" style={{ height: 28, objectFit: 'contain', marginBottom: 8, display: 'block' }} />
+        <div style={{ padding: open ? '22px 20px 18px' : '18px 0', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: open ? 'flex-start' : 'center', transition: 'padding .2s', overflow: 'hidden', minHeight: 72 }}>
+          {open ? (
+            <div style={{ overflow: 'hidden' }}>
+              {tenant.logo_url && (
+                <img src={tenant.logo_url} alt="" style={{ height: 28, objectFit: 'contain', marginBottom: 8, display: 'block' }} />
+              )}
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#111', lineHeight: 1.2, whiteSpace: 'nowrap' }}>{tenant.name}</div>
+              <div style={{ fontSize: 11, color: '#bbb', marginTop: 2, whiteSpace: 'nowrap' }}>Panel de administración</div>
+            </div>
+          ) : (
+            <div title={tenant.name} style={{ fontSize: 20 }}>
+              {tenant.logo_url
+                ? <img src={tenant.logo_url} alt="" style={{ width: 32, height: 32, objectFit: 'contain', display: 'block' }} />
+                : '🏠'}
+            </div>
           )}
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#111', lineHeight: 1.2 }}>{tenant.name}</div>
-          <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>Panel de administración</div>
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '8px 0 12px', overflowY: 'auto' }}>
+        <nav style={{ flex: 1, padding: '8px 0 12px', overflowY: 'auto', overflowX: 'hidden' }}>
 
           {/* ── Grouped sections ───────────────────────── */}
           {NAV_GROUPS.map(group => {
-            const isOpen       = !collapsed[group.key]
-            const hasActive    = group.items.some(item => pathname.startsWith(item.href))
+            const isOpen    = !collapsed[group.key]
+            const hasActive = group.items.some(item => pathname.startsWith(item.href))
 
             return (
               <div key={group.key} style={{ marginBottom: 4 }}>
 
                 {/* Group header */}
                 <button
-                  onClick={() => toggle(group.key)}
+                  onClick={() => open ? toggle(group.key) : undefined}
+                  title={!open ? group.label : undefined}
                   style={{
-                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '7px 20px 7px 16px',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: open ? 'space-between' : 'center',
+                    padding: open ? '7px 20px 7px 16px' : '8px 0',
                     background: 'none', border: 'none', cursor: 'pointer',
                     fontFamily: 'inherit',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <span style={{ fontSize: 13 }}>{group.icon}</span>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, letterSpacing: '.05em',
-                      textTransform: 'uppercase',
-                      color: hasActive ? '#111' : '#999',
-                    }}>
-                      {group.label}
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: open ? 7 : 0 }}>
+                    <span style={{ fontSize: 14 }}>{group.icon}</span>
+                    {open && (
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, letterSpacing: '.05em',
+                        textTransform: 'uppercase',
+                        color: hasActive ? '#111' : '#999',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {group.label}
+                      </span>
+                    )}
                   </div>
-                  <span style={{
-                    fontSize: 9, color: '#bbb',
-                    transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                    transition: 'transform .15s',
-                    display: 'inline-block',
-                  }}>
-                    ▼
-                  </span>
+                  {open && (
+                    <span style={{
+                      fontSize: 9, color: '#bbb',
+                      transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                      transition: 'transform .15s',
+                      display: 'inline-block',
+                    }}>
+                      ▼
+                    </span>
+                  )}
                 </button>
 
-                {/* Group items */}
-                {isOpen && (
+                {/* Group items — always show when sidebar is collapsed (icon only) */}
+                {(open ? isOpen : true) && (
                   <div>
                     {group.items.map(({ href, icon, label }) => {
                       const active = pathname.startsWith(href)
                       return (
-                        <a key={href} href={href} style={{
-                          display: 'flex', alignItems: 'center', gap: 9,
-                          padding: '8px 20px 8px 28px',
-                          textDecoration: 'none', fontSize: 13,
-                          color: active ? '#111' : '#666',
-                          background: active ? '#f5f5f7' : 'transparent',
-                          fontWeight: active ? 600 : 400,
-                          borderLeft: `3px solid ${active ? '#111' : 'transparent'}`,
-                          transition: 'background .1s',
-                        }}
+                        <a
+                          key={href}
+                          href={href}
+                          title={!open ? label : undefined}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: open ? 'flex-start' : 'center',
+                            gap: open ? 9 : 0,
+                            padding: open ? '8px 20px 8px 28px' : '9px 0',
+                            textDecoration: 'none',
+                            fontSize: 13,
+                            color: active ? '#111' : '#666',
+                            background: active ? '#f5f5f7' : 'transparent',
+                            fontWeight: active ? 600 : 400,
+                            borderLeft: open ? `3px solid ${active ? '#111' : 'transparent'}` : `3px solid ${active ? '#111' : 'transparent'}`,
+                            transition: 'background .1s',
+                            whiteSpace: 'nowrap',
+                          }}
                           onMouseEnter={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = '#fafafa' }}
                           onMouseLeave={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
                         >
-                          <span style={{ fontSize: 14 }}>{icon}</span>
-                          {label}
+                          <span style={{ fontSize: open ? 14 : 16 }}>{icon}</span>
+                          {open && label}
                         </a>
                       )
                     })}
@@ -160,27 +214,36 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
           })}
 
           {/* ── Divider ─────────────────────────────────── */}
-          <div style={{ height: 1, background: '#f0f0f0', margin: '8px 16px' }} />
+          <div style={{ height: 1, background: '#f0f0f0', margin: open ? '8px 16px' : '8px 12px' }} />
 
           {/* ── Standalone items ────────────────────────── */}
           {NAV_STANDALONE.map(({ href, icon, label }) => {
             const active = pathname.startsWith(href)
             return (
-              <a key={href} href={href} style={{
-                display: 'flex', alignItems: 'center', gap: 9,
-                padding: '8px 20px',
-                textDecoration: 'none', fontSize: 13,
-                color: active ? '#111' : '#666',
-                background: active ? '#f5f5f7' : 'transparent',
-                fontWeight: active ? 600 : 400,
-                borderLeft: `3px solid ${active ? '#111' : 'transparent'}`,
-                transition: 'background .1s',
-              }}
+              <a
+                key={href}
+                href={href}
+                title={!open ? label : undefined}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: open ? 'flex-start' : 'center',
+                  gap: open ? 9 : 0,
+                  padding: open ? '8px 20px' : '9px 0',
+                  textDecoration: 'none',
+                  fontSize: 13,
+                  color: active ? '#111' : '#666',
+                  background: active ? '#f5f5f7' : 'transparent',
+                  fontWeight: active ? 600 : 400,
+                  borderLeft: `3px solid ${active ? '#111' : 'transparent'}`,
+                  transition: 'background .1s',
+                  whiteSpace: 'nowrap',
+                }}
                 onMouseEnter={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = '#fafafa' }}
                 onMouseLeave={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
               >
-                <span style={{ fontSize: 14 }}>{icon}</span>
-                {label}
+                <span style={{ fontSize: open ? 14 : 16 }}>{icon}</span>
+                {open && label}
               </a>
             )
           })}
@@ -188,21 +251,66 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
         </nav>
 
         {/* Footer */}
-        <div style={{ padding: '14px 20px', borderTop: '1px solid #f0f0f0' }}>
-          <div style={{ fontSize: 11, color: '#bbb', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {userEmail}
-          </div>
-          <a href="/" target="_blank" style={{ fontSize: 12, color: '#888', display: 'block', marginBottom: 6, textDecoration: 'none' }}>
-            Ver sitio →
-          </a>
-          <button onClick={signOut} style={{ fontSize: 12, color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
-            Cerrar sesión
-          </button>
+        <div style={{ padding: open ? '14px 20px' : '12px 0', borderTop: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', alignItems: open ? 'flex-start' : 'center', gap: 6 }}>
+          {open ? (
+            <>
+              <div style={{ fontSize: 11, color: '#bbb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                {userEmail}
+              </div>
+              <a href="/" target="_blank" style={{ fontSize: 12, color: '#888', display: 'block', textDecoration: 'none' }}>
+                Ver sitio →
+              </a>
+              <button onClick={signOut} style={{ fontSize: 12, color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                Cerrar sesión
+              </button>
+            </>
+          ) : (
+            <>
+              <a href="/" target="_blank" title="Ver sitio" style={{ fontSize: 16, textDecoration: 'none', lineHeight: 1, padding: '4px 0' }}>🌍</a>
+              <button onClick={signOut} title="Cerrar sesión" style={{ fontSize: 16, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', lineHeight: 1 }}>🚪</button>
+            </>
+          )}
         </div>
+
+        {/* ── Toggle button ────────────────────────────── */}
+        <button
+          onClick={toggleSidebar}
+          title={open ? 'Colapsar sidebar' : 'Expandir sidebar'}
+          style={{
+            position: 'absolute',
+            bottom: open ? 94 : 90,
+            right: -12,
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            background: '#fff',
+            border: '1px solid #e2e5ea',
+            boxShadow: '0 2px 6px rgba(0,0,0,.10)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 10,
+            color: '#666',
+            zIndex: 10,
+            transition: 'box-shadow .15s',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 3px 10px rgba(0,0,0,.18)'}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 6px rgba(0,0,0,.10)'}
+        >
+          {open ? '‹' : '›'}
+        </button>
+
       </aside>
 
       {/* ── Main content ────────────────────────────────────────── */}
-      <main style={{ marginLeft: 216, flex: 1, padding: '36px 44px', minHeight: '100vh' }}>
+      <main style={{
+        marginLeft: sidebarW,
+        flex: 1,
+        padding: '36px 44px',
+        minHeight: '100vh',
+        transition: 'margin-left .2s cubic-bezier(.4,0,.2,1)',
+      }}>
         <div style={{ maxWidth: 1100 }}>
           {children}
         </div>
