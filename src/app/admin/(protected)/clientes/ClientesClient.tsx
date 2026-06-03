@@ -36,11 +36,38 @@ interface Contact {
   facebook: string | null
   tiktok: string | null
   youtube: string | null
+  x: string | null
   notes: string | null
   active: boolean
   contact_types: { name: string; color: string } | null
   contact_sources: { name: string } | null
   crm_companies: { name: string } | null
+}
+
+interface VCardContact {
+  id: string
+  cedula: string | null
+  cedula_tipo: string | null
+  name: string
+  last_name: string | null
+  birth_date: string | null
+  email: string | null
+  phone: string | null
+  phone_country: string | null
+  phone_alt: string | null
+  phone_alt_country: string | null
+  photo_url: string | null
+  notes: string | null
+  instagram: string | null
+  linkedin: string | null
+  facebook: string | null
+  tiktok: string | null
+  youtube: string | null
+  x: string | null
+  doc_urls: DocUrl[] | null
+  contact_types: { name: string; color: string } | null
+  contact_sources: { name: string } | null
+  crm_companies: { name: string; cedula_juridica: string | null } | null
 }
 
 interface ContactType   { id: string; name: string; color: string }
@@ -56,7 +83,7 @@ interface FormState {
   photo_url: string
   company_name: string; company_cedula: string; company_id: string
   instagram: string; linkedin: string; facebook: string
-  tiktok: string; youtube: string
+  tiktok: string; youtube: string; x: string
   notes: string
   doc_urls: DocUrl[]
 }
@@ -69,12 +96,28 @@ const EMPTY_FORM: FormState = {
   photo_url: '',
   company_name: '', company_cedula: '', company_id: '',
   instagram: '', linkedin: '', facebook: '',
-  tiktok: '', youtube: '',
+  tiktok: '', youtube: '', x: '',
   notes: '',
   doc_urls: [],
 }
 
 // ── Helpers ───────────────────────────────────────────────────
+function normalizeUrl(value: string, network: string): string {
+  if (!value) return value
+  const v = value.trim()
+  if (v.startsWith('http://') || v.startsWith('https://')) return v
+  const user = v.startsWith('@') ? v.slice(1) : v
+  const bases: Record<string, string> = {
+    instagram: `https://www.instagram.com/${user}`,
+    linkedin:  `https://www.linkedin.com/in/${user}`,
+    facebook:  `https://www.facebook.com/${user}`,
+    tiktok:    `https://www.tiktok.com/@${user}`,
+    youtube:   `https://www.youtube.com/@${user}`,
+    x:         `https://x.com/${user}`,
+  }
+  return bases[network] || v
+}
+
 function toTitleCase(str: string): string {
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
 }
@@ -84,20 +127,17 @@ function isValidEmail(email: string): boolean {
 }
 
 function formatCedula(val: string, tipo: string): string {
-  if (tipo === 'pasaporte') return val // free text, no formatting
+  if (tipo === 'pasaporte') return val
   const v = val.replace(/[^0-9]/g, '')
   if (tipo === 'dimex') {
-    // 111-111111111  (3 + dash + 9 = 13 chars max)
     if (v.length <= 3) return v
     return v.slice(0, 3) + '-' + v.slice(3, 12)
   }
   if (tipo === 'juridica') {
-    // 3-101-123456  (1 + dash + 3 + dash + 6 = 12 chars max)
     if (v.length <= 1) return v
     if (v.length <= 4) return v[0] + '-' + v.slice(1)
     return v[0] + '-' + v.slice(1, 4) + '-' + v.slice(4, 10)
   }
-  // fisica: 1-2345-6789  (1 + dash + 4 + dash + 4 = 11 chars max)
   if (v.length <= 1) return v
   if (v.length <= 5) return v[0] + '-' + v.slice(1)
   return v[0] + '-' + v.slice(1, 5) + '-' + v.slice(5, 9)
@@ -134,7 +174,6 @@ function openWhatsapp(phone: string | null, country: string | null) {
   window.open(`https://wa.me/${full}`, '_blank')
 }
 
-// Formats phone number: CR → XXXX-XXXX, others → digits only
 function formatPhone(val: string, iso: string): string {
   const digits = val.replace(/[^0-9]/g, '')
   if (iso === 'CR') {
@@ -147,6 +186,16 @@ function formatPhone(val: string, iso: string): string {
 function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
+function formatDateEsCR(dateStr: string | null): string {
+  if (!dateStr) return ''
+  try {
+    const d = new Date(dateStr + 'T12:00:00')
+    return d.toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' })
+  } catch {
+    return dateStr
+  }
 }
 
 // ── SVG social icons ──────────────────────────────────────────
@@ -182,6 +231,12 @@ const LiIcon = () => (
 const YtIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="#FF0000">
     <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+)
+const XIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24">
+    <rect width="24" height="24" rx="4" fill="#000"/>
+    <path d="M17.75 4h-2.3L12 8.5 8.8 4H4l5.25 7L4 20h2.3L10 15l3.5 5H18l-5.5-7.5L17.75 4z" fill="#fff"/>
   </svg>
 )
 
@@ -229,6 +284,16 @@ export default function ClientesClient() {
   const [deleting,      setDeleting]      = useState<string | null>(null)
   const [docDragging,   setDocDragging]   = useState(false)
 
+  // Hover state for list cards
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null)
+  // Hover state for action buttons (key = `${contactId}-${btnType}`)
+  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null)
+
+  // VCard state
+  const [vcardOpen,    setVcardOpen]    = useState(false)
+  const [vcardData,    setVcardData]    = useState<VCardContact | null>(null)
+  const [vcardLoading, setVcardLoading] = useState(false)
+
   // ── Load contacts ──────────────────────────────────────────
   const loadContacts = useCallback(async (
     tid: string, q: string, type: string, source: string
@@ -237,7 +302,7 @@ export default function ClientesClient() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any)
       .from('crm_contacts')
-      .select('id,cedula,cedula_tipo,name,last_name,email,phone,phone_country,phone_alt,phone_alt_country,company_id,type_id,source_id,photo_url,doc_urls,instagram,linkedin,facebook,tiktok,youtube,notes,active,birth_date,contact_types(name,color),contact_sources(name),crm_companies(name)')
+      .select('id,cedula,cedula_tipo,name,last_name,email,phone,phone_country,phone_alt,phone_alt_country,company_id,type_id,source_id,photo_url,doc_urls,instagram,linkedin,facebook,tiktok,youtube,x,notes,active,birth_date,contact_types(name,color),contact_sources(name),crm_companies(name)')
       .eq('tenant_id', tid)
       .eq('active', true)
       .order('name')
@@ -286,10 +351,13 @@ export default function ClientesClient() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew, tenantId])
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — priority: vcard → drawer
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setDrawerOpen(false)
+      if (e.key === 'Escape') {
+        if (vcardOpen) { closeVCard(); return }
+        if (drawerOpen) { setDrawerOpen(false); return }
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         document.getElementById('clientes-search')?.focus()
@@ -297,10 +365,34 @@ export default function ClientesClient() {
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [])
+  }, [vcardOpen, drawerOpen])
+
+  // ── VCard ────────────────────────────────────────────────
+  async function openVCard(id: string) {
+    setVcardLoading(true)
+    setVcardOpen(true)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (createClient() as any)
+      .from('crm_contacts')
+      .select('*, contact_types(name,color), contact_sources(name), crm_companies(name,cedula_juridica)')
+      .eq('id', id)
+      .single()
+    setVcardData(data as VCardContact ?? null)
+    setVcardLoading(false)
+  }
+
+  function closeVCard() {
+    setVcardOpen(false)
+  }
+
+  async function downloadVCardDoc(doc: DocUrl) {
+    const supabase = createClient()
+    const { data } = await supabase.storage.from('contact-docs').createSignedUrl(doc.path, 3600)
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
 
   // ── Drawer ────────────────────────────────────────────────
-  function openDrawer(id: string | null) {
+  async function openDrawer(id: string | null) {
     setEditingId(id)
     setLookupResult(null)
     setEmpresaResult(null)
@@ -312,7 +404,9 @@ export default function ClientesClient() {
     setDocFiles([])
 
     if (id) {
-      const c = contacts.find(x => x.id === id)
+      // Fresh DB fetch to ensure all fields (including x) are populated
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: c } = await (createClient() as any).from('crm_contacts').select('*').eq('id', id).single()
       if (c) {
         const co = companies.find(x => x.id === c.company_id)
         setForm({
@@ -337,6 +431,7 @@ export default function ClientesClient() {
           facebook:          c.facebook         ?? '',
           tiktok:            c.tiktok           ?? '',
           youtube:           c.youtube          ?? '',
+          x:                 c.x                ?? '',
           notes:             c.notes            ?? '',
           doc_urls:          c.doc_urls         ?? [],
         })
@@ -404,7 +499,6 @@ export default function ClientesClient() {
       const existing = companies.find(c => c.name.toLowerCase() === form.company_name.trim().toLowerCase())
       if (existing) {
         companyId = existing.id
-        // Si el nombre en el form difiere (ej. vino de Hacienda en mayúsculas), actualizar en DB
         if (existing.name !== form.company_name.trim()) {
           await sb.from('crm_companies').update({ name: form.company_name.trim() }).eq('id', existing.id)
           setCompanies(prev => prev.map(c =>
@@ -437,11 +531,12 @@ export default function ClientesClient() {
       phone_alt:         form.phone_alt.trim()  || null,
       phone_alt_country: form.phone_alt_country,
       company_id:        companyId,
-      instagram:         form.instagram.trim()  || null,
-      linkedin:          form.linkedin.trim()   || null,
-      facebook:          form.facebook.trim()   || null,
-      tiktok:            form.tiktok.trim()     || null,
-      youtube:           form.youtube.trim()    || null,
+      instagram:         normalizeUrl(form.instagram.trim(), 'instagram') || null,
+      linkedin:          normalizeUrl(form.linkedin.trim(),  'linkedin')  || null,
+      facebook:          normalizeUrl(form.facebook.trim(),  'facebook')  || null,
+      tiktok:            normalizeUrl(form.tiktok.trim(),    'tiktok')    || null,
+      youtube:           normalizeUrl(form.youtube.trim(),   'youtube')   || null,
+      x:                 normalizeUrl(form.x.trim(),         'x')         || null,
       notes:             form.notes.trim()      || null,
     }
 
@@ -473,7 +568,7 @@ export default function ClientesClient() {
       if (upErr) {
         showToast(`Error al subir foto: ${upErr.message}`, 'error')
         setSaving(false)
-        return   // contact already saved — user can re-abrir y reintentar
+        return
       }
       finalPhotoUrl = supabase.storage.from('contact-photos').getPublicUrl(path).data.publicUrl
     }
@@ -529,8 +624,6 @@ export default function ClientesClient() {
       if (d.nombre) {
         const parts = d.nombre.trim().split(/\s+/)
         let name = toTitleCase(d.nombre), last_name = ''
-        // Hacienda devuelve: NOMBRE(S) APELLIDO1 APELLIDO2
-        // Las últimas 2 palabras son siempre los apellidos (estándar CR)
         if ((form.cedula_tipo === 'fisica' || form.cedula_tipo === 'dimex') && parts.length >= 3) {
           name      = toTitleCase(parts.slice(0, -2).join(' '))
           last_name = toTitleCase(parts.slice(-2).join(' '))
@@ -693,20 +786,25 @@ export default function ClientesClient() {
 
             return (
               <div key={c.id}
-                onClick={() => !isConfirming && openDrawer(c.id)}
-                style={{ background: '#fff', border: '1px solid #e2e5ea', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, cursor: isConfirming ? 'default' : 'pointer', transition: 'border-color .15s' }}
-                onMouseEnter={e => { if (!isConfirming) (e.currentTarget as HTMLDivElement).style.borderColor = '#1B6EF3' }}
-                onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = '#e2e5ea'}>
+                onMouseEnter={() => setHoveredCard(c.id)}
+                onMouseLeave={() => setHoveredCard(null)}
+                style={{ background: '#fff', border: '1px solid #e2e5ea', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'default', transition: 'border-color .15s' }}
+                onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1B6EF3' }}
+                onMouseOut={e => (e.currentTarget as HTMLDivElement).style.borderColor = '#e2e5ea'}>
 
-                {/* Avatar */}
-                <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, overflow: 'hidden', background: bgLight, color: typeColor }}>
+                {/* Avatar — click opens VCard */}
+                <div
+                  onClick={() => openVCard(c.id)}
+                  style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, overflow: 'hidden', background: bgLight, color: typeColor, cursor: 'pointer' }}>
                   {c.photo_url
                     ? <img src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : initials}
                 </div>
 
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Info — click opens VCard */}
+                <div
+                  onClick={() => openVCard(c.id)}
+                  style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {c.name}{c.last_name ? ' ' + c.last_name : ''}
                   </div>
@@ -725,13 +823,47 @@ export default function ClientesClient() {
                 )}
 
                 {/* Actions */}
-                <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                <div
+                  onClick={e => e.stopPropagation()}
+                  style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0, opacity: hoveredCard === c.id || isConfirming ? 1 : 0, transition: 'opacity .15s' }}>
                   {!isConfirming ? (
                     <>
-                      <button title="WhatsApp" onClick={() => openWhatsapp(c.phone, c.phone_country)}
-                        style={{ width: 30, height: 30, border: '1px solid #e2e5ea', borderRadius: 6, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>💬</button>
-                      <button title="Eliminar" onClick={() => setConfirmDelete(c.id)}
-                        style={{ width: 30, height: 30, border: '1px solid #e2e5ea', borderRadius: 6, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🗑</button>
+                      {c.phone && (
+                        <button
+                          title="WhatsApp"
+                          onClick={() => openWhatsapp(c.phone, c.phone_country)}
+                          onMouseEnter={() => setHoveredBtn(`${c.id}-wa`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          style={{ width: 30, height: 30, border: `1px solid ${hoveredBtn === `${c.id}-wa` ? 'transparent' : '#A8DFC0'}`, borderRadius: 6, background: hoveredBtn === `${c.id}-wa` ? '#128C48' : '#E7F7EE', color: hoveredBtn === `${c.id}-wa` ? '#fff' : '#128C48', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'all .15s' }}>
+                          💬
+                        </button>
+                      )}
+                      {c.email && (
+                        <button
+                          title="Email"
+                          onClick={() => { window.location.href = `mailto:${c.email}` }}
+                          onMouseEnter={() => setHoveredBtn(`${c.id}-email`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          style={{ width: 30, height: 30, border: `1px solid ${hoveredBtn === `${c.id}-email` ? 'transparent' : '#BFCFFB'}`, borderRadius: 6, background: hoveredBtn === `${c.id}-email` ? '#1B6EF3' : '#EEF4FF', color: hoveredBtn === `${c.id}-email` ? '#fff' : '#1B6EF3', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'all .15s' }}>
+                          ✉
+                        </button>
+                      )}
+                      <button
+                        title="Editar"
+                        onClick={() => openDrawer(c.id)}
+                        onMouseEnter={() => setHoveredBtn(`${c.id}-edit`)}
+                        onMouseLeave={() => setHoveredBtn(null)}
+                        style={{ width: 30, height: 30, border: `1px solid ${hoveredBtn === `${c.id}-edit` ? '#F5D98A' : '#e2e5ea'}`, borderRadius: 6, background: hoveredBtn === `${c.id}-edit` ? '#FEF9EC' : '#F4F5F7', color: hoveredBtn === `${c.id}-edit` ? '#92610A' : '#5a6070', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'all .15s' }}>
+                        ✏️
+                      </button>
+                      <button
+                        title="Eliminar"
+                        onClick={() => setConfirmDelete(c.id)}
+                        onMouseEnter={() => setHoveredBtn(`${c.id}-del`)}
+                        onMouseLeave={() => setHoveredBtn(null)}
+                        style={{ width: 30, height: 30, border: `1px solid ${hoveredBtn === `${c.id}-del` ? 'transparent' : '#FECACA'}`, borderRadius: 6, background: hoveredBtn === `${c.id}-del` ? '#DC2626' : '#FEF2F2', color: hoveredBtn === `${c.id}-del` ? '#fff' : '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'all .15s' }}>
+                        🗑
+                      </button>
                     </>
                   ) : (
                     <>
@@ -750,6 +882,245 @@ export default function ClientesClient() {
           })}
         </div>
       )}
+
+      {/* ── VCard Modal ──────────────────────────────────── */}
+      <div
+        onClick={e => { if (e.target === e.currentTarget) closeVCard() }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(13,15,18,.5)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: vcardOpen ? 1 : 0, pointerEvents: vcardOpen ? 'all' : 'none', transition: 'opacity .2s' }}>
+        <div style={{
+          width: 780, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
+          background: '#fff', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          boxShadow: '0 20px 60px rgba(0,0,0,.18)',
+          transform: vcardOpen ? 'scale(1) translateY(0)' : 'scale(.96) translateY(8px)',
+          transition: 'transform .2s',
+        }}>
+          {/* VCard Header */}
+          <div style={{ height: 52, background: '#E2E5EA', borderBottom: '1px solid #CDD1D8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>
+              {vcardData ? `${vcardData.name}${vcardData.last_name ? ' ' + vcardData.last_name : ''}` : ''}
+            </span>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                onClick={() => {
+                  if (!vcardData) return
+                  const id = vcardData.id
+                  closeVCard()
+                  setTimeout(() => openDrawer(id), 200)
+                }}
+                style={{ height: 32, padding: '0 14px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Editar
+              </button>
+              <button
+                onClick={closeVCard}
+                style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #CDD1D8', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#5a6070' }}>
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* VCard Body */}
+          {vcardLoading ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>Cargando…</div>
+          ) : vcardData ? (
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '220px 1fr', overflow: 'hidden' }}>
+
+              {/* LEFT column */}
+              <div style={{ width: 220, background: '#F4F5F7', borderRight: '1px solid #E2E5EA', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
+                {/* Avatar */}
+                {(() => {
+                  const tc = vcardData.contact_types?.color || '#1B6EF3'
+                  const tBg = tc + '22'
+                  return (
+                    <div style={{ width: 180, height: 180, borderRadius: '50%', overflow: 'hidden', background: tBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 14 }}>
+                      {vcardData.photo_url
+                        ? <img src={vcardData.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: 52, fontWeight: 700, color: tc }}>{getInitials(vcardData.name, vcardData.last_name)}</span>}
+                    </div>
+                  )
+                })()}
+                {/* Name */}
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#0d0f12', textAlign: 'center', marginBottom: 8 }}>
+                  {vcardData.name}{vcardData.last_name ? ' ' + vcardData.last_name : ''}
+                </div>
+                {/* Type badge */}
+                {vcardData.contact_types?.name && (
+                  <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: (vcardData.contact_types.color || '#1B6EF3') + '22', color: vcardData.contact_types.color || '#1B6EF3', marginBottom: 10 }}>
+                    {vcardData.contact_types.name}
+                  </span>
+                )}
+                {/* Company */}
+                {vcardData.crm_companies?.name && (
+                  <div style={{ textAlign: 'center', marginBottom: 10 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#5a6070' }}>{vcardData.crm_companies.name}</div>
+                    {vcardData.crm_companies.cedula_juridica && (
+                      <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>{vcardData.crm_companies.cedula_juridica}</div>
+                    )}
+                  </div>
+                )}
+                {/* Action buttons */}
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 7, marginTop: 14 }}>
+                  {vcardData.phone && (
+                    <button
+                      onClick={() => openWhatsapp(vcardData.phone, vcardData.phone_country)}
+                      style={{ width: '100%', height: 36, background: '#128C48', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      WhatsApp
+                    </button>
+                  )}
+                  {vcardData.email && (
+                    <button
+                      onClick={() => { window.location.href = `mailto:${vcardData.email}` }}
+                      style={{ width: '100%', height: 36, background: '#1B6EF3', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Email
+                    </button>
+                  )}
+                </div>
+                {/* Social icons */}
+                {(() => {
+                  const socials = [
+                    { field: vcardData.instagram, Icon: IgIcon,  label: 'Instagram' },
+                    { field: vcardData.linkedin,  Icon: LiIcon,  label: 'LinkedIn'  },
+                    { field: vcardData.facebook,  Icon: FbIcon,  label: 'Facebook'  },
+                    { field: vcardData.tiktok,    Icon: TkIcon,  label: 'TikTok'    },
+                    { field: vcardData.youtube,   Icon: YtIcon,  label: 'YouTube'   },
+                    { field: vcardData.x,         Icon: XIcon,   label: 'X'         },
+                  ].filter(s => !!s.field)
+                  if (socials.length === 0) return null
+                  return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 14 }}>
+                      {socials.map(({ field, Icon, label }) => (
+                        <a key={label} href={field!} target="_blank" rel="noreferrer"
+                          title={label}
+                          style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #e2e5ea', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+                          <Icon />
+                        </a>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* RIGHT column */}
+              <div style={{ padding: '16px 24px', overflowY: 'auto' }}>
+                {/* Información section */}
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 12 }}>Información</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {/* Cédula */}
+                  {vcardData.cedula && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🪪</div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Cédula</div>
+                        <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.cedula}
+                          {vcardData.cedula_tipo && <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 6 }}>{vcardData.cedula_tipo}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {/* Nacimiento */}
+                  {vcardData.birth_date && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🎂</div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Nacimiento</div>
+                        <div style={{ fontSize: 14, color: '#0d0f12' }}>{formatDateEsCR(vcardData.birth_date)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {/* Teléfono */}
+                  {vcardData.phone && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E7F7EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📱</div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Teléfono</div>
+                        <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.phone}</div>
+                      </div>
+                    </div>
+                  )}
+                  {/* Teléfono alt */}
+                  {vcardData.phone_alt && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📞</div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Teléfono alternativo</div>
+                        <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.phone_alt}</div>
+                      </div>
+                    </div>
+                  )}
+                  {/* Email */}
+                  {vcardData.email && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>✉</div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Email</div>
+                        <a href={`mailto:${vcardData.email}`} style={{ fontSize: 14, color: '#1B6EF3', textDecoration: 'none' }}>{vcardData.email}</a>
+                      </div>
+                    </div>
+                  )}
+                  {/* Empresa */}
+                  {vcardData.crm_companies?.name && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F5F5F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏢</div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Empresa</div>
+                        <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.crm_companies.name}</div>
+                        {vcardData.crm_companies.cedula_juridica && (
+                          <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>{vcardData.crm_companies.cedula_juridica}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {/* Fuente */}
+                  {vcardData.contact_sources?.name && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📡</div>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Fuente</div>
+                        <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.contact_sources.name}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {vcardData.notes && (
+                  <>
+                    <div style={{ height: 1, background: '#E2E5EA', margin: '16px 0' }} />
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 8 }}>Comentarios</div>
+                    <div style={{ fontSize: 14, color: '#0d0f12', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{vcardData.notes}</div>
+                  </>
+                )}
+
+                {/* Documents */}
+                {vcardData.doc_urls && vcardData.doc_urls.length > 0 && (
+                  <>
+                    <div style={{ height: 1, background: '#E2E5EA', margin: '16px 0' }} />
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+                      Documentos ({vcardData.doc_urls.length})
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      {vcardData.doc_urls.map(doc => {
+                        const isPdf = doc.name.toLowerCase().endsWith('.pdf')
+                        return (
+                          <div key={doc.path}
+                            onClick={() => downloadVCardDoc(doc)}
+                            style={{ border: '1px solid #E2E5EA', borderRadius: 10, cursor: 'pointer', overflow: 'hidden' }}>
+                            {/* Placeholder */}
+                            <div style={{ height: 80, background: isPdf ? '#FEE2E2' : '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 24 }}>{isPdf ? '📄' : '🖼'}</span>
+                              {isPdf && <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626' }}>PDF</span>}
+                            </div>
+                            <div style={{ padding: '6px 10px', fontSize: 12, color: '#5a6070', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
 
       {/* ── Drawer ───────────────────────────────────────── */}
       <div
@@ -771,7 +1142,7 @@ export default function ClientesClient() {
             <div style={sSec}>
               <div style={sSecLbl}>Identificación</div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                {/* Tipo — primero */}
+                {/* Tipo */}
                 <div style={{ width: 148, ...sField }}>
                   <label style={sLabel}>Tipo</label>
                   <select value={form.cedula_tipo}
@@ -799,7 +1170,7 @@ export default function ClientesClient() {
                     style={sInput}
                   />
                 </div>
-                {/* Consultar — oculto para pasaporte */}
+                {/* Consultar */}
                 {form.cedula_tipo !== 'pasaporte' && (
                   <div style={{ ...sField, paddingTop: 22 }}>
                     <button onClick={lookupCedula} disabled={lookingUp} style={{ ...sLookupBtn, opacity: lookingUp ? .6 : 1 }}>
@@ -978,6 +1349,7 @@ export default function ClientesClient() {
                   { key: 'tiktok'    as const, Icon: TkIcon,  placeholder: '@usuario',         net: 'tiktok'    },
                   { key: 'linkedin'  as const, Icon: LiIcon,  placeholder: 'URL de LinkedIn',  net: 'linkedin'  },
                   { key: 'youtube'   as const, Icon: YtIcon,  placeholder: 'URL del canal',    net: 'youtube'   },
+                  { key: 'x'         as const, Icon: XIcon,   placeholder: '@usuario o URL',   net: 'x'         },
                 ]).map(({ key, Icon, placeholder, net }) => (
                   <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
