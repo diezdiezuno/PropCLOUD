@@ -404,6 +404,13 @@ export default function ClientesClient() {
       const existing = companies.find(c => c.name.toLowerCase() === form.company_name.trim().toLowerCase())
       if (existing) {
         companyId = existing.id
+        // Si el nombre en el form difiere (ej. vino de Hacienda en mayúsculas), actualizar en DB
+        if (existing.name !== form.company_name.trim()) {
+          await sb.from('crm_companies').update({ name: form.company_name.trim() }).eq('id', existing.id)
+          setCompanies(prev => prev.map(c =>
+            c.id === existing.id ? { ...c, name: form.company_name.trim() } : c
+          ))
+        }
       } else {
         const { data: newCo } = await sb.from('crm_companies').insert({
           tenant_id: tenantId, name: form.company_name.trim(),
