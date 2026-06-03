@@ -218,19 +218,20 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
                     })}
                   </div>
                 )}
+
+                {/* Divider after each group */}
+                <div style={{ height: 1, background: '#f0f0f0', margin: open ? '6px 16px 2px' : '6px 10px 2px' }} />
+
               </div>
             )
           })}
-
-          {/* ── Divider ─────────────────────────────────── */}
-          <div style={{ height: 1, background: '#f0f0f0', margin: open ? '8px 16px' : '8px 12px' }} />
 
           {/* ── Standalone items ────────────────────────── */}
           {NAV_STANDALONE.map(({ href, icon, label }) => {
             const active = pathname.startsWith(href)
             return (
+              <div key={href}>
               <a
-                key={href}
                 href={href}
                 style={{
                   display: 'flex',
@@ -257,6 +258,9 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
                   : <span style={{ fontSize: 9, color: active ? '#111' : '#888', fontWeight: active ? 700 : 400, letterSpacing: '.01em', maxWidth: 62, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
                 }
               </a>
+              {/* Divider after each standalone item */}
+              <div style={{ height: 1, background: '#f0f0f0', margin: open ? '6px 16px 2px' : '6px 10px 2px' }} />
+              </div>
             )
           })}
 
