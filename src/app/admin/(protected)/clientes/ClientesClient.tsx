@@ -374,6 +374,16 @@ export default function ClientesClient() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew, tenantId])
 
+  // Auto-open vcard from ?id=X
+  const idParam = searchParams.get('id')
+  useEffect(() => {
+    if (idParam && tenantId) {
+      openVCard(idParam)
+      router.replace('/admin/clientes')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idParam, tenantId])
+
   // Keyboard shortcuts — priority: vcard → drawer
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {

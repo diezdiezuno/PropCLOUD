@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 
 // ── Types ─────────────────────────────────────────────────────
@@ -60,6 +61,10 @@ function companyInitials(name: string): string {
 
 // ── Component ─────────────────────────────────────────────────
 export default function EmpresasClient() {
+  const searchParams = useSearchParams()
+  const router       = useRouter()
+  const idParam      = searchParams.get('id')
+
   const [tenantId,    setTenantId]    = useState('')
   const [userId,      setUserId]      = useState('')
   const [companies,   setCompanies]   = useState<Company[]>([])
@@ -163,6 +168,24 @@ export default function EmpresasClient() {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [drawerOpen])
+
+  // Auto-open drawer from ?id=X (from property owner link)
+  useEffect(() => {
+    if (!idParam || !tenantId || pageLoading) return
+    const co = companies.find(c => c.id === idParam)
+    if (co) {
+      openDrawer(co)
+      router.replace('/admin/empresas')
+    } else {
+      // Company not in current list — fetch it directly
+      createClient().from('crm_companies').select('id,name,trade_name,cedula_juridica')
+        .eq('id', idParam).single()
+        .then(({ data }) => {
+          if (data) { openDrawer(data as Company); router.replace('/admin/empresas') }
+        })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idParam, tenantId, pageLoading])
 
   // Close contact results on outside click
   useEffect(() => {
