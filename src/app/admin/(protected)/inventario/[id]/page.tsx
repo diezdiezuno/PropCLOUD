@@ -104,10 +104,10 @@ export default function PropiedadPage() {
   const [prop,      setProp]      = useState<PropertyFull | null>(null)
   const [propTypes, setPropTypes] = useState<PropertyType[]>([])
   const [agents,    setAgents]    = useState<Agent[]>([])
+  const [agentId,   setAgentId]   = useState('')
   const [loading,   setLoading]   = useState(true)
   const [activeTab, setActiveTab] = useState(Number(searchParams.get('tab') ?? '1'))
 
-  /* ── Load ── */
   useEffect(() => {
     const sb = createClient()
     sb.auth.getUser().then(async ({ data: { user } }) => {
@@ -119,12 +119,20 @@ export default function PropiedadPage() {
         sb.from('property_types').select('id,label,value,icon').eq('tenant_id', adminRec.tenant_id).order('sort_order'),
         sb.from('agents').select('id,name').eq('tenant_id', adminRec.tenant_id).eq('is_active', true).order('name'),
       ])
-      if (p) setProp(p as PropertyFull)
+      if (p) { setProp(p as PropertyFull); setAgentId((p as PropertyFull).agent_id ?? '') }
       setPropTypes((types ?? []) as PropertyType[])
       setAgents((agentList ?? []) as Agent[])
       setLoading(false)
     })
   }, [id])
+
+  async function saveAgent(newId: string) {
+    if (!prop) return
+    setAgentId(newId)
+    const { data } = await createClient().from('properties')
+      .update({ agent_id: newId || null }).eq('id', prop.id).select('*').single()
+    if (data) setProp(data as PropertyFull)
+  }
 
   if (loading) return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>
   if (!prop)   return <div style={{ padding: 40, color: '#e53e3e', fontSize: 14 }}>Propiedad no encontrada.</div>
@@ -137,12 +145,26 @@ export default function PropiedadPage() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 13, padding: 0, fontFamily: 'inherit', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
           ← Inventario
         </button>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>
-          {prop.title || <span style={{ color: '#bbb', fontWeight: 400 }}>Sin título</span>}
-        </h1>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {prop.provincia && <span style={{ fontSize: 13, color: '#888' }}>📍 {[prop.canton, prop.provincia].filter(Boolean).join(', ')}</span>}
-          <StatusPill status={prop.crm_status} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 6px' }}>
+              {prop.title || <span style={{ color: '#bbb', fontWeight: 400 }}>Sin título</span>}
+            </h1>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {prop.provincia && <span style={{ fontSize: 13, color: '#888' }}>📍 {[prop.canton, prop.provincia].filter(Boolean).join(', ')}</span>}
+              <StatusPill status={prop.crm_status} />
+            </div>
+          </div>
+          {agents.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em' }}>Agente</span>
+              <select value={agentId} onChange={e => saveAgent(e.target.value)}
+                style={{ height: 34, padding: '0 10px', border: '1px solid #e2e5ea', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', background: '#fff', cursor: 'pointer', maxWidth: 200 }}>
+                <option value="">Sin asignar</option>
+                {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -168,7 +190,7 @@ export default function PropiedadPage() {
       </div>
 
       {/* Tab content */}
-      {activeTab === 1 && <Tab1Captacion    prop={prop} propTypes={propTypes} agents={agents} onSaved={setProp} />}
+      {activeTab === 1 && <Tab1Captacion    prop={prop} propTypes={propTypes} onSaved={setProp} />}
       {activeTab === 2 && <Tab2Caracteristicas prop={prop} onSaved={setProp} />}
       {activeTab === 3 && <Tab3Amenidades   prop={prop} onSaved={setProp} />}
       {activeTab === 4 && <Tab4Precio       prop={prop} onSaved={setProp} />}
@@ -181,15 +203,13 @@ export default function PropiedadPage() {
 /* ══════════════════════════════════════════════════════════════
    TAB 1 — Captación
 ══════════════════════════════════════════════════════════════ */
-function Tab1Captacion({ prop, propTypes, agents, onSaved }: {
-  prop: PropertyFull; propTypes: PropertyType[]; agents: Agent[]
+function Tab1Captacion({ prop, propTypes, onSaved }: {
+  prop: PropertyFull; propTypes: PropertyType[]
   onSaved: (p: PropertyFull) => void
 }) {
   const [propType,    setPropType]    = useState(prop.type ?? '')
   const [transaction, setTransaction] = useState(prop.transaction ?? 'sale')
   const [crmStatus,   setCrmStatus]   = useState(prop.crm_status ?? 'captacion')
-  const [agentId,     setAgentId]     = useState(prop.agent_id ?? '')
-  const [mandateType, setMandateType] = useState<'exclusive' | 'open' | ''>(prop.mandate_type as 'exclusive' | 'open' | '' ?? '')
   const [provincia,   setProvincia]   = useState(prop.provincia ?? '')
   const [canton,      setCanton]      = useState(prop.canton ?? '')
   const [distrito,    setDistrito]    = useState(prop.distrito ?? '')
@@ -208,10 +228,10 @@ function Tab1Captacion({ prop, propTypes, agents, onSaved }: {
   const [saveError,   setSaveError]   = useState<string | null>(null)
   const [saved,       setSaved]       = useState(false)
 
-  const mapContainerRef = useRef<HTMLDivElement>(null)
-  const mapRef          = useRef<mapboxgl.Map | null>(null)
-  const markerRef       = useRef<mapboxgl.Marker | null>(null)
-  const informeInputRef = useRef<HTMLInputElement>(null)
+  const mapContainerRef   = useRef<HTMLDivElement>(null)
+  const mapRef            = useRef<mapboxgl.Map | null>(null)
+  const markerRef         = useRef<mapboxgl.Marker | null>(null)
+  const informeInputRef   = useRef<HTMLInputElement>(null)
   const planoFileInputRef = useRef<HTMLInputElement>(null)
 
   const cantons   = provincia ? getCantons(provincia) : []
@@ -299,29 +319,73 @@ function Tab1Captacion({ prop, propTypes, agents, onSaved }: {
     setGeocoding(false)
   }
 
-  function parseGmapsLink(url: string) {
-    const patterns = [/@(-?\d+\.?\d*),(-?\d+\.?\d*)/, /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/, /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/, /\/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/]
-    for (const re of patterns) { const m = url.match(re); if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) } }
+  function parseGmapsLink(url: string): { lat: number; lng: number } | 'short' | null {
+    // Detect short/redirect URLs — coordinates can't be extracted client-side
+    if (/goo\.gl|maps\.app\.goo\.gl/i.test(url)) return 'short'
+
+    // Decode URL-encoded characters
+    const decoded = url.replace(/%2C/gi, ',').replace(/%40/gi, '@').replace(/%3F/gi, '?').replace(/%3D/gi, '=')
+
+    const patterns: Array<[RegExp, boolean]> = [
+      // @lat,lng (standard desktop/mobile link) — most common
+      [/@(-?\d+\.\d+),(-?\d+\.\d+)/, false],
+      // !3d{lat}!4d{lng} (embed URLs, data= parameter)
+      [/!3d(-?\d+\.\d+)[^!]*!4d(-?\d+\.\d+)/, false],
+      // ?q=lat,lng or &q=lat,lng
+      [/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, false],
+      // ?ll=lat,lng
+      [/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/, false],
+      // center=lat,lng
+      [/[?&]center=(-?\d+\.\d+),(-?\d+\.\d+)/, false],
+      // cbll=lat,lng (Street View)
+      [/[?&]cbll=(-?\d+\.\d+),(-?\d+\.\d+)/, false],
+    ]
+
+    for (const [re, swap] of patterns) {
+      const m = decoded.match(re)
+      if (m) {
+        let lat = parseFloat(m[1])
+        let lng = parseFloat(m[2])
+        if (swap) [lat, lng] = [lng, lat]
+        if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+          return { lat, lng }
+        }
+      }
+    }
     return null
   }
+
   async function handleGmapsLink(url: string) {
     setGmapsLink(url); setGmapsError('')
     if (!url.trim()) return
-    const coords = parseGmapsLink(url)
-    if (!coords) { setGmapsError('No se encontraron coordenadas. Usá el link completo de Google Maps.'); return }
-    flyToLocation(coords.lng, coords.lat); await reverseGeocode(coords.lng, coords.lat)
+    const result = parseGmapsLink(url)
+    if (result === 'short') {
+      setGmapsError('Link corto detectado — abrí Google Maps en el navegador, clic en Compartir → Copiar enlace, y pegá ese link aquí.')
+      return
+    }
+    if (!result) {
+      setGmapsError('No se encontraron coordenadas. Pegá el link completo de Google Maps (debe contener el símbolo @).')
+      return
+    }
+    flyToLocation(result.lng, result.lat)
+    await reverseGeocode(result.lng, result.lat)
   }
+
   function useMyLocation() {
     if (!navigator.geolocation) return
     setGeoLoading(true)
-    navigator.geolocation.getCurrentPosition(pos => { flyToLocation(pos.coords.longitude, pos.coords.latitude); setGeoLoading(false) }, () => setGeoLoading(false), { timeout: 8000 })
+    navigator.geolocation.getCurrentPosition(
+      pos => { flyToLocation(pos.coords.longitude, pos.coords.latitude); setGeoLoading(false) },
+      () => setGeoLoading(false),
+      { timeout: 8000 }
+    )
   }
 
   async function save(e: React.FormEvent) {
     e.preventDefault(); setSaving(true); setSaveError(null); setSaved(false)
     const sb = createClient()
     async function uploadDoc(file: File, label: string) {
-      const ext = file.name.split('.').pop()
+      const ext  = file.name.split('.').pop()
       const path = `${prop.tenant_id}/${prop.id}-${label}.${ext}`
       const { error } = await sb.storage.from('property-docs').upload(path, file, { upsert: true })
       if (error) return null
@@ -331,13 +395,24 @@ function Tab1Captacion({ prop, propTypes, agents, onSaved }: {
       informeFile ? uploadDoc(informeFile, 'informe-registral') : Promise.resolve(null),
       planoFile   ? uploadDoc(planoFile,   'plano-catastrado')  : Promise.resolve(null),
     ])
-    const newFeatures = { ...(prop.features ?? {}), ...(informeUrl ? { informe_registral_url: informeUrl } : {}), ...(planoDocUrl ? { plano_catastrado_url: planoDocUrl } : {}), ...(gmapsLink ? { gmaps_link: gmapsLink } : {}) }
+    const newFeatures = {
+      ...(prop.features ?? {}),
+      ...(informeUrl  ? { informe_registral_url: informeUrl }  : {}),
+      ...(planoDocUrl ? { plano_catastrado_url: planoDocUrl }  : {}),
+      ...(gmapsLink   ? { gmaps_link: gmapsLink }              : {}),
+    }
     const { data, error } = await sb.from('properties').update({
-      type: propType, transaction: transaction === 'sale_rent' ? 'sale' : transaction,
-      crm_status: crmStatus, status: crmStatus === 'active' ? 'active' : (crmStatus === 'sold' ? 'sold' : 'inactive'),
-      mandate_type: mandateType || null, agent_id: agentId || null,
-      provincia: provincia || null, canton: canton || null, distrito: distrito || null, address: address || null,
-      lat: mapLat, lng: mapLng, finca_number: finca || null, plano_number: plano || null,
+      type:       propType,
+      transaction: transaction,
+      crm_status: crmStatus,
+      status: crmStatus === 'active' ? 'active' : (crmStatus === 'sold' ? 'sold' : 'inactive'),
+      provincia: provincia   || null,
+      canton:    canton      || null,
+      distrito:  distrito    || null,
+      address:   address     || null,
+      lat: mapLat, lng: mapLng,
+      finca_number: finca  || null,
+      plano_number: plano  || null,
       features: newFeatures,
     }).eq('id', prop.id).select('*').single()
     if (error) { setSaveError(`Error: ${error.message}`); setSaving(false); return }
@@ -347,27 +422,67 @@ function Tab1Captacion({ prop, propTypes, agents, onSaved }: {
 
   return (
     <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <OwnerSection prop={prop} onSaved={onSaved} />
 
-      <FormSection title="Datos registrales">
+      {/* ── 1. Estado CRM ─────────────────────────────────── */}
+      <FormSection title="Estado CRM">
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {CRM_STATUSES.map(s => (
+            <PillBtn key={s.value} active={crmStatus === s.value} onClick={() => setCrmStatus(s.value)}>
+              {s.label}
+            </PillBtn>
+          ))}
+        </div>
+      </FormSection>
+
+      {/* ── 2. Datos básicos ──────────────────────────────── */}
+      <FormSection title="Datos básicos">
+        <FieldLabel>Tipo de transacción</FieldLabel>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          {TRANSACTIONS.map(t => (
+            <PillBtn key={t.value} active={transaction === t.value} onClick={() => setTransaction(t.value)}>
+              {t.label}
+            </PillBtn>
+          ))}
+        </div>
+
+        <FieldLabel>Tipo de propiedad</FieldLabel>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {propTypes.map(t => (
+            <button key={t.value} type="button" onClick={() => setPropType(t.value)}
+              style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid', borderColor: propType === t.value ? '#111' : '#e0e0e0', background: propType === t.value ? '#111' : '#fff', color: propType === t.value ? '#fff' : '#555', fontSize: 13, fontWeight: propType === t.value ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all .15s' }}>
+              {t.icon && <span>{t.icon}</span>} {t.label}
+            </button>
+          ))}
+        </div>
+      </FormSection>
+
+      {/* ── 3. Datos registrales y ubicación ─────────────── */}
+      <FormSection title="Datos registrales y ubicación">
+        {/* Finca + Plano */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
           <div><FieldLabel>Número de finca</FieldLabel><input value={finca} onChange={e => setFinca(e.target.value)} placeholder="Ej: 1-12345-000" style={inputSt} /></div>
           <div><FieldLabel>Número de plano catastrado</FieldLabel><input value={plano} onChange={e => setPlano(e.target.value)} placeholder="Ej: SJ-1234567-2010" style={inputSt} /></div>
         </div>
+
+        {/* Document uploads */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
           <FileUploadField label="Informe registral (PDF)" file={informeFile} onSelect={setInformeFile} onClear={() => setInformeFile(null)} inputRef={informeInputRef} accept=".pdf"
             existingUrl={prop.features?.informe_registral_url} />
           <FileUploadField label="Plano catastrado (PDF / imagen)" file={planoFile} onSelect={setPlanoFile} onClear={() => setPlanoFile(null)} inputRef={planoFileInputRef} accept=".pdf,image/*"
             existingUrl={prop.features?.plano_catastrado_url} />
         </div>
-      </FormSection>
 
-      <FormSection title="Ubicación">
+        <div style={{ height: 1, background: '#f0f0f0', margin: '0 0 20px' }} />
+
+        {/* Google Maps link */}
         <div style={{ marginBottom: 16 }}>
           <FieldLabel>Link de Google Maps</FieldLabel>
-          <input value={gmapsLink} onChange={e => handleGmapsLink(e.target.value)} placeholder="Pegá el link de Google Maps aquí…" style={inputSt} />
+          <input value={gmapsLink} onChange={e => handleGmapsLink(e.target.value)} placeholder="Pegá el link completo de Google Maps aquí…" style={inputSt} />
           {gmapsError && <p style={{ fontSize: 12, color: '#e53e3e', margin: '6px 0 0' }}>{gmapsError}</p>}
+          <p style={{ fontSize: 11, color: '#9ca3af', margin: '4px 0 0' }}>Compartí el link desde el navegador (no el link corto goo.gl).</p>
         </div>
+
+        {/* Map */}
         <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid #e0e0e0', marginBottom: 8 }}>
           <div ref={mapContainerRef} style={{ height: 340, width: '100%' }} />
           <button type="button" onClick={useMyLocation} disabled={geoLoading}
@@ -379,6 +494,8 @@ function Tab1Captacion({ prop, propTypes, agents, onSaved }: {
           {mapLat !== null && <p style={{ fontSize: 11, color: '#6b2fa0', margin: 0, fontWeight: 500 }}>✓ {mapLat}, {mapLng}</p>}
           {geocoding && <p style={{ fontSize: 11, color: '#888', margin: 0 }}>Detectando ubicación…</p>}
         </div>
+
+        {/* Provincia / Cantón / Distrito */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 14 }}>
           <div>
             <FieldLabel>Provincia</FieldLabel>
@@ -402,41 +519,15 @@ function Tab1Captacion({ prop, propTypes, agents, onSaved }: {
             </select>
           </div>
         </div>
-        <div><FieldLabel>Dirección / señas exactas</FieldLabel><input value={address} onChange={e => setAddress(e.target.value)} placeholder="Ej: 200m norte del parque, casa esquinera" style={inputSt} /></div>
+
+        <div>
+          <FieldLabel>Dirección / señas exactas</FieldLabel>
+          <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Ej: 200m norte del parque, casa esquinera" style={inputSt} />
+        </div>
       </FormSection>
 
-      <FormSection title="Datos básicos">
-        <FieldLabel>Tipo de propiedad</FieldLabel>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-          {propTypes.map(t => (
-            <button key={t.value} type="button" onClick={() => setPropType(t.value)}
-              style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid', borderColor: propType === t.value ? '#111' : '#e0e0e0', background: propType === t.value ? '#111' : '#fff', color: propType === t.value ? '#fff' : '#555', fontSize: 13, fontWeight: propType === t.value ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, transition: 'all .15s' }}>
-              {t.icon && <span>{t.icon}</span>} {t.label}
-            </button>
-          ))}
-        </div>
-        <FieldLabel>Transacción</FieldLabel>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-          {TRANSACTIONS.map(t => <PillBtn key={t.value} active={transaction === t.value} onClick={() => setTransaction(t.value)}>{t.label}</PillBtn>)}
-        </div>
-        <FieldLabel>Tipo de mandato</FieldLabel>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-          {[{ value: 'exclusive', label: '🔒 Exclusivo' }, { value: 'open', label: '🔓 Abierto' }].map(m => (
-            <PillBtn key={m.value} active={mandateType === m.value} onClick={() => setMandateType(prev => prev === m.value ? '' : m.value as 'exclusive' | 'open')}>{m.label}</PillBtn>
-          ))}
-        </div>
-        <FieldLabel>Estado CRM</FieldLabel>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-          {CRM_STATUSES.map(s => <PillBtn key={s.value} active={crmStatus === s.value} onClick={() => setCrmStatus(s.value)}>{s.label}</PillBtn>)}
-        </div>
-        {agents.length > 0 && (<>
-          <FieldLabel>Agente asignado</FieldLabel>
-          <select value={agentId} onChange={e => setAgentId(e.target.value)} style={{ ...inputSt, maxWidth: 320 }}>
-            <option value="">Sin asignar</option>
-            {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
-        </>)}
-      </FormSection>
+      {/* ── 4. Dueños ─────────────────────────────────────── */}
+      <OwnerSection prop={prop} onSaved={onSaved} />
 
       <SaveBar saving={saving} saved={saved} error={saveError} />
     </form>
