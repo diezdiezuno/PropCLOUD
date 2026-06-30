@@ -40,6 +40,7 @@ const TABS = [
   { id: 4, label: 'Precio',          icon: '💰' },
   { id: 5, label: 'Descripción',     icon: '📝' },
   { id: 6, label: 'Fotos',           icon: '📸' },
+  { id: 7, label: 'Estudios',        icon: '🔎' },
 ]
 
 /* ── Types ───────────────────────────────────────────────────── */
@@ -196,6 +197,7 @@ export default function PropiedadPage() {
       {activeTab === 4 && <Tab4Precio       prop={prop} onSaved={setProp} />}
       {activeTab === 5 && <Tab5Descripcion  prop={prop} onSaved={setProp} />}
       {activeTab === 6 && <Tab6Fotos        prop={prop} onSaved={setProp} />}
+      {activeTab === 7 && <Tab7Estudios     prop={prop} />}
     </div>
   )
 }
@@ -881,6 +883,115 @@ function Tab6Fotos({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Propert
         {saveError && <p style={{ fontSize: 12, color: '#e53e3e', margin: '12px 0 0' }}>{saveError}</p>}
         {saved && <p style={{ fontSize: 12, color: '#10B981', margin: '12px 0 0', fontWeight: 600 }}>✓ Portada actualizada</p>}
       </FormSection>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TAB 7 — Estudios (registral y mercado, generados por los agentes AIre)
+══════════════════════════════════════════════════════════════ */
+interface Estudio {
+  id: string
+  tipo: 'registral' | 'mercado' | string
+  resultado: 'limpio' | 'revisar' | 'problema' | null
+  resumen: string | null
+  pdf_path: string | null
+  precio_min: number | null
+  precio_max: number | null
+  precio_sugerido: number | null
+  created_at: string
+}
+
+const RESULTADO_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
+  limpio:   { bg: '#ECFDF5', fg: '#059669', label: '✓ Limpio' },
+  revisar:  { bg: '#FFFBEB', fg: '#D97706', label: '⚠ Revisar' },
+  problema: { bg: '#FEF2F2', fg: '#DC2626', label: '✕ Problema' },
+}
+
+function Tab7Estudios({ prop }: { prop: PropertyFull }) {
+  const [estudios, setEstudios] = useState<Estudio[] | null>(null)
+
+  useEffect(() => {
+    createClient()
+      .from('crm_estudios')
+      .select('id,tipo,resultado,resumen,pdf_path,precio_min,precio_max,precio_sugerido,created_at')
+      .eq('property_id', prop.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setEstudios((data as Estudio[]) ?? []))
+  }, [prop.id])
+
+  if (estudios === null) {
+    return <p style={{ fontSize: 13, color: '#888', padding: '8px 2px' }}>Cargando estudios…</p>
+  }
+  if (estudios.length === 0) {
+    return (
+      <FormSection title="Estudios">
+        <div style={{ textAlign: 'center', padding: '28px 12px', color: '#888' }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>🔎</div>
+          <p style={{ fontSize: 13, margin: 0 }}>Aún no hay estudios para esta propiedad.</p>
+          <p style={{ fontSize: 12, color: '#aaa', margin: '6px 0 0' }}>
+            Los agentes (Vera, Vega) los generan automáticamente cuando se registra la finca.
+          </p>
+        </div>
+      </FormSection>
+    )
+  }
+
+  const fmt = (n: number | null) => n == null ? '—' : `$${n.toLocaleString('en-US')}`
+  const fecha = (s: string) => new Date(s).toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric' })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {estudios.map(e => {
+        const rs = e.resultado ? RESULTADO_STYLE[e.resultado] : null
+        const esMercado = e.tipo === 'mercado'
+        return (
+          <div key={e.id} style={{ background: '#fff', borderRadius: 12, padding: '22px 26px', border: '1px solid #ebebeb' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 14, borderBottom: '1px solid #f0f0f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>{esMercado ? '📊' : '📋'}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#111', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                  Estudio {esMercado ? 'de mercado' : 'registral'}
+                </span>
+                {rs && (
+                  <span style={{ background: rs.bg, color: rs.fg, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
+                    {rs.label}
+                  </span>
+                )}
+              </div>
+              <span style={{ fontSize: 12, color: '#aaa' }}>{fecha(e.created_at)}</span>
+            </div>
+
+            {/* Precio (solo mercado) */}
+            {esMercado && (e.precio_sugerido != null || e.precio_min != null) && (
+              <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Rango</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#444' }}>{fmt(e.precio_min)} – {fmt(e.precio_max)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Sugerido</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{fmt(e.precio_sugerido)}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Resumen */}
+            {e.resumen && (
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#444', margin: 0, whiteSpace: 'pre-wrap' }}>{e.resumen}</p>
+            )}
+
+            {/* PDF */}
+            {e.pdf_path && (
+              <a href={e.pdf_path} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, fontSize: 13, color: '#2563EB', textDecoration: 'none', fontWeight: 500 }}>
+                📎 Ver PDF del estudio
+              </a>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
