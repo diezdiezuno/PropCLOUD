@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Card Options</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f7; padding: 40px 32px; }
+  h2 { font-size: 13px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .12em; margin-bottom: 20px; }
+  .section { margin-bottom: 56px; }
+  .label { display: inline-block; font-size: 11px; font-weight: 600; color: #fff; background: #6b2fa0; border-radius: 100px; padding: 4px 12px; margin-bottom: 16px; }
+  .grid { display: grid; gap: 2px; background: #e0ddd9; border: 1px solid #e0ddd9; border-radius: 18px; overflow: hidden; }
+
+  /* ── OPTION A — Editorial vertical ── */
+  .grid-a { grid-template-columns: repeat(4, 260px); }
+  .card-a {
+    position: relative; height: 340px; background: #eee; overflow: hidden; cursor: pointer;
+  }
+  .card-a img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s; }
+  .card-a:hover img { transform: scale(1.04); }
+  .card-a .overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.3) 60%, transparent 100%);
+    padding: 20px 20px 22px;
+  }
+  .card-a .position-badge {
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,.6);
+    text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px;
+  }
+  .card-a .name { font-size: 17px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .card-a .contacts { display: flex; gap: 8px; margin-top: 10px; }
+  .card-a .contact-icon {
+    width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.15);
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ── OPTION B — Portrait info abajo ── */
+  .grid-b { grid-template-columns: repeat(4, 240px); }
+  .card-b { background: #fff; overflow: hidden; }
+  .card-b .photo { width: 100%; aspect-ratio: 3/4; background: #e8e4df; overflow: hidden; }
+  .card-b .photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s; }
+  .card-b:hover .photo img { transform: scale(1.03); }
+  .card-b .info { padding: 18px 20px 22px; }
+  .card-b .name { font-size: 17px; font-weight: 800; color: #111; letter-spacing: -.02em; line-height: 1.2; margin-bottom: 8px; }
+  .card-b .badge {
+    display: inline-block; font-size: 11px; font-weight: 500;
+    background: rgba(107,47,160,.08); color: #6b2fa0;
+    border: 1px solid rgba(107,47,160,.15); border-radius: 100px; padding: 3px 10px;
+    margin-bottom: 14px;
+  }
+  .card-b .socials { display: flex; gap: 6px; flex-wrap: wrap; }
+  .card-b .soc {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid #e8e4df;
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    color: #888; text-decoration: none;
+  }
+  .card-b .soc:hover { border-color: #111; color: #111; }
+
+  /* ── OPTION C — Hover reveal ── */
+  .grid-c { grid-template-columns: repeat(4, 260px); }
+  .card-c { position: relative; overflow: hidden; cursor: pointer; }
+  .card-c .photo { width: 100%; height: 320px; background: #ddd; overflow: hidden; }
+  .card-c .photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+  .card-c:hover .photo img { transform: scale(1.06); }
+  .card-c .reveal {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #111; padding: 0 20px;
+    max-height: 0; overflow: hidden; transition: max-height .35s ease, padding .35s ease;
+  }
+  .card-c:hover .reveal { max-height: 120px; padding: 18px 20px 20px; }
+  .card-c .r-position { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 4px; }
+  .card-c .r-name { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 10px; }
+  .card-c .r-socials { display: flex; gap: 6px; }
+  .card-c .r-soc { width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  /* Static name at bottom for non-hover */
+  .card-c .static-name {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.6), transparent);
+    padding: 24px 20px 14px;
+    transition: opacity .3s;
+  }
+  .card-c:hover .static-name { opacity: 0; }
+  .card-c .static-name span { font-size: 15px; font-weight: 700; color: #fff; }
+
+  /* ── OPTION D — Horizontal ── */
+  .grid-d { grid-template-columns: repeat(2, 440px); }
+  .card-d {
+    background: #fff; display: flex; align-items: stretch; overflow: hidden;
+  }
+  .card-d .photo {
+    width: 140px; flex-shrink: 0; background: #e8e4df; overflow: hidden;
+  }
+  .card-d .photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s; }
+  .card-d:hover .photo img { transform: scale(1.05); }
+  .card-d .info { padding: 22px 24px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .card-d .name { font-size: 18px; font-weight: 800; color: #111; letter-spacing: -.02em; line-height: 1.2; }
+  .card-d .badge {
+    display: inline-block; font-size: 11px; font-weight: 500;
+    background: rgba(107,47,160,.08); color: #6b2fa0;
+    border: 1px solid rgba(107,47,160,.15); border-radius: 100px; padding: 3px 10px;
+    width: fit-content;
+  }
+  .card-d .contacts { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+  .card-d .contact-row { font-size: 12px; color: #666; display: flex; align-items: center; gap: 6px; }
+  .card-d .socials { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .card-d .soc {
+    width: 28px; height: 28px; border-radius: 7px; border: 1px solid #e8e4df;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; color: #888;
+  }
+</style>
+</head>
+<body>
+
+<!-- OPTION A -->
+<div class="section">
+  <div class="label">Opción A</div>
+  <h2>Editorial vertical — foto con overlay</h2>
+  <div class="grid grid-a">
+    <div class="card-a">
+      <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=500&fit=crop&crop=face" />
+      <div class="overlay">
+        <div class="position-badge">Team Leader</div>
+        <div class="name">María Fernández</div>
+        <div class="contacts">
+          <div class="contact-icon">💬</div>
+          <div class="contact-icon">✉️</div>
+          <div class="contact-icon">📸</div>
+          <div class="contact-icon">in</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-a">
+      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop&crop=face" />
+      <div class="overlay">
+        <div class="position-badge">Asesor Inmobiliario</div>
+        <div class="name">Carlos Rodríguez</div>
+        <div class="contacts">
+          <div class="contact-icon">💬</div>
+          <div class="contact-icon">✉️</div>
+          <div class="contact-icon">📸</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-a">
+      <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=500&fit=crop&crop=face" />
+      <div class="overlay">
+        <div class="position-badge">Broker</div>
+        <div class="name">Ana Vargas</div>
+        <div class="contacts">
+          <div class="contact-icon">💬</div>
+          <div class="contact-icon">✉️</div>
+          <div class="contact-icon">📸</div>
+          <div class="contact-icon">in</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-a">
+      <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=500&fit=crop&crop=face" />
+      <div class="overlay">
+        <div class="position-badge">Asesor Inmobiliario</div>
+        <div class="name">Luis Mora</div>
+        <div class="contacts">
+          <div class="contact-icon">💬</div>
+          <div class="contact-icon">✉️</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OPTION B -->
+<div class="section">
+  <div class="label">Opción B</div>
+  <h2>Portrait con info abajo — foto 3:4</h2>
+  <div class="grid grid-b">
+    <div class="card-b">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=520&fit=crop&crop=face" /></div>
+      <div class="info">
+        <div class="name">María Fernández</div>
+        <div class="badge">Team Leader</div>
+        <div class="socials">
+          <a class="soc">📸</a><a class="soc">in</a><a class="soc">💬</a><a class="soc">✉️</a>
+        </div>
+      </div>
+    </div>
+    <div class="card-b">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=520&fit=crop&crop=face" /></div>
+      <div class="info">
+        <div class="name">Carlos Rodríguez</div>
+        <div class="badge">Asesor Inmobiliario</div>
+        <div class="socials">
+          <a class="soc">📸</a><a class="soc">💬</a><a class="soc">✉️</a>
+        </div>
+      </div>
+    </div>
+    <div class="card-b">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=520&fit=crop&crop=face" /></div>
+      <div class="info">
+        <div class="name">Ana Vargas</div>
+        <div class="badge">Broker</div>
+        <div class="socials">
+          <a class="soc">📸</a><a class="soc">in</a><a class="soc">💬</a>
+        </div>
+      </div>
+    </div>
+    <div class="card-b">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=520&fit=crop&crop=face" /></div>
+      <div class="info">
+        <div class="name">Luis Mora</div>
+        <div class="badge">Asesor Inmobiliario</div>
+        <div class="socials">
+          <a class="soc">💬</a><a class="soc">✉️</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OPTION C -->
+<div class="section">
+  <div class="label">Opción C</div>
+  <h2>Hover reveal — info aparece al pasar el mouse</h2>
+  <div class="grid grid-c">
+    <div class="card-c">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=380&fit=crop&crop=face" /></div>
+      <div class="static-name"><span>María Fernández</span></div>
+      <div class="reveal">
+        <div class="r-position">Team Leader</div>
+        <div class="r-name">María Fernández</div>
+        <div class="r-socials">
+          <div class="r-soc">📸</div><div class="r-soc">in</div><div class="r-soc">💬</div><div class="r-soc">✉️</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-c">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=380&fit=crop&crop=face" /></div>
+      <div class="static-name"><span>Carlos Rodríguez</span></div>
+      <div class="reveal">
+        <div class="r-position">Asesor Inmobiliario</div>
+        <div class="r-name">Carlos Rodríguez</div>
+        <div class="r-socials">
+          <div class="r-soc">📸</div><div class="r-soc">💬</div><div class="r-soc">✉️</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-c">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=380&fit=crop&crop=face" /></div>
+      <div class="static-name"><span>Ana Vargas</span></div>
+      <div class="reveal">
+        <div class="r-position">Broker</div>
+        <div class="r-name">Ana Vargas</div>
+        <div class="r-socials">
+          <div class="r-soc">📸</div><div class="r-soc">in</div><div class="r-soc">💬</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-c">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=380&fit=crop&crop=face" /></div>
+      <div class="static-name"><span>Luis Mora</span></div>
+      <div class="reveal">
+        <div class="r-position">Asesor Inmobiliario</div>
+        <div class="r-name">Luis Mora</div>
+        <div class="r-socials">
+          <div class="r-soc">💬</div><div class="r-soc">✉️</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OPTION D -->
+<div class="section">
+  <div class="label">Opción D</div>
+  <h2>Horizontal — foto a la izquierda</h2>
+  <div class="grid grid-d">
+    <div class="card-d">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&h=300&fit=crop&crop=face" /></div>
+      <div class="info">
+        <div class="name">María Fernández</div>
+        <div class="badge">Team Leader</div>
+        <div class="contacts">
+          <div class="contact-row"><span>💬</span> +506 8888-1234</div>
+          <div class="contact-row"><span>✉️</span> maria@sunrise.cr</div>
+        </div>
+        <div class="socials">
+          <div class="soc">📸</div><div class="soc">in</div><div class="soc">𝕏</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-d">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face" /></div>
+      <div class="info">
+        <div class="name">Carlos Rodríguez</div>
+        <div class="badge">Asesor Inmobiliario</div>
+        <div class="contacts">
+          <div class="contact-row"><span>💬</span> +506 8888-5678</div>
+          <div class="contact-row"><span>✉️</span> carlos@sunrise.cr</div>
+        </div>
+        <div class="socials">
+          <div class="soc">📸</div><div class="soc">💬</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-d">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face" /></div>
+      <div class="info">
+        <div class="name">Ana Vargas</div>
+        <div class="badge">Broker</div>
+        <div class="contacts">
+          <div class="contact-row"><span>💬</span> +506 8888-9012</div>
+          <div class="contact-row"><span>✉️</span> ana@sunrise.cr</div>
+        </div>
+        <div class="socials">
+          <div class="soc">📸</div><div class="soc">in</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-d">
+      <div class="photo"><img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face" /></div>
+      <div class="info">
+        <div class="name">Luis Mora</div>
+        <div class="badge">Asesor Inmobiliario</div>
+        <div class="contacts">
+          <div class="contact-row"><span>💬</span> +506 8888-3456</div>
+          <div class="contact-row"><span>✉️</span> luis@sunrise.cr</div>
+        </div>
+        <div class="socials">
+          <div class="soc">💬</div><div class="soc">✉️</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

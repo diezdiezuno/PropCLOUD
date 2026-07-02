@@ -13,7 +13,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/admin/general',     icon: '⚙️', label: 'General'     },
       { href: '/admin/mapa',        icon: '🗺️', label: 'Mapa'        },
-      { href: '/admin/propiedades', icon: '🏠', label: 'Propiedades'  },
+      { href: '/admin/propiedades', icon: '🏠', label: 'Visualización' },
       { href: '/admin/paginas',     icon: '📄', label: 'Páginas'      },
       { href: '/admin/fuentes',     icon: '🔗', label: 'Fuentes'      },
       { href: '/admin/agentes',     icon: '👥', label: 'Agentes'      },
@@ -25,7 +25,7 @@ const NAV_GROUPS = [
     label: 'CRM',
     icon:  '🗂️',
     items: [
-      { href: '/admin/inventario', icon: '🏘️', label: 'Inventario' },
+      { href: '/admin/inventario', icon: '🏘️', label: 'Propiedades' },
       { href: '/admin/clientes',   icon: '👤', label: 'Clientes'   },
       { href: '/admin/empresas',   icon: '🏢', label: 'Empresas'   },
       { href: '/admin/leads',      icon: '📬', label: 'Leads'      },

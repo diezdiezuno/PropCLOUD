@@ -80,7 +80,7 @@ export default function InventarioPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>Inventario</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>Propiedades</h1>
           <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>
             {props.length === 0
               ? 'Sin propiedades manuales aún.'
