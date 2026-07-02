@@ -13,7 +13,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/admin/general',     icon: '⚙️', label: 'General'     },
       { href: '/admin/mapa',        icon: '🗺️', label: 'Mapa'        },
-      { href: '/admin/propiedades', icon: '🏠', label: 'Visualización' },
+      { href: '/admin/visualizacion', icon: '🏠', label: 'Visualización' },
       { href: '/admin/paginas',     icon: '📄', label: 'Páginas'      },
       { href: '/admin/fuentes',     icon: '🔗', label: 'Fuentes'      },
       { href: '/admin/agentes',     icon: '👥', label: 'Agentes'      },
@@ -25,7 +25,7 @@ const NAV_GROUPS = [
     label: 'CRM',
     icon:  '🗂️',
     items: [
-      { href: '/admin/inventario', icon: '🏘️', label: 'Propiedades' },
+      { href: '/admin/propiedades', icon: '🏘️', label: 'Propiedades' },
       { href: '/admin/clientes',   icon: '👤', label: 'Clientes'   },
       { href: '/admin/empresas',   icon: '🏢', label: 'Empresas'   },
       { href: '/admin/leads',      icon: '📬', label: 'Leads'      },
@@ -178,7 +178,7 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
         id:       p.id,
         title:    p.title || 'Sin título',
         subtitle: [p.canton, p.provincia].filter(Boolean).join(', ') || p.address || 'Propiedad',
-        href:     `/admin/inventario/${p.id}`,
+        href:     `/admin/propiedades/${p.id}`,
       })
     }
     setResults(out)
@@ -213,7 +213,7 @@ export default function AdminShell({ tenant, userEmail, children }: Props) {
   const QUICK_ADD = [
     { icon: '👤', label: 'Nuevo cliente',    href: '/admin/clientes?new=1'   },
     { icon: '🏢', label: 'Nueva empresa',    href: '/admin/empresas?new=1'   },
-    { icon: '🏘️', label: 'Nueva propiedad',  href: '/admin/inventario?new=1' },
+    { icon: '🏘️', label: 'Nueva propiedad',  href: '/admin/propiedades?new=1' },
   ]
 
   const RESULT_ICONS: Record<string, string> = { contact: '👤', company: '🏢', property: '🏘️' }

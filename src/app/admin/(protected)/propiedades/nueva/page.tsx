@@ -451,7 +451,7 @@ export default function NuevaPropiedadPage() {
       return
     }
 
-    router.push(`/admin/inventario/${data.id}?tab=1`)
+    router.push(`/admin/propiedades/${data.id}?tab=1`)
   }
 
   if (loading) return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>
@@ -469,7 +469,7 @@ export default function NuevaPropiedadPage() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <button onClick={() => router.push('/admin/inventario')}
+        <button onClick={() => router.push('/admin/propiedades')}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 13, padding: 0, fontFamily: 'inherit', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
           ← Inventario
         </button>
@@ -812,7 +812,7 @@ export default function NuevaPropiedadPage() {
             style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
             {saving ? 'Guardando…' : 'Guardar y pasar al siguiente tab →'}
           </button>
-          <button type="button" onClick={() => router.push('/admin/inventario')}
+          <button type="button" onClick={() => router.push('/admin/propiedades')}
             style={{ background: 'none', border: '1px solid #e0e0e0', borderRadius: 10, padding: '11px 20px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', color: '#555' }}>
             Cancelar
           </button>

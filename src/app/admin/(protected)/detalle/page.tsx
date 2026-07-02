@@ -1,2 +1,2 @@
 import { redirect } from 'next/navigation'
-export default function DetallePage() { redirect('/admin/propiedades') }
+export default function DetallePage() { redirect('/admin/visualizacion') }

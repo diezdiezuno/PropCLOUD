@@ -142,7 +142,7 @@ export default function PropiedadPage() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <button onClick={() => router.push('/admin/inventario')}
+        <button onClick={() => router.push('/admin/propiedades')}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 13, padding: 0, fontFamily: 'inherit', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
           ← Inventario
         </button>
