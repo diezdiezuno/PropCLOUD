@@ -29,6 +29,7 @@ const NAV_GROUPS = [
       { href: '/admin/clientes',   icon: '👤', label: 'Clientes'   },
       { href: '/admin/empresas',   icon: '🏢', label: 'Empresas'   },
       { href: '/admin/leads',      icon: '📬', label: 'Leads'      },
+      { href: '/admin/crm-config', icon: '⚙️', label: 'Configuración' },
     ],
   },
 ]

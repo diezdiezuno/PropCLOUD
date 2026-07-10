@@ -6,9 +6,10 @@
    Una sola fuente de verdad: cualquier cambio se hace acá.
 ══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import PhoneInput from '@/components/PhoneInput'
+import TaxonomyManager from '@/components/crm/TaxonomyManager'
 
 /* ── Types ───────────────────────────────────────────────────── */
 interface ContactType   { id: string; name: string; color: string }
@@ -166,6 +167,7 @@ export default function ContactForm({
   // Si el caller no pasa isAdmin, lo resolvemos solos (cero plomería)
   const [adminAuto, setAdminAuto] = useState(false)
   const showAdmin = isAdmin ?? adminAuto
+  const [manageOpen, setManageOpen] = useState(false)
 
   /* Identification */
   const [cedulaTipo,   setCedulaTipo]   = useState('fisica')
@@ -224,16 +226,16 @@ export default function ContactForm({
   const [error,  setError]  = useState('')
 
   /* ── Load types + sources ────────────────────────────────── */
-  useEffect(() => {
+  const reloadTaxonomy = useCallback(async () => {
     const sb = createClient()
-    Promise.all([
+    const [{ data: t }, { data: s }] = await Promise.all([
       sb.from('contact_types').select('id,name,color').eq('tenant_id', tenantId).order('position'),
       sb.from('contact_sources').select('id,name').eq('tenant_id', tenantId).order('position'),
-    ]).then(([{ data: t }, { data: s }]) => {
-      setTypes((t ?? []) as ContactType[])
-      setSources((s ?? []) as ContactSource[])
-    })
+    ])
+    setTypes((t ?? []) as ContactType[])
+    setSources((s ?? []) as ContactSource[])
   }, [tenantId])
+  useEffect(() => { reloadTaxonomy() }, [reloadTaxonomy])
 
   /* ── Resolver admin si no viene por prop ─────────────────── */
   useEffect(() => {
@@ -630,6 +632,10 @@ export default function ContactForm({
             <span style={{ fontSize: 12, fontWeight: 600, color: '#5a6070' }}>Tipo de contacto</span>
             <span style={{ fontSize: 11, color: '#9ca3af' }}>· podés elegir varios</span>
             {showAdmin && <QuickAddOption onAdd={addType} />}
+            {showAdmin && (
+              <button type="button" onClick={() => setManageOpen(true)} title="Gestionar tipos y fuentes"
+                style={{ height: 20, minWidth: 20, padding: '0 5px', border: '1px solid #d5d9e0', borderRadius: 6, background: '#fff', color: '#5a6070', fontSize: 12, lineHeight: 1, cursor: 'pointer', fontFamily: 'inherit' }}>⚙</button>
+            )}
           </div>
           {types.length === 0 ? (
             <div style={{ fontSize: 12, color: '#9ca3af' }}>Sin tipos definidos{showAdmin ? ' — usá el + para crear uno' : ''}.</div>
@@ -814,6 +820,23 @@ export default function ContactForm({
           {saveLabel}
         </button>
       </div>
+
+      {/* Modal gestión de tipos/fuentes */}
+      {manageOpen && (
+        <div onClick={e => { if (e.target === e.currentTarget) setManageOpen(false) }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(13,15,18,.55)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ width: 520, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)', background: '#fff', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,.22)' }}>
+            <div style={{ height: 52, background: '#f4f5f7', borderBottom: '1px solid #e2e5ea', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', flexShrink: 0 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>⚙ Gestionar tipos y fuentes</span>
+              <button onClick={() => setManageOpen(false)}
+                style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #e2e5ea', background: '#fff', cursor: 'pointer', fontSize: 16, color: '#5a6070' }}>✕</button>
+            </div>
+            <div style={{ padding: 20, overflowY: 'auto' }}>
+              <TaxonomyManager tenantId={tenantId} canEdit={showAdmin} onChanged={reloadTaxonomy} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
