@@ -35,6 +35,8 @@ export default function TaxonomyManager({
   const [loading, setLoading] = useState(true)
   const [adminAuto, setAdminAuto] = useState(false)
   const editable = canEdit ?? adminAuto
+  const [dragType,   setDragType]   = useState<number | null>(null)
+  const [dragSource, setDragSource] = useState<number | null>(null)
 
   const reload = useCallback(async () => {
     const sb = createClient()
@@ -100,6 +102,29 @@ export default function TaxonomyManager({
     await reload()
   }
 
+  /* ── Reordenar (drag & drop) ── */
+  async function persistOrder(table: 'contact_types' | 'contact_sources', arr: { id: string }[]) {
+    const sb = createClient()
+    await Promise.all(arr.map((it, i) => sb.from(table).update({ position: i }).eq('id', it.id)))
+    onChanged?.()
+  }
+  function moveType(from: number, to: number) {
+    if (from === to || from < 0 || to < 0) return
+    const arr = [...types]
+    const [m] = arr.splice(from, 1)
+    arr.splice(to, 0, m)
+    setTypes(arr.map((t, i) => ({ ...t, position: i })))
+    persistOrder('contact_types', arr)
+  }
+  function moveSource(from: number, to: number) {
+    if (from === to || from < 0 || to < 0) return
+    const arr = [...sources]
+    const [m] = arr.splice(from, 1)
+    arr.splice(to, 0, m)
+    setSources(arr.map((s, i) => ({ ...s, position: i })))
+    persistOrder('contact_sources', arr)
+  }
+
   if (loading) return <div style={{ padding: 20, color: '#9ca3af', fontSize: 13 }}>Cargando…</div>
 
   return (
@@ -108,10 +133,16 @@ export default function TaxonomyManager({
       <section>
         <SectionHead title="Tipos de contacto" hint="Un contacto puede tener varios tipos." />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {types.map(t => (
-            <TypeRow key={t.id} t={t} editable={editable}
-              onSave={(name, color) => saveType(t.id, name, color)}
-              onDelete={() => deleteType(t)} />
+          {types.map((t, idx) => (
+            <div key={t.id}
+              onDragOver={editable ? (e => e.preventDefault()) : undefined}
+              onDrop={editable ? (() => { if (dragType !== null) moveType(dragType, idx); setDragType(null) }) : undefined}
+              style={{ opacity: dragType === idx ? 0.4 : 1 }}>
+              <TypeRow t={t} editable={editable}
+                handle={editable ? <DragHandle onStart={() => setDragType(idx)} onEnd={() => setDragType(null)} /> : null}
+                onSave={(name, color) => saveType(t.id, name, color)}
+                onDelete={() => deleteType(t)} />
+            </div>
           ))}
           {types.length === 0 && <Empty>Sin tipos aún.</Empty>}
         </div>
@@ -122,10 +153,16 @@ export default function TaxonomyManager({
       <section>
         <SectionHead title="Fuentes / Canales" hint="Cómo llegó el contacto (uno por contacto)." />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {sources.map(s => (
-            <SourceRow key={s.id} s={s} editable={editable}
-              onSave={name => saveSource(s.id, name)}
-              onDelete={() => deleteSource(s)} />
+          {sources.map((s, idx) => (
+            <div key={s.id}
+              onDragOver={editable ? (e => e.preventDefault()) : undefined}
+              onDrop={editable ? (() => { if (dragSource !== null) moveSource(dragSource, idx); setDragSource(null) }) : undefined}
+              style={{ opacity: dragSource === idx ? 0.4 : 1 }}>
+              <SourceRow s={s} editable={editable}
+                handle={editable ? <DragHandle onStart={() => setDragSource(idx)} onEnd={() => setDragSource(null)} /> : null}
+                onSave={name => saveSource(s.id, name)}
+                onDelete={() => deleteSource(s)} />
+            </div>
           ))}
           {sources.length === 0 && <Empty>Sin fuentes aún.</Empty>}
         </div>
@@ -140,14 +177,15 @@ export default function TaxonomyManager({
 }
 
 /* ── Rows & bits ─────────────────────────────────────────────── */
-function TypeRow({ t, editable, onSave, onDelete }: {
-  t: CType; editable: boolean; onSave: (name: string, color: string) => void; onDelete: () => void
+function TypeRow({ t, editable, handle, onSave, onDelete }: {
+  t: CType; editable: boolean; handle?: React.ReactNode; onSave: (name: string, color: string) => void; onDelete: () => void
 }) {
   const [name, setName]   = useState(t.name)
   const [color, setColor] = useState(t.color || '#1B6EF3')
   const dirty = editable && (name.trim() !== t.name || color !== (t.color || '#1B6EF3')) && name.trim().length > 0
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {handle}
       <input type="color" value={color} disabled={!editable} onChange={e => setColor(e.target.value)}
         style={{ width: 34, height: 34, padding: 2, border: '1px solid #e2e5ea', borderRadius: 8, cursor: editable ? 'pointer' : 'default', background: '#fff', flexShrink: 0 }} />
       <input value={name} disabled={!editable} onChange={e => setName(e.target.value)}
@@ -160,13 +198,14 @@ function TypeRow({ t, editable, onSave, onDelete }: {
   )
 }
 
-function SourceRow({ s, editable, onSave, onDelete }: {
-  s: CSource; editable: boolean; onSave: (name: string) => void; onDelete: () => void
+function SourceRow({ s, editable, handle, onSave, onDelete }: {
+  s: CSource; editable: boolean; handle?: React.ReactNode; onSave: (name: string) => void; onDelete: () => void
 }) {
   const [name, setName] = useState(s.name)
   const dirty = editable && name.trim() !== s.name && name.trim().length > 0
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {handle}
       <input value={name} disabled={!editable} onChange={e => setName(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter' && dirty) onSave(name.trim()) }}
         style={{ ...inputSt, flex: 1 }} />
@@ -192,6 +231,12 @@ function AddRow({ placeholder, onAdd }: { placeholder: string; onAdd: (name: str
   )
 }
 
+function DragHandle({ onStart, onEnd }: { onStart: () => void; onEnd: () => void }) {
+  return (
+    <span draggable onDragStart={onStart} onDragEnd={onEnd} title="Arrastrá para reordenar"
+      style={{ cursor: 'grab', color: '#c5cad3', fontSize: 15, lineHeight: 1, padding: '0 2px', flexShrink: 0, userSelect: 'none' }}>⠿</span>
+  )
+}
 function SaveBtn({ onClick }: { onClick: () => void }) {
   return <button type="button" onClick={onClick} title="Guardar"
     style={{ height: 34, minWidth: 34, border: 'none', borderRadius: 8, background: '#15803d', color: '#fff', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>✓</button>
