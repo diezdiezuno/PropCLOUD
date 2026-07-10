@@ -101,13 +101,17 @@ function nameToColor(name: string): string {
   return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length]
 }
 
-function openWhatsapp(phone: string | null, country: string | null) {
-  if (!phone) return
+function whatsappHref(phone: string | null, country: string | null): string {
+  if (!phone) return '#'
   const num = phone.replace(/[^0-9]/g, '')
   const c = COUNTRIES.find(x => x.iso === (country || 'CR'))
   const dialCode = c?.dialCode?.replace(/\D/g, '') ?? '506'
   const full = num.length <= 8 ? dialCode + num : num
-  window.open(`https://wa.me/${full}`, '_blank')
+  return `https://wa.me/${full}`
+}
+function openWhatsapp(phone: string | null, country: string | null) {
+  if (!phone) return
+  window.open(whatsappHref(phone, country), '_blank')
 }
 
 function formatDateEsCR(dateStr: string | null): string {
@@ -190,11 +194,28 @@ export default function ClientesClient() {
 
   // Vista: tabla (denso, por defecto) o tarjetas. Hover es por CSS (escala a miles de filas).
   const [view, setView] = useState<'table' | 'cards'>('table')
-  useEffect(() => {
-    const v = localStorage.getItem('clientes_view')
-    if (v === 'cards' || v === 'table') setView(v)
-  }, [])
   function changeView(v: 'table' | 'cards') { setView(v); localStorage.setItem('clientes_view', v) }
+
+  // Paginación y orden
+  type SortKey = 'name' | 'email' | 'phone' | 'company'
+  const [page,     setPage]     = useState(0)
+  const [pageSize, setPageSize] = useState<number>(25)   // 0 = todos
+  const [sortKey,  setSortKey]  = useState<SortKey>('name')
+  const [sortDir,  setSortDir]  = useState<'asc' | 'desc'>('asc')
+
+  useEffect(() => {
+    const v  = localStorage.getItem('clientes_view')
+    if (v === 'cards' || v === 'table') setView(v)
+    const ps = localStorage.getItem('clientes_page_size')
+    if (ps !== null && !isNaN(Number(ps))) setPageSize(Number(ps))
+  }, [])
+
+  function changePageSize(n: number) { setPageSize(n); setPage(0); localStorage.setItem('clientes_page_size', String(n)) }
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('asc') }
+    setPage(0)
+  }
 
   // VCard state
   const [vcardOpen,      setVcardOpen]      = useState(false)
@@ -357,12 +378,12 @@ export default function ClientesClient() {
 
   // ── Filters ───────────────────────────────────────────────
   function handleSearch(val: string) {
-    setSearch(val)
+    setSearch(val); setPage(0)
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => loadContacts(tenantId, val, typeFilter, sourceFilter), 300)
   }
-  function handleTypeFilter(val: string)   { setTypeFilter(val);   loadContacts(tenantId, search, val, sourceFilter) }
-  function handleSourceFilter(val: string) { setSourceFilter(val); loadContacts(tenantId, search, typeFilter, val) }
+  function handleTypeFilter(val: string)   { setTypeFilter(val);   setPage(0); loadContacts(tenantId, search, val, sourceFilter) }
+  function handleSourceFilter(val: string) { setSourceFilter(val); setPage(0); loadContacts(tenantId, search, typeFilter, val) }
 
   // ── Toast ─────────────────────────────────────────────────
   function showToast(msg: string, type: 'success' | 'error' = 'success') {
@@ -383,6 +404,29 @@ export default function ClientesClient() {
   if (pageLoading) return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>
 
   const hasFilters = search || typeFilter || sourceFilter
+
+  // Orden + paginación (cliente — sobre los contactos ya cargados)
+  const sortVal = (c: Contact): string => {
+    switch (sortKey) {
+      case 'email':   return (c.email ?? '').toLowerCase()
+      case 'phone':   return (c.phone ?? '')
+      case 'company': return (companyLabel(c) ?? '').toLowerCase()
+      default:        return (c.name + ' ' + (c.last_name ?? '')).toLowerCase()
+    }
+  }
+  const sorted = [...contacts].sort((a, b) => {
+    const va = sortVal(a), vb = sortVal(b)
+    if (va === vb) return 0
+    if (va === '') return 1          // vacíos al final
+    if (vb === '') return -1
+    return (va < vb ? -1 : 1) * (sortDir === 'asc' ? 1 : -1)
+  })
+  const total      = sorted.length
+  const totalPages = pageSize === 0 ? 1 : Math.max(1, Math.ceil(total / pageSize))
+  const safePage   = Math.min(page, totalPages - 1)
+  const pageStart  = pageSize === 0 ? 0 : safePage * pageSize
+  const pageEnd    = pageSize === 0 ? total : Math.min(pageStart + pageSize, total)
+  const paged      = pageSize === 0 ? sorted : sorted.slice(pageStart, pageEnd)
 
   // Avatar reutilizable (tabla + tarjetas)
   function ContactAvatar({ c, size }: { c: Contact; size: number }) {
@@ -465,9 +509,12 @@ export default function ClientesClient() {
           <option value="">Todas las fuentes</option>
           {sources.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
-        <span style={{ fontSize: 12, color: '#9ca3af', fontVariantNumeric: 'tabular-nums', marginLeft: 'auto' }}>
-          {contacts.length} cliente{contacts.length !== 1 ? 's' : ''}
-        </span>
+        {/* Registros por página */}
+        <select value={pageSize} onChange={e => changePageSize(Number(e.target.value))} title="Registros por página"
+          style={{ height: 38, padding: '0 10px', border: '1px solid #e2e5ea', borderRadius: 8, fontSize: 13, background: '#fff', color: '#0d0f12', fontFamily: 'inherit', cursor: 'pointer', marginLeft: 'auto' }}>
+          {[25, 50, 100].map(n => <option key={n} value={n}>{n} / pág.</option>)}
+          <option value={0}>Todos</option>
+        </select>
         {/* Toggle vista tabla / tarjetas */}
         <div style={{ display: 'flex', border: '1px solid #e2e5ea', borderRadius: 8, overflow: 'hidden' }}>
           {([['table', '☰', 'Tabla'], ['cards', '▦', 'Tarjetas']] as const).map(([v, icon, label]) => (
@@ -518,15 +565,16 @@ export default function ClientesClient() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
                 <thead>
                   <tr style={{ background: '#f9fafb', color: '#5a6070', textAlign: 'left' }}>
-                    <th style={{ padding: '9px 12px', fontWeight: 500 }}>Nombre</th>
-                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 190 }}>Contacto</th>
-                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 150 }}>Empresa</th>
-                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 180 }}>Tipos</th>
-                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 150 }} />
+                    <th onClick={() => toggleSort('name')} style={{ padding: '9px 12px', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>Nombre{sortKey === 'name' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 170 }}>Tipo</th>
+                    <th onClick={() => toggleSort('email')} style={{ padding: '9px 12px', fontWeight: 500, width: 210, cursor: 'pointer', userSelect: 'none' }}>Email{sortKey === 'email' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                    <th onClick={() => toggleSort('phone')} style={{ padding: '9px 12px', fontWeight: 500, width: 150, cursor: 'pointer', userSelect: 'none' }}>Teléfono{sortKey === 'phone' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                    <th onClick={() => toggleSort('company')} style={{ padding: '9px 12px', fontWeight: 500, width: 150, cursor: 'pointer', userSelect: 'none' }}>Empresa{sortKey === 'company' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}</th>
+                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 140 }} />
                   </tr>
                 </thead>
                 <tbody>
-                  {contacts.map(c => {
+                  {paged.map(c => {
                     const cTypes = contactTypeList(c.crm_contact_types)
                     const comp = companyLabel(c)
                     return (
@@ -537,13 +585,22 @@ export default function ClientesClient() {
                             <span style={{ fontWeight: 600, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}{c.last_name ? ' ' + c.last_name : ''}</span>
                           </div>
                         </td>
-                        <td style={{ padding: '8px 12px', color: '#5a6070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.phone || c.email || '—'}</td>
-                        <td style={{ padding: '8px 12px', color: comp ? '#5a6070' : '#c5cad3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{comp || '—'}</td>
                         <td style={{ padding: '8px 12px' }}>
                           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                             {cTypes.map((t, i) => <span key={t.id ?? i} style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, background: (t.color || '#1B6EF3') + '18', color: t.color || '#1B6EF3', whiteSpace: 'nowrap' }}>{t.name}</span>)}
                           </div>
                         </td>
+                        <td style={{ padding: '8px 12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.email
+                            ? <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ color: '#1B6EF3', textDecoration: 'none' }}>{c.email}</a>
+                            : <span style={{ color: '#c5cad3' }}>—</span>}
+                        </td>
+                        <td style={{ padding: '8px 12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.phone
+                            ? <a href={whatsappHref(c.phone, c.phone_country)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#128C48', textDecoration: 'none' }}>{c.phone}</a>
+                            : <span style={{ color: '#c5cad3' }}>—</span>}
+                        </td>
+                        <td style={{ padding: '8px 12px', color: comp ? '#5a6070' : '#c5cad3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{comp || '—'}</td>
                         <td style={{ padding: '8px 12px' }}>
                           <div style={{ display: 'flex', justifyContent: 'flex-end' }}><ContactActions c={c} /></div>
                         </td>
@@ -555,7 +612,7 @@ export default function ClientesClient() {
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
-              {contacts.map(c => {
+              {paged.map(c => {
                 const cTypes = contactTypeList(c.crm_contact_types)
                 const comp = companyLabel(c)
                 return (
@@ -572,13 +629,30 @@ export default function ClientesClient() {
                         {cTypes.map((t, i) => <span key={t.id ?? i} style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, background: (t.color || '#1B6EF3') + '18', color: t.color || '#1B6EF3', whiteSpace: 'nowrap' }}>{t.name}</span>)}
                       </div>
                     )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 12, color: '#5a6070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{c.phone || c.email || ''}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+                      {c.email && <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#1B6EF3', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>✉ {c.email}</a>}
+                      {c.phone && <a href={whatsappHref(c.phone, c.phone_country)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#128C48', textDecoration: 'none' }}>💬 {c.phone}</a>}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <ContactActions c={c} />
                     </div>
                   </div>
                 )
               })}
+            </div>
+          )}
+
+          {/* Paginación */}
+          {pageSize !== 0 && totalPages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: '#9ca3af', fontVariantNumeric: 'tabular-nums' }}>{pageStart + 1}–{pageEnd} de {total}</span>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <button disabled={safePage <= 0} onClick={() => setPage(safePage - 1)}
+                  style={{ height: 34, padding: '0 12px', border: '1px solid #e2e5ea', borderRadius: 8, background: '#fff', color: safePage <= 0 ? '#c5cad3' : '#0d0f12', cursor: safePage <= 0 ? 'not-allowed' : 'pointer', fontSize: 13, fontFamily: 'inherit' }}>‹ Anterior</button>
+                <span style={{ fontSize: 12, color: '#5a6070', fontVariantNumeric: 'tabular-nums', padding: '0 4px' }}>Página {safePage + 1} de {totalPages}</span>
+                <button disabled={safePage >= totalPages - 1} onClick={() => setPage(safePage + 1)}
+                  style={{ height: 34, padding: '0 12px', border: '1px solid #e2e5ea', borderRadius: 8, background: '#fff', color: safePage >= totalPages - 1 ? '#c5cad3' : '#0d0f12', cursor: safePage >= totalPages - 1 ? 'not-allowed' : 'pointer', fontSize: 13, fontFamily: 'inherit' }}>Siguiente ›</button>
+              </div>
             </div>
           )}
         </>
