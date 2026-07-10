@@ -178,6 +178,39 @@ function nameToColor(name: string): string {
   return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length]
 }
 
+/** Inline "+" to add a new option (contact type / source). Admin-only, rendered by caller. */
+function QuickAddOption({ onAdd }: { onAdd: (name: string) => Promise<void> }) {
+  const [open, setOpen]     = useState(false)
+  const [name, setName]     = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    if (!name.trim() || saving) return
+    setSaving(true)
+    await onAdd(name.trim())
+    setSaving(false); setName(''); setOpen(false)
+  }
+
+  if (!open) return (
+    <button type="button" onClick={() => setOpen(true)} title="Agregar nuevo"
+      style={{ height: 20, minWidth: 20, padding: '0 5px', border: '1px solid #d5d9e0', borderRadius: 6, background: '#fff', color: '#5a6070', fontSize: 14, lineHeight: 1, cursor: 'pointer', fontFamily: 'inherit' }}>
+      +
+    </button>
+  )
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      <input autoFocus value={name} onChange={e => setName(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save() } if (e.key === 'Escape') { setOpen(false); setName('') } }}
+        placeholder="Nuevo…" disabled={saving}
+        style={{ height: 22, width: 120, padding: '0 8px', border: '1px solid #c5cad3', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', outline: 'none' }} />
+      <button type="button" onClick={save} disabled={saving} title="Guardar"
+        style={{ height: 22, minWidth: 22, border: 'none', borderRadius: 6, background: '#111', color: '#fff', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>✓</button>
+      <button type="button" onClick={() => { setOpen(false); setName('') }} title="Cancelar"
+        style={{ height: 22, minWidth: 22, border: '1px solid #e2e5ea', borderRadius: 6, background: '#fff', color: '#9ca3af', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>✕</button>
+    </span>
+  )
+}
+
 function openWhatsapp(phone: string | null, country: string | null) {
   if (!phone) return
   const num = phone.replace(/[^0-9]/g, '')
@@ -261,6 +294,7 @@ export default function ClientesClient() {
 
   const [tenantId,  setTenantId]  = useState('')
   const [userId,    setUserId]    = useState('')
+  const [isAdmin,   setIsAdmin]   = useState(false)
   const [contacts,  setContacts]  = useState<Contact[]>([])
   const [types,     setTypes]     = useState<ContactType[]>([])
   const [sources,   setSources]   = useState<ContactSource[]>([])
@@ -344,11 +378,12 @@ export default function ClientesClient() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
       const { data: adminRec } = await supabase
-        .from('tenant_admins').select('tenant_id').eq('user_id', user.id).single()
+        .from('tenant_admins').select('tenant_id, role').eq('user_id', user.id).single()
       if (!adminRec) return
 
       setTenantId(adminRec.tenant_id)
       setUserId(user.id)
+      setIsAdmin(adminRec.role === 'admin')
 
       const [{ data: typesData }, { data: sourcesData }, { data: companiesData }] =
         await Promise.all([
@@ -791,6 +826,25 @@ export default function ClientesClient() {
   function showToast(msg: string, type: 'success' | 'error' = 'success') {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3000)
+  }
+
+  // ── Quick-add contact type / source (admin only) ─────────
+  async function addType(name: string) {
+    const color = AVATAR_PALETTE[types.length % AVATAR_PALETTE.length]
+    const { data, error } = await createClient().from('contact_types')
+      .insert({ tenant_id: tenantId, name, color, position: types.length })
+      .select('id,name,color').single()
+    if (error || !data) { showToast('No se pudo crear el tipo', 'error'); return }
+    setTypes(prev => [...prev, data])
+    setForm(prev => ({ ...prev, type_id: data.id }))
+  }
+  async function addSource(name: string) {
+    const { data, error } = await createClient().from('contact_sources')
+      .insert({ tenant_id: tenantId, name, position: sources.length })
+      .select('id,name').single()
+    if (error || !data) { showToast('No se pudo crear la fuente', 'error'); return }
+    setSources(prev => [...prev, data])
+    setForm(prev => ({ ...prev, source_id: data.id }))
   }
 
   // ── Style tokens ─────────────────────────────────────────
@@ -1377,14 +1431,20 @@ export default function ClientesClient() {
                     style={sInput} />
                 </div>
                 <div style={sField}>
-                  <label style={sLabel}>Tipo de contacto</label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                    <label style={{ ...sLabel, marginBottom: 0 }}>Tipo de contacto</label>
+                    {isAdmin && <QuickAddOption onAdd={addType} />}
+                  </div>
                   <select value={form.type_id} onChange={e => setForm(prev => ({ ...prev, type_id: e.target.value }))} style={sInput}>
                     <option value="">Sin tipo</option>
                     {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
                 <div style={sField}>
-                  <label style={sLabel}>Fuente / Canal</label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                    <label style={{ ...sLabel, marginBottom: 0 }}>Fuente / Canal</label>
+                    {isAdmin && <QuickAddOption onAdd={addSource} />}
+                  </div>
                   <select value={form.source_id} onChange={e => setForm(prev => ({ ...prev, source_id: e.target.value }))} style={sInput}>
                     <option value="">Sin fuente</option>
                     {sources.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
