@@ -188,10 +188,13 @@ export default function ClientesClient() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [deleting,      setDeleting]      = useState<string | null>(null)
 
-  // Hover state for list cards
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null)
-  // Hover state for action buttons (key = `${contactId}-${btnType}`)
-  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null)
+  // Vista: tabla (denso, por defecto) o tarjetas. Hover es por CSS (escala a miles de filas).
+  const [view, setView] = useState<'table' | 'cards'>('table')
+  useEffect(() => {
+    const v = localStorage.getItem('clientes_view')
+    if (v === 'cards' || v === 'table') setView(v)
+  }, [])
+  function changeView(v: 'table' | 'cards') { setView(v); localStorage.setItem('clientes_view', v) }
 
   // VCard state
   const [vcardOpen,      setVcardOpen]      = useState(false)
@@ -381,6 +384,52 @@ export default function ClientesClient() {
 
   const hasFilters = search || typeFilter || sourceFilter
 
+  // Avatar reutilizable (tabla + tarjetas)
+  function ContactAvatar({ c, size }: { c: Contact; size: number }) {
+    const color = nameToColor(c.name + (c.last_name ?? ''))
+    return (
+      <div onClick={() => openVCard(c.id)}
+        style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.35, fontWeight: 700, overflow: 'hidden', background: c.photo_url ? 'transparent' : color + '22', color, cursor: 'pointer', border: `2px solid ${color}33` }}>
+        {c.photo_url ? <img src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : getInitials(c.name, c.last_name)}
+      </div>
+    )
+  }
+
+  // Acciones reutilizables — hover por CSS (clases cl-btn-*), sin estado por fila
+  function ContactActions({ c }: { c: Contact }) {
+    const isConfirming = confirmDelete === c.id
+    const isDeleting   = deleting === c.id
+    return (
+      <div className="cl-actions" onClick={e => e.stopPropagation()}
+        style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+        {!isConfirming ? (
+          <>
+            {c.phone && <button className="cl-btn cl-btn-wa" title="WhatsApp" onClick={() => openWhatsapp(c.phone, c.phone_country)}>💬</button>}
+            {c.email && <button className="cl-btn cl-btn-mail" title="Email" onClick={() => { window.location.href = `mailto:${c.email}` }}>✉</button>}
+            <button className="cl-btn cl-btn-edit" title="Editar" onClick={() => openDrawer(c.id)}>✏️</button>
+            <button className="cl-btn cl-btn-del" title="Eliminar" onClick={() => setConfirmDelete(c.id)}>🗑</button>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: 12, color: '#DC2626', fontWeight: 600 }}>¿Eliminar?</span>
+            <button onClick={() => deleteContact(c.id)} disabled={isDeleting}
+              style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: '#DC2626', border: 'none', borderRadius: 7, padding: '5px 10px', cursor: isDeleting ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: isDeleting ? .6 : 1 }}>
+              {isDeleting ? '…' : 'Sí'}
+            </button>
+            <button onClick={() => setConfirmDelete(null)}
+              style={{ fontSize: 12, color: '#666', background: 'none', border: '1px solid #e0e0e0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>No</button>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  function companyLabel(c: Contact): string | null {
+    const cos = (c.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean)
+    if (cos.length === 0) return null
+    return (cos[0]!.trade_name || cos[0]!.name) + (cos.length > 1 ? ` +${cos.length - 1}` : '')
+  }
+
   // ── Render ────────────────────────────────────────────────
   return (
     <>
@@ -419,6 +468,15 @@ export default function ClientesClient() {
         <span style={{ fontSize: 12, color: '#9ca3af', fontVariantNumeric: 'tabular-nums', marginLeft: 'auto' }}>
           {contacts.length} cliente{contacts.length !== 1 ? 's' : ''}
         </span>
+        {/* Toggle vista tabla / tarjetas */}
+        <div style={{ display: 'flex', border: '1px solid #e2e5ea', borderRadius: 8, overflow: 'hidden' }}>
+          {([['table', '☰', 'Tabla'], ['cards', '▦', 'Tarjetas']] as const).map(([v, icon, label]) => (
+            <button key={v} onClick={() => changeView(v)} title={label}
+              style={{ height: 38, padding: '0 12px', border: 'none', background: view === v ? '#111' : '#fff', color: view === v ? '#fff' : '#5a6070', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}>
+              {icon}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── List ─────────────────────────────────────────── */}
@@ -439,120 +497,91 @@ export default function ClientesClient() {
           )}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {contacts.map(c => {
-            const cTypes       = contactTypeList(c.crm_contact_types)
-            const initials     = getInitials(c.name, c.last_name)
-            const avatarColor  = nameToColor(c.name + (c.last_name ?? ''))
-            const isConfirming = confirmDelete === c.id
-            const isDeleting   = deleting === c.id
+        <>
+          <style>{`
+            .cl-trow:hover { background:#f9fafb; }
+            .cl-trow .cl-actions, .cl-card .cl-actions { opacity:0; transition:opacity .15s; }
+            .cl-trow:hover .cl-actions, .cl-card:hover .cl-actions { opacity:1; }
+            .cl-card:hover { border-color:#1B6EF3 !important; }
+            .cl-btn { width:30px; height:30px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all .15s; background:#F4F5F7; border:1px solid #e2e5ea; color:#5a6070; }
+            .cl-btn-wa { background:#E7F7EE; border-color:#A8DFC0; color:#128C48; }
+            .cl-btn-wa:hover { background:#128C48; color:#fff; border-color:transparent; }
+            .cl-btn-mail { background:#EEF4FF; border-color:#BFCFFB; color:#1B6EF3; }
+            .cl-btn-mail:hover { background:#1B6EF3; color:#fff; border-color:transparent; }
+            .cl-btn-edit:hover { background:#FEF9EC; border-color:#F5D98A; color:#92610A; }
+            .cl-btn-del { background:#FEF2F2; border-color:#FECACA; color:#DC2626; }
+            .cl-btn-del:hover { background:#DC2626; color:#fff; border-color:transparent; }
+          `}</style>
 
-            return (
-              <div key={c.id}
-                onMouseEnter={() => setHoveredCard(c.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{ background: '#fff', border: '1px solid #e2e5ea', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'default', transition: 'border-color .15s' }}
-                onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#1B6EF3' }}
-                onMouseOut={e => (e.currentTarget as HTMLDivElement).style.borderColor = '#e2e5ea'}>
-
-                {/* Avatar — click opens VCard */}
-                <div
-                  onClick={() => openVCard(c.id)}
-                  style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, overflow: 'hidden', background: c.photo_url ? 'transparent' : avatarColor + '22', color: avatarColor, cursor: 'pointer', border: `2px solid ${avatarColor}33` }}>
-                  {c.photo_url
-                    ? <img src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : initials}
-                </div>
-
-                {/* Info — click opens VCard */}
-                <div
-                  onClick={() => openVCard(c.id)}
-                  style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {c.name}{c.last_name ? ' ' + c.last_name : ''}
+          {view === 'table' ? (
+            <div style={{ background: '#fff', border: '1px solid #e2e5ea', borderRadius: 12, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
+                <thead>
+                  <tr style={{ background: '#f9fafb', color: '#5a6070', textAlign: 'left' }}>
+                    <th style={{ padding: '9px 12px', fontWeight: 500 }}>Nombre</th>
+                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 190 }}>Contacto</th>
+                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 150 }}>Empresa</th>
+                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 180 }}>Tipos</th>
+                    <th style={{ padding: '9px 12px', fontWeight: 500, width: 150 }} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {contacts.map(c => {
+                    const cTypes = contactTypeList(c.crm_contact_types)
+                    const comp = companyLabel(c)
+                    return (
+                      <tr key={c.id} className="cl-trow" style={{ borderTop: '1px solid #eef0f2' }}>
+                        <td style={{ padding: '8px 12px' }}>
+                          <div onClick={() => openVCard(c.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', minWidth: 0 }}>
+                            <ContactAvatar c={c} size={30} />
+                            <span style={{ fontWeight: 600, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}{c.last_name ? ' ' + c.last_name : ''}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '8px 12px', color: '#5a6070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.phone || c.email || '—'}</td>
+                        <td style={{ padding: '8px 12px', color: comp ? '#5a6070' : '#c5cad3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{comp || '—'}</td>
+                        <td style={{ padding: '8px 12px' }}>
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            {cTypes.map((t, i) => <span key={t.id ?? i} style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, background: (t.color || '#1B6EF3') + '18', color: t.color || '#1B6EF3', whiteSpace: 'nowrap' }}>{t.name}</span>)}
+                          </div>
+                        </td>
+                        <td style={{ padding: '8px 12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}><ContactActions c={c} /></div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
+              {contacts.map(c => {
+                const cTypes = contactTypeList(c.crm_contact_types)
+                const comp = companyLabel(c)
+                return (
+                  <div key={c.id} className="cl-card" style={{ background: '#fff', border: '1px solid #e2e5ea', borderRadius: 12, padding: 14, transition: 'border-color .15s' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <ContactAvatar c={c} size={40} />
+                      <div onClick={() => openVCard(c.id)} style={{ minWidth: 0, cursor: 'pointer', flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}{c.last_name ? ' ' + c.last_name : ''}</div>
+                        <div style={{ fontSize: 12, color: comp ? '#9ca3af' : '#c5cad3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{comp || 'Sin empresa'}</div>
+                      </div>
+                    </div>
+                    {cTypes.length > 0 && (
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>
+                        {cTypes.map((t, i) => <span key={t.id ?? i} style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, background: (t.color || '#1B6EF3') + '18', color: t.color || '#1B6EF3', whiteSpace: 'nowrap' }}>{t.name}</span>)}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12, color: '#5a6070', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{c.phone || c.email || ''}</span>
+                      <ContactActions c={c} />
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, color: '#5a6070', marginTop: 2, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                    {c.phone && <span>📱 {c.phone}</span>}
-                    {c.email && <span>✉ {c.email}</span>}
-                    {(() => {
-                      const cos = (c.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean)
-                      if (cos.length === 0) return null
-                      const label = cos[0]!.trade_name || cos[0]!.name
-                      return <span>🏢 {label}{cos.length > 1 ? ` +${cos.length - 1}` : ''}</span>
-                    })()}
-                  </div>
-                </div>
-
-                {/* Type badges (múltiples) */}
-                {cTypes.length > 0 && (
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', flexShrink: 0, maxWidth: 220 }}>
-                    {cTypes.map((t, i) => (
-                      <span key={t.id ?? i} style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: (t.color || '#1B6EF3') + '18', color: t.color || '#1B6EF3', whiteSpace: 'nowrap' }}>
-                        {t.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div
-                  onClick={e => e.stopPropagation()}
-                  style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0, opacity: hoveredCard === c.id || isConfirming ? 1 : 0, transition: 'opacity .15s' }}>
-                  {!isConfirming ? (
-                    <>
-                      {c.phone && (
-                        <button
-                          title="WhatsApp"
-                          onClick={() => openWhatsapp(c.phone, c.phone_country)}
-                          onMouseEnter={() => setHoveredBtn(`${c.id}-wa`)}
-                          onMouseLeave={() => setHoveredBtn(null)}
-                          style={{ width: 30, height: 30, border: `1px solid ${hoveredBtn === `${c.id}-wa` ? 'transparent' : '#A8DFC0'}`, borderRadius: 6, background: hoveredBtn === `${c.id}-wa` ? '#128C48' : '#E7F7EE', color: hoveredBtn === `${c.id}-wa` ? '#fff' : '#128C48', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'all .15s' }}>
-                          💬
-                        </button>
-                      )}
-                      {c.email && (
-                        <button
-                          title="Email"
-                          onClick={() => { window.location.href = `mailto:${c.email}` }}
-                          onMouseEnter={() => setHoveredBtn(`${c.id}-email`)}
-                          onMouseLeave={() => setHoveredBtn(null)}
-                          style={{ width: 30, height: 30, border: `1px solid ${hoveredBtn === `${c.id}-email` ? 'transparent' : '#BFCFFB'}`, borderRadius: 6, background: hoveredBtn === `${c.id}-email` ? '#1B6EF3' : '#EEF4FF', color: hoveredBtn === `${c.id}-email` ? '#fff' : '#1B6EF3', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'all .15s' }}>
-                          ✉
-                        </button>
-                      )}
-                      <button
-                        title="Editar"
-                        onClick={() => openDrawer(c.id)}
-                        onMouseEnter={() => setHoveredBtn(`${c.id}-edit`)}
-                        onMouseLeave={() => setHoveredBtn(null)}
-                        style={{ width: 30, height: 30, border: `1px solid ${hoveredBtn === `${c.id}-edit` ? '#F5D98A' : '#e2e5ea'}`, borderRadius: 6, background: hoveredBtn === `${c.id}-edit` ? '#FEF9EC' : '#F4F5F7', color: hoveredBtn === `${c.id}-edit` ? '#92610A' : '#5a6070', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'all .15s' }}>
-                        ✏️
-                      </button>
-                      <button
-                        title="Eliminar"
-                        onClick={() => setConfirmDelete(c.id)}
-                        onMouseEnter={() => setHoveredBtn(`${c.id}-del`)}
-                        onMouseLeave={() => setHoveredBtn(null)}
-                        style={{ width: 30, height: 30, border: `1px solid ${hoveredBtn === `${c.id}-del` ? 'transparent' : '#FECACA'}`, borderRadius: 6, background: hoveredBtn === `${c.id}-del` ? '#DC2626' : '#FEF2F2', color: hoveredBtn === `${c.id}-del` ? '#fff' : '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, transition: 'all .15s' }}>
-                        🗑
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ fontSize: 12, color: '#DC2626', fontWeight: 600 }}>¿Eliminar?</span>
-                      <button onClick={() => deleteContact(c.id)} disabled={isDeleting}
-                        style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: '#DC2626', border: 'none', borderRadius: 7, padding: '5px 10px', cursor: isDeleting ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: isDeleting ? .6 : 1 }}>
-                        {isDeleting ? '…' : 'Sí'}
-                      </button>
-                      <button onClick={() => setConfirmDelete(null)}
-                        style={{ fontSize: 12, color: '#666', background: 'none', border: '1px solid #e0e0e0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>No</button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+                )
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* ── VCard Modal ──────────────────────────────────── */}
