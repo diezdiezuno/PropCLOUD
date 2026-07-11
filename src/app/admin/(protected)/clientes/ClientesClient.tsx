@@ -687,9 +687,11 @@ export default function ClientesClient() {
                       <ContactAvatar c={c} size={40} />
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div onClick={() => openVCard(c.id)} style={{ fontSize: 14, fontWeight: 700, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>{c.name}{c.last_name ? ' ' + c.last_name : ''}</div>
-                        <div style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {companyList(c).length > 0 ? <CompanyCell c={c} size={12} /> : <span style={{ color: '#c5cad3' }}>Sin empresa</span>}
-                        </div>
+                        {companyList(c).length > 0 && (
+                          <div style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <CompanyCell c={c} size={12} />
+                          </div>
+                        )}
                       </div>
                     </div>
                     {cTypes.length > 0 && (
