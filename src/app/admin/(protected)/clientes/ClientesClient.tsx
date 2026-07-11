@@ -593,6 +593,8 @@ export default function ClientesClient() {
             .cl-btn { width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .12s; background:transparent; border:none; color:#9ca3af; }
             .cl-btn:hover { background:#f0f1f3; color:#5a6070; }
             .cl-btn-del:hover { background:#FEF2F2; color:#DC2626; }
+            .cl-resize { border-right:2px solid transparent; box-sizing:border-box; }
+            .cl-resize:hover { border-right-color:#9ca3af; }
           `}</style>
 
           {view === 'table' ? (
@@ -606,11 +608,11 @@ export default function ClientesClient() {
                     {([['Nombre', 'name'], ['Tipo', null], ['Email', 'email'], ['Teléfono', 'phone'], ['Empresa', 'company'], ['', null]] as [string, SortKey | null][]).map(([label, key], i) => (
                       <th key={i}
                         onClick={key ? () => toggleSort(key) : undefined}
-                        style={{ padding: '9px 12px', fontWeight: 500, position: 'relative', cursor: key ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap' }}>
+                        style={{ padding: '9px 12px', fontWeight: 500, position: 'relative', cursor: key ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap', borderRight: i < colWidths.length - 1 ? '1px solid #e5e7eb' : undefined }}>
                         {label}{key && sortKey === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
                         {i < colWidths.length - 1 && (
-                          <span onMouseDown={e => startColResize(e, i)}
-                            style={{ position: 'absolute', right: -3, top: 0, height: '100%', width: 8, cursor: 'col-resize', zIndex: 2 }} />
+                          <span className="cl-resize" onMouseDown={e => startColResize(e, i)}
+                            style={{ position: 'absolute', right: -4, top: 0, height: '100%', width: 8, cursor: 'col-resize', zIndex: 2 }} />
                         )}
                       </th>
                     ))}
