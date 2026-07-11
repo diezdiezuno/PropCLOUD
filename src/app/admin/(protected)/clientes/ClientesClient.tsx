@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { COUNTRIES } from '@/data/countries'
 import ContactForm from '@/components/crm/ContactForm'
+import ContactVCardModal, { type VCardViewType } from '../propiedades/ContactVCardModal'
 
 // ── Types ─────────────────────────────────────────────────────
 interface DocUrl {
@@ -201,6 +202,9 @@ export default function ClientesClient() {
   const [toast,         setToast]         = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [deleting,      setDeleting]      = useState<string | null>(null)
+
+  // Ficha de empresa (ventana interna) al clickear la sociedad
+  const [companyView, setCompanyView] = useState<VCardViewType | null>(null)
 
   // Vista: tabla (denso, por defecto) o tarjetas. Hover es por CSS (escala a miles de filas).
   const [view, setView] = useState<'table' | 'cards'>('table')
@@ -510,10 +514,27 @@ export default function ClientesClient() {
     )
   }
 
+  function companyList(c: Contact) {
+    return (c.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean) as NonNullable<ContactCompanyRow['crm_companies']>[]
+  }
   function companyLabel(c: Contact): string | null {
-    const cos = (c.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean)
+    const cos = companyList(c)
     if (cos.length === 0) return null
-    return (cos[0]!.trade_name || cos[0]!.name) + (cos.length > 1 ? ` +${cos.length - 1}` : '')
+    return (cos[0].trade_name || cos[0].name) + (cos.length > 1 ? ` +${cos.length - 1}` : '')
+  }
+  // Link a la ficha de la empresa (abre ventana interna)
+  function CompanyCell({ c, size }: { c: Contact; size?: number }) {
+    const cos = companyList(c)
+    if (cos.length === 0) return <span style={{ color: '#c5cad3' }}>—</span>
+    const extra = cos.length > 1 ? ` +${cos.length - 1}` : ''
+    return (
+      <a onClick={e => { e.stopPropagation(); setCompanyView({ type: 'company', id: cos[0].id }) }}
+        style={{ color: '#0d0f12', cursor: 'pointer', textDecoration: 'none', fontSize: size }}
+        onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'}
+        onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'}>
+        {(cos[0].trade_name || cos[0].name)}{extra}
+      </a>
+    )
   }
 
   // ── Render ────────────────────────────────────────────────
@@ -623,7 +644,6 @@ export default function ClientesClient() {
                 <tbody>
                   {paged.map(c => {
                     const cTypes = contactTypeList(c.crm_contact_types)
-                    const comp = companyLabel(c)
                     return (
                       <tr key={c.id} className="cl-trow" style={{ borderTop: '1px solid #eef0f2' }}>
                         <td style={{ padding: '8px 12px' }}>
@@ -647,7 +667,7 @@ export default function ClientesClient() {
                             ? <a href={whatsappHref(c.phone, c.phone_country)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#0d0f12', textDecoration: 'none' }}>{c.phone}</a>
                             : <span style={{ color: '#c5cad3' }}>—</span>}
                         </td>
-                        <td style={{ padding: '8px 12px', color: comp ? '#5a6070' : '#c5cad3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{comp || '—'}</td>
+                        <td style={{ padding: '8px 12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><CompanyCell c={c} /></td>
                         <td style={{ padding: '8px 12px' }}>
                           <div style={{ display: 'flex', justifyContent: 'flex-end' }}><ContactActions c={c} /></div>
                         </td>
@@ -661,14 +681,15 @@ export default function ClientesClient() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
               {paged.map(c => {
                 const cTypes = contactTypeList(c.crm_contact_types)
-                const comp = companyLabel(c)
                 return (
                   <div key={c.id} className="cl-card" style={{ background: '#fff', border: '1px solid #e2e5ea', borderRadius: 12, padding: 14, transition: 'border-color .15s' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                       <ContactAvatar c={c} size={40} />
-                      <div onClick={() => openVCard(c.id)} style={{ minWidth: 0, cursor: 'pointer', flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}{c.last_name ? ' ' + c.last_name : ''}</div>
-                        <div style={{ fontSize: 12, color: comp ? '#9ca3af' : '#c5cad3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{comp || 'Sin empresa'}</div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div onClick={() => openVCard(c.id)} style={{ fontSize: 14, fontWeight: 700, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>{c.name}{c.last_name ? ' ' + c.last_name : ''}</div>
+                        <div style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {companyList(c).length > 0 ? <CompanyCell c={c} size={12} /> : <span style={{ color: '#c5cad3' }}>Sin empresa</span>}
+                        </div>
                       </div>
                     </div>
                     {cTypes.length > 0 && (
@@ -999,6 +1020,9 @@ export default function ClientesClient() {
 
         </div>
       </div>
+
+      {/* ── Ficha de empresa (ventana interna) ─────────────── */}
+      {companyView && <ContactVCardModal view={companyView} onClose={() => setCompanyView(null)} />}
 
       {/* ── Toast ─────────────────────────────────────────── */}
       {toast && (
