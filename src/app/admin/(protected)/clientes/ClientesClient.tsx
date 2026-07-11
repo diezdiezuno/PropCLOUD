@@ -165,6 +165,16 @@ const XIcon = () => (
     <path d="M17.75 4h-2.3L12 8.5 8.8 4H4l5.25 7L4 20h2.3L10 15l3.5 5H18l-5.5-7.5L17.75 4z" fill="#fff"/>
   </svg>
 )
+const EditIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+)
+const TrashIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M6 6v14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6" /><path d="M10 11v6M14 11v6" />
+  </svg>
+)
 
 // ── Component ─────────────────────────────────────────────────
 export default function ClientesClient() {
@@ -480,10 +490,8 @@ export default function ClientesClient() {
         style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
         {!isConfirming ? (
           <>
-            {c.phone && <button className="cl-btn cl-btn-wa" title="WhatsApp" onClick={() => openWhatsapp(c.phone, c.phone_country)}>💬</button>}
-            {c.email && <button className="cl-btn cl-btn-mail" title="Email" onClick={() => { window.location.href = `mailto:${c.email}` }}>✉</button>}
-            <button className="cl-btn cl-btn-edit" title="Editar" onClick={() => openDrawer(c.id)}>✏️</button>
-            <button className="cl-btn cl-btn-del" title="Eliminar" onClick={() => setConfirmDelete(c.id)}>🗑</button>
+            <button className="cl-btn cl-btn-edit" title="Editar" onClick={() => openDrawer(c.id)}><EditIcon /></button>
+            <button className="cl-btn cl-btn-del" title="Eliminar" onClick={() => setConfirmDelete(c.id)}><TrashIcon /></button>
           </>
         ) : (
           <>
@@ -582,14 +590,9 @@ export default function ClientesClient() {
             .cl-trow .cl-actions, .cl-card .cl-actions { opacity:0; transition:opacity .15s; }
             .cl-trow:hover .cl-actions, .cl-card:hover .cl-actions { opacity:1; }
             .cl-card:hover { border-color:#1B6EF3 !important; }
-            .cl-btn { width:30px; height:30px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all .15s; background:#F4F5F7; border:1px solid #e2e5ea; color:#5a6070; }
-            .cl-btn-wa { background:#E7F7EE; border-color:#A8DFC0; color:#128C48; }
-            .cl-btn-wa:hover { background:#128C48; color:#fff; border-color:transparent; }
-            .cl-btn-mail { background:#EEF4FF; border-color:#BFCFFB; color:#1B6EF3; }
-            .cl-btn-mail:hover { background:#1B6EF3; color:#fff; border-color:transparent; }
-            .cl-btn-edit:hover { background:#FEF9EC; border-color:#F5D98A; color:#92610A; }
-            .cl-btn-del { background:#FEF2F2; border-color:#FECACA; color:#DC2626; }
-            .cl-btn-del:hover { background:#DC2626; color:#fff; border-color:transparent; }
+            .cl-btn { width:28px; height:28px; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .12s; background:transparent; border:none; color:#9ca3af; }
+            .cl-btn:hover { background:#f0f1f3; color:#5a6070; }
+            .cl-btn-del:hover { background:#FEF2F2; color:#DC2626; }
           `}</style>
 
           {view === 'table' ? (
@@ -632,12 +635,12 @@ export default function ClientesClient() {
                         </td>
                         <td style={{ padding: '8px 12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {c.email
-                            ? <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ color: '#1B6EF3', textDecoration: 'none' }}>{c.email}</a>
+                            ? <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ color: '#0d0f12', textDecoration: 'none' }}>{c.email}</a>
                             : <span style={{ color: '#c5cad3' }}>—</span>}
                         </td>
                         <td style={{ padding: '8px 12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {c.phone
-                            ? <a href={whatsappHref(c.phone, c.phone_country)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#128C48', textDecoration: 'none' }}>{c.phone}</a>
+                            ? <a href={whatsappHref(c.phone, c.phone_country)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#0d0f12', textDecoration: 'none' }}>{c.phone}</a>
                             : <span style={{ color: '#c5cad3' }}>—</span>}
                         </td>
                         <td style={{ padding: '8px 12px', color: comp ? '#5a6070' : '#c5cad3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{comp || '—'}</td>
@@ -670,8 +673,8 @@ export default function ClientesClient() {
                       </div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-                      {c.email && <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#1B6EF3', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>✉ {c.email}</a>}
-                      {c.phone && <a href={whatsappHref(c.phone, c.phone_country)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#128C48', textDecoration: 'none' }}>💬 {c.phone}</a>}
+                      {c.email && <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#5a6070', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>✉ {c.email}</a>}
+                      {c.phone && <a href={whatsappHref(c.phone, c.phone_country)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#5a6070', textDecoration: 'none' }}>💬 {c.phone}</a>}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <ContactActions c={c} />
