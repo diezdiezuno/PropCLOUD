@@ -347,16 +347,17 @@ function renderFooter() {
  * @returns {Promise<{ profile: object, apps: Array } | null>}
  */
 async function initComponents({ active = '', version = '' } = {}) {
-  injectComponentStyles();
+  // Modo embebido: dentro del admin de PropCLOUD (iframe) no pintamos
+  // header/sidebar propios — el shell lo pone PropCLOUD.
+  const EMBEDDED = window.self !== window.top || new URLSearchParams(location.search).has('embed');
+  if (!EMBEDDED) injectComponentStyles();
 
   if (typeof sb === 'undefined') {
     console.error('[PropTools] initComponents: `sb` no está definido.');
     return null;
   }
 
-  // 1. Sesión
-  // getSession() puede retornar null en el primer render aunque haya sesión en localStorage.
-  // Esperar hasta 3s a que Supabase la restaure antes de redirigir.
+  // 1. Sesión (compartida con PropCLOUD vía cookie-storage)
   let session = (await sb.auth.getSession()).data.session;
   if (!session) {
     session = await new Promise(resolve => {
@@ -367,22 +368,43 @@ async function initComponents({ active = '', version = '' } = {}) {
     });
   }
   if (!session) {
-    window.location.href = '/tools/perfil/';
+    // login único: el de PropCLOUD
+    const target = '/admin/login';
+    if (EMBEDDED) { window.top.location.href = target; } else { window.location.href = target; }
     return null;
   }
 
-  // 2. Perfil
-  const { data: profile, error: profileError } = await sb
+  // 2. Perfil (users). Si no existe (p. ej. un admin de PropCLOUD que nunca
+  //    usó las herramientas), se auto-provisiona desde tenant_admins.
+  let { data: profile } = await sb
     .from('users')
     .select('*, tenants(*)')
     .eq('auth_id', session.user.id)
     .single();
 
-  if (profileError || !profile) {
-    console.warn('[PropTools] No se encontró perfil:', profileError);
-    renderHeader();
-    renderSidebar({ apps: [], active, role: 'agent' });
-    renderFooter();
+  if (!profile) {
+    const { data: adm } = await sb
+      .from('tenant_admins').select('tenant_id, role').eq('user_id', session.user.id).single();
+    if (adm) {
+      await sb.from('users').upsert({
+        auth_id:   session.user.id,
+        tenant_id: adm.tenant_id,
+        email:     session.user.email,
+        name:      session.user.email?.split('@')[0] || 'Admin',
+        role:      adm.role === 'admin' ? 'admin' : 'agent',
+      }, { onConflict: 'auth_id' });
+      ({ data: profile } = await sb
+        .from('users').select('*, tenants(*)').eq('auth_id', session.user.id).single());
+    }
+  }
+
+  if (!profile) {
+    console.warn('[PropTools] No se encontró perfil.');
+    if (!EMBEDDED) {
+      renderHeader();
+      renderSidebar({ apps: [], active, role: 'agent' });
+      renderFooter();
+    }
     return null;
   }
 
@@ -399,18 +421,23 @@ async function initComponents({ active = '', version = '' } = {}) {
   const enabled = profile.tenants?.proptools_apps || [];
   let resolvedApps = APPS_CATALOG.filter(a => a.requires_role === 'admin' || enabled.includes(a.slug));
 
-  // 4 + 5. Render
-  renderHeader({
-    tenantLogo: profile.tenants?.logo_url || '',
-    tenantName: profile.tenants?.name     || 'Tenant',
-    apps: resolvedApps,
-    active,
-    role: profile.role,
-  });
-
-  renderSidebar({ apps: resolvedApps, active, role: profile.role });
-
-  renderFooter();
+  // 4 + 5. Render (solo standalone — embebido usa el shell de PropCLOUD)
+  if (!EMBEDDED) {
+    renderHeader({
+      tenantLogo: profile.tenants?.logo_url || '',
+      tenantName: profile.tenants?.name     || 'Tenant',
+      apps: resolvedApps,
+      active,
+      role: profile.role,
+    });
+    renderSidebar({ apps: resolvedApps, active, role: profile.role });
+    renderFooter();
+  } else {
+    document.body.classList.add('pt-embedded');
+    const st = document.createElement('style');
+    st.textContent = '.pt-embedded { padding-top: 0 !important; } .pt-embedded .pt-header, .pt-embedded .pt-sidebar, .pt-embedded .pt-footer { display: none !important; }';
+    document.head.appendChild(st);
+  }
 
   return { profile, apps: resolvedApps };
 }
@@ -429,7 +456,7 @@ window.__ptToggleSidebar = function (force) {
 window.__ptLogout = async function () {
   try { if (typeof sb !== 'undefined') await sb.auth.signOut(); }
   catch (e) { console.warn('[PropTools] Logout error:', e); }
-  window.location.href = '/';
+  window.location.href = '/admin/login';
 };
 
 // export { renderHeader, renderSidebar, renderFooter, initComponents };

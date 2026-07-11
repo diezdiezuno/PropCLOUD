@@ -41,12 +41,12 @@ const NAV_STANDALONE = [
 
 // Catálogo PropTools — el tenant solo ve las que tiene en tenants.proptools_apps
 const PROPTOOLS_CATALOG: Record<string, { icon: string; label: string; href: string }> = {
-  firmas:       { icon: '✍️', label: 'Firmas',       href: '/tools/firmas/' },
-  tarjetas:     { icon: '💳', label: 'Tarjetas',     href: '/tools/tarjetas/' },
-  rotulos:      { icon: '🪧', label: 'Rótulos',      href: '/tools/rotulos/' },
-  valoraciones: { icon: '📈', label: 'Valoraciones', href: '/tools/valoraciones/' },
-  calendario:   { icon: '📅', label: 'Calendario',   href: '/tools/calendario/' },
-  equipos:      { icon: '📷', label: 'Equipos',      href: '/tools/equipos/' },
+  firmas:       { icon: '✍️', label: 'Firmas',       href: '/admin/tools/firmas' },
+  tarjetas:     { icon: '💳', label: 'Tarjetas',     href: '/admin/tools/tarjetas' },
+  rotulos:      { icon: '🪧', label: 'Rótulos',      href: '/admin/tools/rotulos' },
+  valoraciones: { icon: '📈', label: 'Valoraciones', href: '/admin/tools/valoraciones' },
+  calendario:   { icon: '📅', label: 'Calendario',   href: '/admin/tools/calendario' },
+  equipos:      { icon: '📷', label: 'Equipos',      href: '/admin/tools/equipos' },
 }
 
 // Rutas de listado que usan el ancho completo de la pantalla
@@ -93,7 +93,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   const ptGroup = ptApps.length > 0
     ? [{
         key: 'proptools', label: 'PropTools', icon: '🧰',
-        items: ptApps.map(s => ({ ...PROPTOOLS_CATALOG[s], external: true })),
+        items: ptApps.map(s => ({ ...PROPTOOLS_CATALOG[s] })),
       }]
     : []
   // Agentes: solo CRM (sin Configuración) + PropTools. Admins: todo.
@@ -556,7 +556,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
         minHeight: `calc(100vh - ${TOPBAR_H}px)`,
         transition: 'margin-left .2s cubic-bezier(.4,0,.2,1)',
       }}>
-        <div style={{ maxWidth: WIDE_ROUTES.some(r => pathname === r) ? 'none' : 1100 }}>
+        <div style={{ maxWidth: WIDE_ROUTES.some(r => pathname === r) || pathname.startsWith('/admin/tools/') ? 'none' : 1100 }}>
           {children}
         </div>
       </main>

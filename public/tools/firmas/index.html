@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script src="/tools/cookie-storage.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Firmas — PropTools</title>
@@ -435,7 +436,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const sb = createClient(
   'https://neuzltjlezogxmhbceco.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ldXpsdGpsZXpvZ3htaGJjZWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NTMxOTksImV4cCI6MjA5NTMyOTE5OX0.p4NZzk_O2aU-KOYQPdSIkiD9TSoNgaDrC1yBKXcgfWg'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ldXpsdGpsZXpvZ3htaGJjZWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NTMxOTksImV4cCI6MjA5NTMyOTE5OX0.p4NZzk_O2aU-KOYQPdSIkiD9TSoNgaDrC1yBKXcgfWg',
+  window.__ptAuthOpts
 );
 window.sb = sb; // exponer para components.js
 
