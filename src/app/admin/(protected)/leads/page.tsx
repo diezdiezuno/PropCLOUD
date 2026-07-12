@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { getMembership } from '@/lib/membership'
+import PageHeader from '@/components/admin/PageHeader'
 
 interface Lead {
   id: string
@@ -121,9 +122,7 @@ export default function AdminLeadsPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>Leads</h1>
-      </div>
+      <PageHeader title={<>Leads</>} />
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#f5f5f7', borderRadius: 10, padding: 4, width: 'fit-content' }}>

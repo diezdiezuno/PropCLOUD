@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import TaxonomyManager from '@/components/crm/TaxonomyManager'
+import PageHeader from '@/components/admin/PageHeader'
 
 export default function CrmConfigPage() {
   const [tenantId, setTenantId] = useState('')
@@ -23,10 +24,7 @@ export default function CrmConfigPage() {
 
   return (
     <div style={{ maxWidth: 640 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 6px' }}>Configuración CRM</h1>
-        <p style={{ fontSize: 14, color: '#888', margin: 0 }}>Tipos de contacto y fuentes / canales usados en clientes.</p>
-      </div>
+      <PageHeader title={<>Configuración CRM</>} subtitle={<>Tipos de contacto y fuentes / canales usados en clientes.</>} />
       <div style={{ background: '#fff', borderRadius: 12, padding: '22px 24px', border: '1px solid #ebebeb' }}>
         {tenantId && <TaxonomyManager tenantId={tenantId} canEdit={isAdmin} />}
       </div>

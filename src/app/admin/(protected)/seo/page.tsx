@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
+import PageHeader from '@/components/admin/PageHeader'
 
 export default function SeoAdminPage() {
   const [loading, setLoading] = useState(true)
@@ -70,10 +71,7 @@ export default function SeoAdminPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>SEO</h1>
-        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Configuración de visibilidad en buscadores y redes sociales.</p>
-      </div>
+      <PageHeader title={<>SEO</>} subtitle={<>Configuración de visibilidad en buscadores y redes sociales.</>} />
 
       <form onSubmit={save}>
 

@@ -163,7 +163,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 function PageLoader() { return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div> }
 function PageHeader({ title, desc }: { title: string; desc: string }) {
-  return <div style={{ marginBottom: 32 }}><h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 6px' }}>{title}</h1><p style={{ fontSize: 14, color: '#888', margin: 0 }}>{desc}</p></div>
+  return <div style={{ borderLeft: '3px solid #111', paddingLeft: 14, marginBottom: 32 }}><h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', margin: 0, lineHeight: 1.2 }}>{title}</h1><p style={{ fontSize: 14, color: '#888', margin: '5px 0 0' }}>{desc}</p></div>
 }
 const inputStyle: React.CSSProperties = { width: '100%', border: '1px solid #e0e0e0', borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }
 const selectStyle: React.CSSProperties = { ...inputStyle, background: '#fff', cursor: 'pointer' }

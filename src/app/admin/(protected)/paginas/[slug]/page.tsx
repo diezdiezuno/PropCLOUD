@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import type { PageConfig, PageSettings } from '@/types'
+import PageHeader from '@/components/admin/PageHeader'
 
 const PREDEFINED_SLUGS = ['nosotros', 'agentes', 'contacto', 'listar', 'reclutamiento']
 
@@ -176,8 +177,7 @@ export default function PageEditorPage() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 13, padding: 0, fontFamily: 'inherit', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
           ← Páginas
         </button>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>{pageTitle}</h1>
-        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>/{slug}</p>
+        <PageHeader title={pageTitle} subtitle={`/${slug}`} style={{ marginBottom: 0 }} />
       </div>
 
       <form onSubmit={save}>

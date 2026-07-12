@@ -8,6 +8,7 @@ import { getCantons, getDistricts } from '@/data/cr-divisions'
 import type mapboxgl from 'mapbox-gl'
 import ContactVCardModal, { type VCardViewType } from '../ContactVCardModal'
 import NewOwnerModal, { type NewOwnerResult } from '../NewOwnerModal'
+import PageHeader from '@/components/admin/PageHeader'
 
 /* ── Constants ───────────────────────────────────────────────── */
 const PROVINCIAS = ['San José', 'Alajuela', 'Cartago', 'Heredia', 'Guanacaste', 'Puntarenas', 'Limón']
@@ -472,8 +473,7 @@ export default function NuevaPropiedadPage() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 13, padding: 0, fontFamily: 'inherit', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
           ← Inventario
         </button>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>Nueva propiedad</h1>
-        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Completá cada sección. Los demás pasos se habilitan al guardar el primero.</p>
+        <PageHeader title="Nueva propiedad" subtitle="Completá cada sección. Los demás pasos se habilitan al guardar el primero." style={{ marginBottom: 0 }} />
       </div>
 
       {/* Tab bar */}

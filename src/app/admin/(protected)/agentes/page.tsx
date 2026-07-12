@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
+import PageHeader from '@/components/admin/PageHeader'
 
 const POSITIONS = ['Broker', 'Team Leader', 'Asesor Inmobiliario', 'Administrativo', 'Asistente'] as const
 type Position = typeof POSITIONS[number]
@@ -175,20 +176,14 @@ export default function AgentesPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, gap: 16 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>Agentes</h1>
-          <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>
-            {agents.length === 0 ? 'Sin agentes aún.' : `${agents.length} agente${agents.length !== 1 ? 's' : ''} registrado${agents.length !== 1 ? 's' : ''}.`}
-          </p>
-        </div>
-        {!showForm && (
+      <PageHeader title="Agentes"
+        subtitle={agents.length === 0 ? 'Sin agentes aún.' : `${agents.length} agente${agents.length !== 1 ? 's' : ''} registrado${agents.length !== 1 ? 's' : ''}.`}
+        right={!showForm && (
           <button onClick={openNew}
             style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
             + Nuevo agente
           </button>
-        )}
-      </div>
+        )} />
 
       {/* Form */}
       {showForm && (

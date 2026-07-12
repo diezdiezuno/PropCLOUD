@@ -408,7 +408,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 }
 function PageLoader() { return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div> }
 function PageHeader({ title, desc }: { title: string; desc: string }) {
-  return <div style={{ marginBottom: 32 }}><h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 6px' }}>{title}</h1><p style={{ fontSize: 14, color: '#888', margin: 0 }}>{desc}</p></div>
+  return <div style={{ borderLeft: '3px solid #111', paddingLeft: 14, marginBottom: 32 }}><h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', margin: 0, lineHeight: 1.2 }}>{title}</h1><p style={{ fontSize: 14, color: '#888', margin: '5px 0 0' }}>{desc}</p></div>
 }
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return <div style={{ background: '#fff', borderRadius: 12, padding: '22px 24px', marginBottom: 16, border: '1px solid #ebebeb' }}><div style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '.08em' }}>{title}</div>{children}</div>

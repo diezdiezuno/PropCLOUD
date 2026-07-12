@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
+import PageHeader from '@/components/admin/PageHeader'
 
 // ── Font lists ────────────────────────────────────────────────────────────────
 const FONT_HEADINGS = [
@@ -210,10 +211,7 @@ export default function GeneralPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 6px' }}>General</h1>
-        <p style={{ fontSize: 14, color: '#888', margin: 0 }}>Identidad y apariencia de tu inmobiliaria</p>
-      </div>
+      <PageHeader title={<>General</>} subtitle={<>Identidad y apariencia de tu inmobiliaria</>} />
 
       {/* ── Tabs ── */}
       <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e8e8e8', marginBottom: 24 }}>
@@ -467,7 +465,7 @@ export default function GeneralPage() {
                   {/* Live preview */}
                   <div style={{ marginTop: 12, padding: '14px 16px', background: '#f9f9f9', borderRadius: 8, border: '1px solid #f0f0f0' }}>
                     <div style={{ fontSize: 10, color: '#bbb', fontFamily: 'system-ui', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Vista previa</div>
-                    <div style={{ fontFamily: `'${fontBody}', sans-serif`, fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, marginBottom: 4 }}>
+                    <div style={{ fontFamily: `'${fontBody}', sans-serif`, fontSize: 22, fontWeight: 700, color: '#111', marginBottom: 4 }}>
                       $1,250,000
                     </div>
                     <div style={{ fontFamily: `'${fontBody}', sans-serif`, fontSize: 13, color: '#666', lineHeight: 1.6 }}>

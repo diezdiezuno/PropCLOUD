@@ -44,8 +44,8 @@ function Greeting({ name }: { name: string | null }) {
   }, [])
   const firstName = (name || '').trim().split(/\s+/)[0]
   return (
-    <div style={{ marginBottom: 20 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: 0 }}>
+    <div style={{ marginBottom: 20, borderLeft: '3px solid #111', paddingLeft: 14 }}>
+      <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', margin: 0, lineHeight: 1.2 }}>
         Hola{firstName ? ` ${firstName}` : ''}, {saludo}
       </h1>
     </div>

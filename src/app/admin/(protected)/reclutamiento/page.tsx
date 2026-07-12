@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
+import PageHeader from '@/components/admin/PageHeader'
 
 interface Application {
   id: string
@@ -101,14 +102,9 @@ export default function AdminReclutamientoPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>Reclutamiento</h1>
-        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>
-          {apps.length === 0
+      <PageHeader title={<>Reclutamiento</>} subtitle={<>{apps.length === 0
             ? 'Aún no hay aplicaciones.'
-            : `${apps.length} aplicación${apps.length !== 1 ? 'es' : ''} recibida${apps.length !== 1 ? 's' : ''}.`}
-        </p>
-      </div>
+            : `${apps.length} aplicación${apps.length !== 1 ? 'es' : ''} recibida${apps.length !== 1 ? 's' : ''}.`}</>} />
 
       {apps.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: 12, padding: '60px 24px', border: '1px solid #ebebeb', textAlign: 'center' }}>

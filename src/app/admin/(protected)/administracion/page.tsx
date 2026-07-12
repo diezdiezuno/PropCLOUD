@@ -1,4 +1,5 @@
 'use client'
+import PageHeader from '@/components/admin/PageHeader'
 
 // Hub de Administración: agrupa la configuración del sitio, ajustes del CRM,
 // gestión de oficina (PropTools admin), métricas y reclutamiento — para no
@@ -30,10 +31,7 @@ const SITIO = [
 export default function AdministracionPage() {
   return (
     <>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>Administración</h1>
-        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Configuración del sitio, CRM y gestión de la oficina.</p>
-      </div>
+      <PageHeader title={<>Administración</>} subtitle={<>Configuración del sitio, CRM y gestión de la oficina.</>} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
         {/* Sitio web — ancho completo con chips a sus secciones */}

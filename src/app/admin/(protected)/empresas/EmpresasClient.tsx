@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { getMembership } from '@/lib/membership'
+import PageHeader from '@/components/admin/PageHeader'
 
 // ── Types ─────────────────────────────────────────────────────
 interface Company {
@@ -500,18 +501,14 @@ export default function EmpresasClient() {
   return (
     <>
       {/* ── Header ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>Empresas</h1>
-          <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>
-            {companies.length === 0 && !hasSearch ? 'Sin empresas aún.' : `${companies.length} empresa${companies.length !== 1 ? 's' : ''}`}
-          </p>
-        </div>
-        <button onClick={() => openDrawer(null)}
-          style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-          + Nueva empresa
-        </button>
-      </div>
+      <PageHeader title="Empresas"
+        subtitle={companies.length === 0 && !hasSearch ? 'Sin empresas aún.' : `${companies.length} empresa${companies.length !== 1 ? 's' : ''}`}
+        right={
+          <button onClick={() => openDrawer(null)}
+            style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            + Nueva empresa
+          </button>
+        } />
 
       {/* ── Toolbar ────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>

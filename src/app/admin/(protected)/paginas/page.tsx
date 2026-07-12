@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import type { PageConfig } from '@/types'
+import PageHeader from '@/components/admin/PageHeader'
 
 const PREDEFINED_PAGES: PageConfig[] = [
   { slug: 'nosotros',      title: 'Nosotros',             visible: true,  order: 1, custom: false },
@@ -119,19 +120,16 @@ export default function PaginasPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>Páginas</h1>
-          <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Seleccioná una página para ver su vista previa y opciones.</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {savedMsg && <span style={{ fontSize: 13, color: '#38a169' }}>✓ Guardado</span>}
-          <button onClick={save} disabled={saving}
-            style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
-            {saving ? 'Guardando…' : 'Guardar cambios'}
-          </button>
-        </div>
-      </div>
+      <PageHeader title="Páginas" subtitle="Seleccioná una página para ver su vista previa y opciones."
+        right={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {savedMsg && <span style={{ fontSize: 13, color: '#38a169' }}>✓ Guardado</span>}
+            <button onClick={save} disabled={saving}
+              style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
+              {saving ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
+        } />
 
       {/* Tab bar */}
       <div style={{

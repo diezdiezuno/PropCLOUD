@@ -7,6 +7,7 @@ import { COUNTRIES } from '@/data/countries'
 import ContactForm from '@/components/crm/ContactForm'
 import { getMembership } from '@/lib/membership'
 import ContactVCardModal, { type VCardViewType } from '../propiedades/ContactVCardModal'
+import PageHeader from '@/components/admin/PageHeader'
 
 // ── Types ─────────────────────────────────────────────────────
 interface DocUrl {
@@ -539,18 +540,14 @@ export default function ClientesClient() {
   return (
     <>
       {/* ── Header ───────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, margin: '0 0 4px' }}>Clientes</h1>
-          <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>
-            {contacts.length === 0 && !hasFilters ? 'Sin clientes aún.' : `${contacts.length} cliente${contacts.length !== 1 ? 's' : ''}`}
-          </p>
-        </div>
-        <button onClick={() => openDrawer(null)}
-          style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-          + Nuevo cliente
-        </button>
-      </div>
+      <PageHeader title="Clientes"
+        subtitle={contacts.length === 0 && !hasFilters ? 'Sin clientes aún.' : `${contacts.length} cliente${contacts.length !== 1 ? 's' : ''}`}
+        right={
+          <button onClick={() => openDrawer(null)}
+            style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            + Nuevo cliente
+          </button>
+        } />
 
       {/* ── Toolbar ──────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
