@@ -92,7 +92,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   // Admins además ven la administración de PropTools (usuarios, plantillas).
   const ptApps = (tenant.proptools_apps ?? []).filter(s => PROPTOOLS_CATALOG[s])
   const ptItems = [
-    { icon: '👤', label: 'Mi perfil', href: '/admin/tools/perfil' },
+    { icon: '👤', label: 'Mi perfil', href: '/admin/perfil' },
     ...ptApps.map(s => ({ ...PROPTOOLS_CATALOG[s] })),
     ...(role === 'admin' ? [{ icon: '🛠️', label: 'Administración', href: '/admin/tools/admin' }] : []),
   ]
@@ -113,7 +113,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   // (Los datos igual están protegidos por RLS; esto es solo UI.)
   useEffect(() => {
     if (role !== 'agent') return
-    const allowed = ['/admin/propiedades', '/admin/clientes', '/admin/empresas', '/admin/leads', '/admin/tools/']
+    const allowed = ['/admin/propiedades', '/admin/clientes', '/admin/empresas', '/admin/leads', '/admin/tools/', '/admin/perfil']
     const ok = allowed.some(p => pathname.startsWith(p)) && !pathname.startsWith('/admin/tools/admin')
     if (!ok) router.replace('/admin/clientes')
   }, [role, pathname, router])
@@ -128,7 +128,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
       if (hasActive) setCollapsed(prev => ({ ...prev, [group.key]: false }))
     }
     // PropTools no está en NAV_GROUPS (se arma por tenant) — mismo comportamiento
-    if (pathname.startsWith('/admin/tools/')) setCollapsed(prev => ({ ...prev, proptools: false }))
+    if (pathname.startsWith('/admin/tools/') || pathname.startsWith('/admin/perfil')) setCollapsed(prev => ({ ...prev, proptools: false }))
   }, [pathname])
   function toggle(key: string) {
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))

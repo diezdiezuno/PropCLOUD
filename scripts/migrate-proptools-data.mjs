@@ -43,8 +43,8 @@ const COLS = {
   users: ['id','auth_id','tenant_id','name','email','role','job_title','phone','whatsapp','instagram','facebook','linkedin','tiktok','photo_url','created_at'],
   tenant_templates: ['id','tenant_id','name','html','config','active','sort_order','created_at'],
   signatures: ['id','tenant_id','user_id','save_name','template','photo_url','name','role','email','phone','whatsapp','facebook','instagram','linkedin','tiktok','created_at','updated_at'],
-  tarjetas: ['id','tenant_id','user_id','data','created_at'],
-  rotulos: ['id','tenant_id','user_id','data','created_at'],
+  tarjetas: ['id','tenant_id','user_id','save_name','template','photo_url','name','whatsapp','email','instagram','created_at','updated_at'],
+  rotulos: ['id','tenant_id','user_id','save_name','orientacion','template','texto_rojo','name','whatsapp','email','created_at','updated_at'],
   avaluos: ['id','tenant_id','user_id','referencia','obra','fecha_avaluo','provincia','canton','distrito','ubicacion','notas','tipo_principal','tipo_segunda','area_construccion','anios_construccion','pct_remodelacion','anios_remodelacion','vida_util','estado_conservacion','area_lote','val_mt2_lote','anio_mapa','tipo_cambio','complementarias','resultado_terreno_col','resultado_const_base_col','resultado_const_depr_col','resultado_compl_col','resultado_total_col','resultado_total_usd','created_at','updated_at'],
   calendarios: ['id','tenant_id','nombre','color','created_at'],
   eventos_calendario: ['id','tenant_id','calendario_id','titulo','fecha','hora_inicio','hora_fin','descripcion','todo_dia','user_auth_id','creado_por','created_at'],
@@ -103,7 +103,8 @@ async function insertRows(table, rows) {
   for (let i = 0; i < rows.length; i += 500) {
     await rest(NEW_URL, NEW_KEY, `/rest/v1/${table}?on_conflict=id`, {
       method: 'POST',
-      headers: { Prefer: 'resolution=ignore-duplicates' },
+      // merge: si la fila ya existe (re-ejecución) actualiza sus columnas
+      headers: { Prefer: 'resolution=merge-duplicates' },
       body: JSON.stringify(rows.slice(i, i + 500)),
     })
   }

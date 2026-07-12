@@ -102,16 +102,30 @@ create table if not exists tarjetas (
   id         uuid default gen_random_uuid() primary key,
   tenant_id  uuid references tenants(id) on delete cascade not null default my_tenant_id(),
   user_id    uuid references users(id) on delete cascade not null,
-  data       jsonb,
-  created_at timestamptz default now()
+  save_name  text,
+  template   text,
+  photo_url  text,
+  name       text,
+  whatsapp   text,
+  email      text,
+  instagram  text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 create table if not exists rotulos (
-  id         uuid default gen_random_uuid() primary key,
-  tenant_id  uuid references tenants(id) on delete cascade not null default my_tenant_id(),
-  user_id    uuid references users(id) on delete cascade not null,
-  data       jsonb,
-  created_at timestamptz default now()
+  id          uuid default gen_random_uuid() primary key,
+  tenant_id   uuid references tenants(id) on delete cascade not null default my_tenant_id(),
+  user_id     uuid references users(id) on delete cascade not null,
+  save_name   text,
+  orientacion text,
+  template    text,
+  texto_rojo  text,
+  name        text,
+  whatsapp    text,
+  email       text,
+  created_at  timestamptz default now(),
+  updated_at  timestamptz default now()
 );
 
 -- ── Valoraciones (avalúos) ──────────────────────────────────────

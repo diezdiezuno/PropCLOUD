@@ -1,6 +1,7 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { Suspense } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 
 // Herramientas PropTools embebidas dentro del shell de PropCLOUD.
 // La sesión se comparte vía cookie (public/tools/cookie-storage.js).
@@ -17,13 +18,17 @@ const TOOLS: Record<string, { title: string; subtitle: string }> = {
   admin:        { title: 'Administración PropTools', subtitle: 'Gestión de agentes, invitaciones y equipos de oficina.' },
 }
 
-export default function ToolPage() {
+function ToolFrame() {
   const { slug } = useParams<{ slug: string }>()
+  const search = useSearchParams()
   const tool = TOOLS[slug]
 
   if (!tool) {
     return <div style={{ padding: 40, color: '#e53e3e', fontSize: 14 }}>Herramienta no encontrada.</div>
   }
+
+  // Deep-link: /admin/tools/rotulos?id=X carga ese guardado en la herramienta
+  const id = search.get('id')
 
   return (
     <>
@@ -32,7 +37,7 @@ export default function ToolPage() {
         <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>{tool.subtitle}</p>
       </div>
       <iframe
-        src={`/tools/${slug}/?embed=1`}
+        src={`/tools/${slug}/?embed=1${id ? `&id=${encodeURIComponent(id)}` : ''}`}
         style={{
           width: '100%',
           height: 'calc(100vh - 190px)',
@@ -44,4 +49,9 @@ export default function ToolPage() {
       />
     </>
   )
+}
+
+export default function ToolPage() {
+  // useSearchParams exige Suspense en build estático
+  return <Suspense fallback={null}><ToolFrame /></Suspense>
 }
