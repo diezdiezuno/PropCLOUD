@@ -9,6 +9,22 @@ import { createClient } from '@/lib/supabase-browser'
 
 const CLOUD = 'dlgrhr6lh', PRESET = 'firmas' // Cloudinary — mismo que PropTools
 
+// ── Íconos ──────────────────────────────────────────────────
+const ic = (d: string, fill = false) => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'}
+    stroke={fill ? 'none' : 'currentColor'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+    style={{ flexShrink: 0 }}><path d={d} /></svg>
+)
+const ICONS: Record<string, React.ReactNode> = {
+  email:     ic('M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2 8 6 8-6'),
+  whatsapp:  ic('M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Zm5.1 14.3c-.2.6-1.2 1.2-1.7 1.2-.4.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.5-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1.1-1.4-1.1-2.7s.7-1.9.9-2.2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5-.3.6-.7.9-.5 1.2.7 1.2 1.6 2 2.8 2.6.3.2.5.1.7-.1.2-.2.8-.9 1-1.2.2-.3.4-.2.6-.1.3.1 1.7.8 2 1 .3.2.5.2.5.4 0 .1 0 .7-.3 1.3Z', true),
+  phone:     ic('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3A19.5 19.5 0 0 1 5.2 13 19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.8.7a2 2 0 0 1 1.7 2Z'),
+  instagram: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ flexShrink: 0 }}><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>,
+  facebook:  ic('M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3V2Z', true),
+  linkedin:  ic('M20.4 3H3.6A.6.6 0 0 0 3 3.6v16.8a.6.6 0 0 0 .6.6h16.8a.6.6 0 0 0 .6-.6V3.6a.6.6 0 0 0-.6-.6ZM8.3 18.4H5.7V9.7h2.6v8.7ZM7 8.5a1.6 1.6 0 1 1 0-3.1 1.6 1.6 0 0 1 0 3.1Zm11.4 9.9h-2.6v-4.2c0-1 0-2.3-1.4-2.3s-1.6 1.1-1.6 2.2v4.3h-2.6V9.7h2.5v1.2h.1a2.7 2.7 0 0 1 2.4-1.3c2.6 0 3.2 1.7 3.2 4v4.8Z', true),
+  tiktok:    ic('M19.6 6.7a4.8 4.8 0 0 1-3.8-4.3V2h-3.3v13.2a2.8 2.8 0 1 1-2-2.7V9.1a6.1 6.1 0 1 0 5.3 6V8.9a8 8 0 0 0 3.8 1V6.7Z', true),
+}
+
 interface Profile {
   id: string; tenant_id: string; name: string | null; job_title: string | null
   email: string | null; phone: string | null; whatsapp: string | null
@@ -117,10 +133,15 @@ export default function PerfilPage() {
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#aaa', fontSize: 13 }}>Cargando…</div>
   if (!profile) return <div style={{ padding: 60, textAlign: 'center', color: '#e53e3e', fontSize: 13 }}>No se encontró tu perfil.</div>
 
-  const contactFields: { key: keyof Profile; label: string }[] = [
-    { key: 'email', label: '✉ Email' }, { key: 'phone', label: '☎ Teléfono' },
-    { key: 'whatsapp', label: '💬 WhatsApp' }, { key: 'instagram', label: 'Instagram' },
-    { key: 'facebook', label: 'Facebook' }, { key: 'linkedin', label: 'LinkedIn' }, { key: 'tiktok', label: 'TikTok' },
+  // Email | WhatsApp | Teléfono / Instagram | Facebook / LinkedIn | TikTok
+  const contactFields: { key: keyof Profile; label: string; span: number }[] = [
+    { key: 'email',     label: 'Email',     span: 2 },
+    { key: 'whatsapp',  label: 'WhatsApp',  span: 2 },
+    { key: 'phone',     label: 'Teléfono',  span: 2 },
+    { key: 'instagram', label: 'Instagram', span: 3 },
+    { key: 'facebook',  label: 'Facebook',  span: 3 },
+    { key: 'linkedin',  label: 'LinkedIn',  span: 3 },
+    { key: 'tiktok',    label: 'TikTok',    span: 3 },
   ]
   const card: React.CSSProperties = { background: '#fff', border: '1px solid #ececf0', borderRadius: 14, padding: 24 }
   const sectionTitle: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 14px' }
@@ -129,18 +150,18 @@ export default function PerfilPage() {
     <>
       <style>{`.pf-edit:hover::after { content: ' ✎'; font-size: .85em; color: #c5cad3 }`}</style>
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>Mi perfil</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>Dashboard</h1>
         <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Tu información de agente — se usa en firmas, tarjetas, rótulos, CRM y web. Hacé click en un dato para editarlo.</p>
       </div>
 
       {/* ── Agente ─────────────────────────────────────────── */}
       <div style={{ ...card, display: 'flex', gap: 28, marginBottom: 20, flexWrap: 'wrap' }}>
         <div onClick={() => fileRef.current?.click()} title="Click para cambiar la foto"
-          style={{ width: 150, height: 150, borderRadius: 14, background: '#f5f5f7', cursor: 'pointer', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          style={{ width: 220, height: 220, borderRadius: 16, background: profile.photo_url ? 'transparent' : '#f5f5f7', cursor: 'pointer', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
           {profile.photo_url
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={profile.photo_url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ fontSize: 40, color: '#c5cad3' }}>👤</span>}
+            : <span style={{ fontSize: 54, color: '#c5cad3' }}>👤</span>}
           {uploading && <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#666' }}>Subiendo…</div>}
         </div>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
@@ -153,11 +174,13 @@ export default function PerfilPage() {
           <div style={{ fontSize: 14, color: '#888', marginBottom: 16 }}>
             <Editable value={profile.job_title} placeholder="Puesto" onSave={v => saveField('job_title', v)} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
-            {contactFields.map(({ key, label }) => (
-              <div key={key} style={{ background: '#f7f8fa', borderRadius: 10, padding: '9px 13px' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#9aa1ad', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 3 }}>{label}</div>
-                <div style={{ fontSize: 13, color: '#111' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10 }}>
+            {contactFields.map(({ key, label, span }) => (
+              <div key={key} style={{ gridColumn: `span ${span}`, background: '#f7f8fa', borderRadius: 10, padding: '9px 13px', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 600, color: '#9aa1ad', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 3 }}>
+                  {ICONS[key]}{label}
+                </div>
+                <div style={{ fontSize: 13, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   <Editable value={profile[key] as string | null} onSave={v => saveField(key, v)} />
                 </div>
               </div>

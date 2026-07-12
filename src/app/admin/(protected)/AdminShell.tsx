@@ -50,7 +50,7 @@ const PROPTOOLS_CATALOG: Record<string, { icon: string; label: string; href: str
 }
 
 // Rutas de listado que usan el ancho completo de la pantalla
-const WIDE_ROUTES = ['/admin/clientes', '/admin/empresas', '/admin/leads', '/admin/propiedades']
+const WIDE_ROUTES = ['/admin/dashboard', '/admin/clientes', '/admin/empresas', '/admin/leads', '/admin/propiedades']
 
 const SIDEBAR_W_OPEN   = 216
 const SIDEBAR_W_CLOSED = 72
@@ -92,7 +92,6 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   // Admins además ven la administración de PropTools (usuarios, plantillas).
   const ptApps = (tenant.proptools_apps ?? []).filter(s => PROPTOOLS_CATALOG[s])
   const ptItems = [
-    { icon: '👤', label: 'Mi perfil', href: '/admin/perfil' },
     ...ptApps.map(s => ({ ...PROPTOOLS_CATALOG[s] })),
     ...(role === 'admin' ? [{ icon: '🛠️', label: 'Administración', href: '/admin/tools/admin' }] : []),
   ]
@@ -113,9 +112,9 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   // (Los datos igual están protegidos por RLS; esto es solo UI.)
   useEffect(() => {
     if (role !== 'agent') return
-    const allowed = ['/admin/propiedades', '/admin/clientes', '/admin/empresas', '/admin/leads', '/admin/tools/', '/admin/perfil']
+    const allowed = ['/admin/propiedades', '/admin/clientes', '/admin/empresas', '/admin/leads', '/admin/tools/', '/admin/dashboard']
     const ok = allowed.some(p => pathname.startsWith(p)) && !pathname.startsWith('/admin/tools/admin')
-    if (!ok) router.replace('/admin/clientes')
+    if (!ok) router.replace('/admin/dashboard')
   }, [role, pathname, router])
 
   // ── Nav group collapse — all closed by default ────────────
@@ -128,7 +127,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
       if (hasActive) setCollapsed(prev => ({ ...prev, [group.key]: false }))
     }
     // PropTools no está en NAV_GROUPS (se arma por tenant) — mismo comportamiento
-    if (pathname.startsWith('/admin/tools/') || pathname.startsWith('/admin/perfil')) setCollapsed(prev => ({ ...prev, proptools: false }))
+    if (pathname.startsWith('/admin/tools/')) setCollapsed(prev => ({ ...prev, proptools: false }))
   }, [pathname])
   function toggle(key: string) {
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
@@ -304,6 +303,25 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '8px 0 12px', overflowY: 'auto', overflowX: 'hidden' }}>
+
+          {/* Dashboard — página principal, visible para todos los roles */}
+          {(() => {
+            const active = pathname.startsWith('/admin/dashboard')
+            return (
+              <div style={{ marginBottom: 4 }}>
+                <a href="/admin/dashboard" style={{ display: 'flex', flexDirection: open ? 'row' : 'column', alignItems: 'center', justifyContent: open ? 'flex-start' : 'center', gap: open ? 9 : 2, padding: open ? '8px 20px' : '6px 0', textDecoration: 'none', fontSize: 13, color: active ? '#111' : '#666', background: active ? '#f5f5f7' : 'transparent', fontWeight: active ? 600 : 400, borderLeft: `3px solid ${active ? '#111' : 'transparent'}`, transition: 'background .1s', whiteSpace: 'nowrap' }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = '#fafafa' }}
+                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
+                >
+                  <span style={{ fontSize: open ? 14 : 16 }}>📊</span>
+                  {open
+                    ? 'Dashboard'
+                    : <span style={{ fontSize: 9, color: active ? '#111' : '#888', fontWeight: active ? 700 : 400, letterSpacing: '.01em', maxWidth: 62, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>Dashboard</span>}
+                </a>
+                <div style={{ height: 1, background: '#f0f0f0', margin: open ? '6px 16px 2px' : '6px 10px 2px' }} />
+              </div>
+            )
+          })()}
 
           {navGroups.map(group => {
             const isOpen    = !collapsed[group.key]

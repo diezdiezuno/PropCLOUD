@@ -31,7 +31,7 @@ function LoginForm() {
           ? 'Email o contraseña incorrectos'
           : error.message)
       } else {
-        router.push('/admin/branding')
+        router.push('/admin/dashboard')
         router.refresh()
       }
     } else {

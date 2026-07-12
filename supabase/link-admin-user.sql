@@ -1,8 +1,8 @@
 -- Vincular el admin de PropCLOUD con su usuario migrado de PropTools.
 -- Reemplazá los dos emails y corré todo en el SQL editor.
 --
--- ADMIN_EMAIL    = email con el que entrás a PropCLOUD
--- PROPTOOLS_EMAIL = email que tenía tu usuario en PropTools
+-- ADMIN_EMAIL    = diezdiezuno.dev@gmail.com
+-- PROPTOOLS_EMAIL = sergio.solorzano@remaxcentralcr.com
 -- (si son el mismo email, poné el mismo en ambos)
 
 do $$
@@ -11,13 +11,13 @@ declare
   old_auth     uuid;  -- auth id que la migración le puso al usuario migrado
   migrated_uid uuid;  -- users.id migrado (dueño de rótulos/tarjetas/firmas)
 begin
-  select id into admin_auth from auth.users where email = 'ADMIN_EMAIL';
-  if admin_auth is null then raise exception 'No existe auth user ADMIN_EMAIL'; end if;
+  select id into admin_auth from auth.users where email = 'diezdiezuno.dev@gmail.com';
+  if admin_auth is null then raise exception 'No existe auth user diezdiezuno.dev@gmail.com'; end if;
 
   select id, auth_id into migrated_uid, old_auth
-  from users where lower(email) = lower('PROPTOOLS_EMAIL')
+  from users where lower(email) = lower('sergio.solorzano@remaxcentralcr.com')
   order by created_at limit 1;
-  if migrated_uid is null then raise exception 'No hay usuario migrado con PROPTOOLS_EMAIL'; end if;
+  if migrated_uid is null then raise exception 'No hay usuario migrado con sergio.solorzano@remaxcentralcr.com'; end if;
 
   -- 1. quitar la fila auto-provisionada (vacía) del admin, si existe
   delete from users where auth_id = admin_auth and id <> migrated_uid;
