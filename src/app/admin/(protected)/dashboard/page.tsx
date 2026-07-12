@@ -147,17 +147,19 @@ export default function PerfilPage() {
   const sectionTitle: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 14px' }
 
   return (
-    <>
+    // degradado gris→blanco en todo el espacio de contenido (bleed sobre el
+    // padding 36/44 del shell)
+    <div style={{ margin: '-36px -44px', padding: '36px 44px', minHeight: 'calc(100vh - 54px)', background: 'linear-gradient(115deg, #e4e7ec 0%, #ffffff 70%)' }}>
       <style>{`.pf-edit:hover::after { content: ' ✎'; font-size: .85em; color: #c5cad3 }`}</style>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>Dashboard</h1>
         <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Tu información de agente — se usa en firmas, tarjetas, rótulos, CRM y web. Hacé click en un dato para editarlo.</p>
       </div>
 
-      {/* ── Agente — foto flotante sobre degradado, pegada a la caja de abajo ── */}
-      <div style={{ background: 'linear-gradient(115deg, #e8eaee 0%, #ffffff 100%)', border: '1px solid #ececf0', borderRadius: 14, padding: '24px 24px 0', display: 'flex', gap: 28, marginBottom: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      {/* ── Agente — foto flotante directo sobre el degradado de la página ── */}
+      <div style={{ padding: '10px 4px 0', display: 'flex', gap: 28, marginBottom: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div onClick={() => fileRef.current?.click()} title="Click para cambiar la foto"
-          style={{ width: 230, height: 270, marginBottom: -20, zIndex: 1, background: profile.photo_url ? 'transparent' : 'rgba(255,255,255,.45)', borderRadius: profile.photo_url ? 0 : 16, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', position: 'relative' }}>
+          style={{ width: 230, height: 270, marginBottom: -20, background: profile.photo_url ? 'transparent' : 'rgba(255,255,255,.55)', borderRadius: profile.photo_url ? 0 : 16, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', position: 'relative' }}>
           {profile.photo_url
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={profile.photo_url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }} />
@@ -189,8 +191,8 @@ export default function PerfilPage() {
         </div>
       </div>
 
-      {/* ── Material de impresión ──────────────────────────── */}
-      <div style={{ ...card, marginBottom: 20 }}>
+      {/* ── Material de impresión — top translúcido: la foto se ve detrás ── */}
+      <div style={{ ...card, marginBottom: 20, position: 'relative', zIndex: 1, background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
         <h2 style={sectionTitle}>Material de impresión</h2>
         {material.length === 0
           ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin material guardado aún — creá rótulos y tarjetas desde el menú PropTools.</p>
@@ -244,6 +246,6 @@ export default function PerfilPage() {
             </div>
           )}
       </div>
-    </>
+    </div>
   )
 }
