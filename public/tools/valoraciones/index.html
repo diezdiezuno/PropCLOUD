@@ -970,22 +970,19 @@ window.fetchTipoCambio = async function() {
   meta.textContent = 'Consultando…';
 
   try {
-    // Edge Function en PROD o STAGING según el entorno
-    const fnUrl = SUPABASE_URL.replace('supabase.co', 'supabase.co') + '/functions/v1/tipo-cambio';
-    const { data: { session } } = await sb.auth.getSession();
-    const res = await fetch(fnUrl, {
-      headers: { Authorization: `Bearer ${session?.access_token}` }
-    });
-
+    // API pública del Ministerio de Hacienda (CORS abierto, sin auth)
+    const res = await fetch('https://api.hacienda.go.cr/indicadores/tc');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const tc = await res.json();
+    const tc = (await res.json())?.dolar;
+    const venta  = tc?.venta?.valor;
+    const compra = tc?.compra?.valor;
+    if (!venta) throw new Error('respuesta sin valor de venta');
+    const fecha = String(tc.venta.fecha || '').slice(0, 10);
 
-    if (tc.error) throw new Error(tc.error);
-
-    document.getElementById('f_tc').value = tc.valor;
+    document.getElementById('f_tc').value = venta;
     calcular();
     markDirty();
-    meta.textContent = `Venta ₡${tc.valor} · Compra ₡${tc.compra} · ${tc.fecha}${tc.cached ? ' (cache)' : ''}`;
+    meta.textContent = `Venta ₡${venta} · Compra ₡${compra} · ${fecha}`;
     meta.style.color = 'var(--green)';
   } catch (err) {
     meta.textContent = `Error: ${err.message} — ingresá el valor manual`;

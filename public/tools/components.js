@@ -433,9 +433,18 @@ async function initComponents({ active = '', version = '' } = {}) {
     renderSidebar({ apps: resolvedApps, active, role: profile.role });
     renderFooter();
   } else {
+    // Embebido en PropCLOUD: sin chrome propio (header/sidebar/footer) ni
+    // título de página (lo pone el shell), fondo transparente para que se
+    // integre con el fondo #f5f5f7 del admin, y layouts sin la fila del header.
     document.body.classList.add('pt-embedded');
     const st = document.createElement('style');
-    st.textContent = '.pt-embedded { padding-top: 0 !important; } .pt-embedded .pt-header, .pt-embedded .pt-sidebar, .pt-embedded .pt-footer { display: none !important; }';
+    st.textContent = `
+      #pt-header, #pt-sidebar, #pt-footer, .page-header { display: none !important; }
+      body { background: transparent !important; }
+      .app-screen { grid-template-rows: 0 100vh !important; }
+      #pt-main { padding-top: 0 !important; }
+      .results-bar { top: 0 !important; }
+    `;
     document.head.appendChild(st);
   }
 

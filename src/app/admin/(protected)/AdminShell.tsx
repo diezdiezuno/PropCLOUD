@@ -92,6 +92,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   // Admins además ven la administración de PropTools (usuarios, plantillas).
   const ptApps = (tenant.proptools_apps ?? []).filter(s => PROPTOOLS_CATALOG[s])
   const ptItems = [
+    { icon: '👤', label: 'Mi perfil', href: '/admin/tools/perfil' },
     ...ptApps.map(s => ({ ...PROPTOOLS_CATALOG[s] })),
     ...(role === 'admin' ? [{ icon: '🛠️', label: 'Administración', href: '/admin/tools/admin' }] : []),
   ]
@@ -126,6 +127,8 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
       const hasActive = group.items.some(item => pathname.startsWith(item.href))
       if (hasActive) setCollapsed(prev => ({ ...prev, [group.key]: false }))
     }
+    // PropTools no está en NAV_GROUPS (se arma por tenant) — mismo comportamiento
+    if (pathname.startsWith('/admin/tools/')) setCollapsed(prev => ({ ...prev, proptools: false }))
   }, [pathname])
   function toggle(key: string) {
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
