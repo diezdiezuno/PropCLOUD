@@ -18,6 +18,14 @@ const TOOLS: Record<string, { title: string; subtitle: string }> = {
   admin:        { title: 'Administración PropTools', subtitle: 'Gestión de agentes, invitaciones y equipos de oficina.' },
 }
 
+// Tabs internos de Administración, cada uno es un link del menú (?tab=)
+const ADMIN_TABS: Record<string, { title: string; subtitle: string }> = {
+  agentes:    { title: 'Agentes',            subtitle: 'Gestión de agentes e invitaciones.' },
+  equipos:    { title: 'Equipos de oficina', subtitle: 'Inventario de equipos de la oficina.' },
+  calendario: { title: 'Calendario',         subtitle: 'Calendarios de la oficina.' },
+  materiales: { title: 'Materiales',         subtitle: 'Materiales guardados de los agentes.' },
+}
+
 function ToolFrame() {
   const { slug } = useParams<{ slug: string }>()
   const search = useSearchParams()
@@ -27,17 +35,23 @@ function ToolFrame() {
     return <div style={{ padding: 40, color: '#e53e3e', fontSize: 14 }}>Herramienta no encontrada.</div>
   }
 
-  // Deep-link: /admin/tools/rotulos?id=X carga ese guardado en la herramienta
+  // Deep-link: ?id=X carga un guardado; ?tab=X abre un tab de Administración.
   const id = search.get('id')
+  const tab = slug === 'admin' ? search.get('tab') : null
+  const heading = (tab && ADMIN_TABS[tab]) ? ADMIN_TABS[tab] : tool
+  const qs = new URLSearchParams({ embed: '1' })
+  if (id) qs.set('id', id)
+  if (tab) qs.set('tab', tab)
 
   return (
     <>
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{tool.title}</h1>
-        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>{tool.subtitle}</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{heading.title}</h1>
+        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>{heading.subtitle}</p>
       </div>
       <iframe
-        src={`/tools/${slug}/?embed=1${id ? `&id=${encodeURIComponent(id)}` : ''}`}
+        key={tab ?? 'default'}
+        src={`/tools/${slug}/?${qs.toString()}`}
         style={{
           width: '100%',
           height: 'calc(100vh - 190px)',
@@ -45,7 +59,7 @@ function ToolFrame() {
           background: 'transparent',
           display: 'block',
         }}
-        title={`PropTools — ${tool.title}`}
+        title={`PropTools — ${heading.title}`}
       />
     </>
   )

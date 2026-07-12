@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 
 // ── Nav structure ─────────────────────────────────────────────
@@ -73,6 +73,13 @@ interface Props   { tenant: Tenant; userEmail: string; role?: 'admin' | 'agent';
 export default function AdminShell({ tenant, userEmail, role = 'admin', children }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
+  const tab      = useSearchParams().get('tab')
+  // Ruta actual incluyendo ?tab= (los links de Administración lo usan)
+  const currentPath = pathname + (tab ? `?tab=${tab}` : '')
+  // Un item está activo si su href (con o sin query) matchea la ruta actual
+  const isActive = (href: string) => href.includes('?')
+    ? currentPath === href
+    : pathname.startsWith(href) && !pathname.startsWith('/admin/tools/admin')
 
   // ── Sidebar open/closed ────────────────────────────────────
   const [open, setOpen] = useState(true)
@@ -91,12 +98,18 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   // Grupo PropTools según las apps activas del tenant.
   // Admins además ven la administración de PropTools (usuarios, plantillas).
   const ptApps = (tenant.proptools_apps ?? []).filter(s => PROPTOOLS_CATALOG[s])
-  const ptItems = [
-    ...ptApps.map(s => ({ ...PROPTOOLS_CATALOG[s] })),
-    ...(role === 'admin' ? [{ icon: '🛠️', label: 'Administración', href: '/admin/tools/admin' }] : []),
-  ]
+  const ptItems = ptApps.map(s => ({ ...PROPTOOLS_CATALOG[s] }))
   const ptGroup = ptItems.length > 0
     ? [{ key: 'proptools', label: 'PropTools', icon: '🧰', items: ptItems }]
+    : []
+  // Administración de PropTools: cada tab interno como link (solo admin).
+  const adminGroup = role === 'admin'
+    ? [{ key: 'ptadmin', label: 'Administración', icon: '🛠️', items: [
+        { icon: '👥', label: 'Agentes',            href: '/admin/tools/admin?tab=agentes' },
+        { icon: '📦', label: 'Equipos de oficina', href: '/admin/tools/admin?tab=equipos' },
+        { icon: '📅', label: 'Calendario',         href: '/admin/tools/admin?tab=calendario' },
+        { icon: '🗂️', label: 'Materiales',         href: '/admin/tools/admin?tab=materiales' },
+      ] }]
     : []
   // Agentes: solo CRM (sin Configuración) + PropTools. Admins: todo.
   const baseGroups = role === 'agent'
@@ -105,7 +118,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
         items: g.items.filter(i => i.href !== '/admin/crm-config'),
       }))
     : NAV_GROUPS
-  const navGroups = [...baseGroups, ...ptGroup]
+  const navGroups = [...baseGroups, ...ptGroup, ...adminGroup]
   const standalone = role === 'agent' ? [] : NAV_STANDALONE
 
   // Guard: si un agente escribe una URL admin-only, redirigir al CRM.
@@ -126,8 +139,9 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
       const hasActive = group.items.some(item => pathname.startsWith(item.href))
       if (hasActive) setCollapsed(prev => ({ ...prev, [group.key]: false }))
     }
-    // PropTools no está en NAV_GROUPS (se arma por tenant) — mismo comportamiento
-    if (pathname.startsWith('/admin/tools/')) setCollapsed(prev => ({ ...prev, proptools: false }))
+    // Grupos armados por tenant/rol (no están en NAV_GROUPS)
+    if (pathname === '/admin/tools/admin') setCollapsed(prev => ({ ...prev, ptadmin: false }))
+    else if (pathname.startsWith('/admin/tools/')) setCollapsed(prev => ({ ...prev, proptools: false }))
   }, [pathname])
   function toggle(key: string) {
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
@@ -325,7 +339,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
 
           {navGroups.map(group => {
             const isOpen    = !collapsed[group.key]
-            const hasActive = group.items.some(item => pathname.startsWith(item.href))
+            const hasActive = group.items.some(item => isActive(item.href))
             return (
               <div key={group.key} style={{ marginBottom: 4 }}>
                 <button
@@ -356,7 +370,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
                     {group.items.map(item => {
                       const { href, icon, label } = item
                       const external = 'external' in item && item.external
-                      const active = !external && pathname.startsWith(href)
+                      const active = !external && isActive(href)
                       return (
                         <a key={href} href={href}
                           target={external ? '_blank' : undefined}

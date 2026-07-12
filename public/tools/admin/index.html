@@ -2627,6 +2627,15 @@ async function boot() {
   $('gate').style.display = 'none';
   $('btn-refresh').addEventListener('click', loadInvites);
   await Promise.all([loadUsers(), loadInvites()]);
+
+  // Deep-link ?tab=agentes|equipos|calendario|materiales (desde el menú de
+  // PropCLOUD). Con tab fijo, la barra de tabs interna se oculta.
+  const _tab = new URLSearchParams(location.search).get('tab');
+  if (_tab && ['agentes','equipos','calendario','materiales'].includes(_tab)) {
+    switchAdminTab(_tab);
+    const bar = document.querySelector('.admin-tabs');
+    if (bar) bar.style.display = 'none';
+  }
 }
 
 boot();
