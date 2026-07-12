@@ -157,9 +157,9 @@ export default function PerfilPage() {
       </div>
 
       {/* ── Agente — foto flotante directo sobre el degradado de la página ── */}
-      <div style={{ padding: '10px 4px 0', display: 'flex', gap: 28, marginBottom: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <div style={{ padding: '10px 4px 0', display: 'flex', gap: 28, marginBottom: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div onClick={() => fileRef.current?.click()} title="Click para cambiar la foto"
-          style={{ width: 300, height: 360, marginBottom: -110, background: profile.photo_url ? 'transparent' : 'rgba(255,255,255,.55)', borderRadius: profile.photo_url ? 0 : 16, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', position: 'relative' }}>
+          style={{ width: 340, height: 410, marginBottom: -110, background: profile.photo_url ? 'transparent' : 'rgba(255,255,255,.55)', borderRadius: profile.photo_url ? 0 : 16, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', position: 'relative' }}>
           {profile.photo_url
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={profile.photo_url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }} />
@@ -169,7 +169,7 @@ export default function PerfilPage() {
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
           onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = '' }} />
 
-        <div style={{ flex: 1, minWidth: 280, padding: '0 0 24px' }}>
+        <div style={{ flex: 1, minWidth: 280 }}>
           <div style={{ fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 2 }}>
             <Editable value={profile.name} placeholder="Tu nombre" onSave={v => saveField('name', v)} />
           </div>
