@@ -256,7 +256,8 @@ export default function PerfilPage() {
   return (
     // degradado gris→blanco en todo el espacio de contenido (bleed sobre el
     // padding 36/44 del shell)
-    <div style={{ margin: '-36px -44px', padding: '36px 44px', minHeight: 'calc(100vh - 54px)', background: 'linear-gradient(180deg, #ffffff 0px, #ffffff 490px, #e4e7ec 100%)' // blanco hasta donde termina la foto }}>
+    // blanco hasta donde termina la foto (~490px), gris hacia abajo
+    <div style={{ margin: '-36px -44px', padding: '36px 44px', minHeight: 'calc(100vh - 54px)', background: 'linear-gradient(180deg, #ffffff 0px, #ffffff 490px, #e4e7ec 100%)' }}>
       <style>{`.pf-edit:hover::after { content: ' ✎'; font-size: .85em; color: #c5cad3 }`}</style>
       <Greeting name={profile.name} />
 
