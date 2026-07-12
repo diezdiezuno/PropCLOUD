@@ -283,7 +283,7 @@ export default function PerfilPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10 }}>
             {contactFields.map(({ key, label, span }) => (
-              <div key={key} style={{ gridColumn: `span ${span}`, background: 'rgba(255,255,255,.65)', borderRadius: 10, padding: '9px 13px', minWidth: 0 }}>
+              <div key={key} style={{ gridColumn: `span ${span}`, background: 'rgba(255,255,255,.72)', border: '1px solid #ececf0', borderRadius: 10, padding: '9px 13px', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 600, color: '#9aa1ad', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 3 }}>
                   {ICONS[key]}{label}
                 </div>
