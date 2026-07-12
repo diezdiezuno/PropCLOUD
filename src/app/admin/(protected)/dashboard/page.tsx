@@ -34,6 +34,113 @@ interface Profile {
 interface Saved { id: string; save_name: string | null; updated_at: string | null; created_at: string | null; kind: 'rotulos' | 'tarjetas' }
 interface Prop { id: string; title: string | null; price: number | null; currency: string | null; crm_status: string | null; status: string | null; images: string[] | null; address: string | null }
 
+// ── Saludo + fecha/reloj + clima ────────────────────────────
+// Clima: Open-Meteo (gratis, sin key, CORS abierto). Zona horaria y
+// ubicación se guardan en localStorage; también puede usar la ubicación
+// actual del navegador.
+function weatherEmoji(code: number) {
+  if (code === 0) return '☀️'
+  if (code <= 2) return '🌤️'
+  if (code === 3) return '☁️'
+  if (code <= 48) return '🌫️'
+  if (code <= 67) return '🌦️'
+  if (code <= 77) return '🌨️'
+  if (code <= 82) return '🌧️'
+  return '⛈️'
+}
+
+interface ClimaCfg { tz?: string; lat?: number; lon?: number; label?: string }
+
+function Greeting({ name }: { name: string | null }) {
+  const [now, setNow] = useState<Date | null>(null)
+  const [cfg, setCfg] = useState<ClimaCfg>({})
+  const [weather, setWeather] = useState<{ t: number; code: number } | null>(null)
+  const [open, setOpen] = useState(false)
+  const [q, setQ] = useState('')
+  const [zones, setZones] = useState<string[]>([])
+
+  useEffect(() => {
+    setNow(new Date())
+    const i = setInterval(() => setNow(new Date()), 1000)
+    try { setCfg(JSON.parse(localStorage.getItem('dash_clima') || 'null') ?? {}) } catch { /* ignorar */ }
+    try { setZones((Intl as unknown as { supportedValuesOf: (k: string) => string[] }).supportedValuesOf('timeZone')) } catch { /* select queda vacío */ }
+    return () => clearInterval(i)
+  }, [])
+
+  const fetchWeather = useCallback(async (lat: number, lon: number) => {
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`)
+      const j = await r.json()
+      if (j.current) setWeather({ t: Math.round(j.current.temperature_2m), code: j.current.weather_code })
+    } catch { /* sin clima */ }
+  }, [])
+
+  function save(c: ClimaCfg) { setCfg(c); localStorage.setItem('dash_clima', JSON.stringify(c)) }
+
+  useEffect(() => {
+    if (cfg.lat != null && cfg.lon != null) { fetchWeather(cfg.lat, cfg.lon); return }
+    // sin ubicación guardada → intentar la actual del navegador
+    navigator.geolocation?.getCurrentPosition(pos => {
+      const c = { ...cfg, lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Mi ubicación' }
+      setCfg(c); localStorage.setItem('dash_clima', JSON.stringify(c))
+    }, () => { /* denegado — se puede elegir zona con ⚙ */ })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.lat, cfg.lon, fetchWeather])
+
+  async function searchCity() {
+    if (!q.trim()) return
+    try {
+      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=1&language=es`)
+      const j = await r.json()
+      const g = j.results?.[0]
+      if (g) { save({ ...cfg, lat: g.latitude, lon: g.longitude, label: g.name, tz: cfg.tz || g.timezone }); setQ('') }
+    } catch { /* sin resultados */ }
+  }
+
+  const tz = cfg.tz || undefined
+  const hour = now ? Number(now.toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: tz })) : 12
+  const saludo = hour < 12 ? 'buenos días' : hour < 18 ? 'buenas tardes' : 'buenas noches'
+  const firstName = (name || '').trim().split(/\s+/)[0]
+
+  return (
+    <div style={{ marginBottom: 20, position: 'relative' }}>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>
+        Hola{firstName ? ` ${firstName}` : ''}, {saludo}
+      </h1>
+      <p style={{ fontSize: 13, color: '#888', margin: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        {now && <>Hoy es {now.toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz })}, {now.toLocaleTimeString('es-CR', { timeZone: tz })}</>}
+        {weather && <> · {weatherEmoji(weather.code)} {weather.t}°C{cfg.label ? ` ${cfg.label}` : ''}</>}
+        <button onClick={() => setOpen(o => !o)} title="Zona horaria y clima"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#b6bcc6', padding: 0 }}>⚙</button>
+      </p>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, background: '#fff', border: '1px solid #e2e5ea', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,.12)', padding: 16, zIndex: 50, width: 300, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9aa1ad', marginBottom: 4 }}>Zona horaria</div>
+            <select value={cfg.tz ?? ''} onChange={e => save({ ...cfg, tz: e.target.value || undefined })}
+              style={{ width: '100%', fontSize: 12, padding: '6px 8px', borderRadius: 8, border: '1px solid #e2e5ea', fontFamily: 'inherit' }}>
+              <option value="">Automática (del sistema)</option>
+              {zones.map(z => <option key={z} value={z}>{z}</option>)}
+            </select>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#9aa1ad', marginBottom: 4 }}>Ciudad para el clima</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchCity()}
+                placeholder="Ej: San José" style={{ flex: 1, fontSize: 12, padding: '6px 8px', borderRadius: 8, border: '1px solid #e2e5ea', fontFamily: 'inherit', outline: 'none' }} />
+              <button onClick={searchCity} style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: 'none', background: '#111', color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>Buscar</button>
+            </div>
+          </div>
+          <button onClick={() => { localStorage.removeItem('dash_clima'); setCfg({}); setWeather(null) }}
+            style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: '1px solid #e2e5ea', background: '#fff', cursor: 'pointer', fontFamily: 'inherit', color: '#374151' }}>
+            📍 Usar mi ubicación actual
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Texto editable al click ─────────────────────────────────
 function Editable({ value, onSave, placeholder = '—', style }: {
   value: string | null; onSave: (v: string) => void; placeholder?: string; style?: React.CSSProperties
@@ -151,10 +258,7 @@ export default function PerfilPage() {
     // padding 36/44 del shell)
     <div style={{ margin: '-36px -44px', padding: '36px 44px', minHeight: 'calc(100vh - 54px)', background: 'linear-gradient(180deg, #ffffff 0%, #e4e7ec 100%)' }}>
       <style>{`.pf-edit:hover::after { content: ' ✎'; font-size: .85em; color: #c5cad3 }`}</style>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>Dashboard</h1>
-        <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Tu información de agente — se usa en firmas, tarjetas, rótulos, CRM y web. Hacé click en un dato para editarlo.</p>
-      </div>
+      <Greeting name={profile.name} />
 
       {/* ── Agente — foto flotante directo sobre el degradado de la página ── */}
       <div style={{ padding: '10px 4px 0', display: 'flex', gap: 28, marginBottom: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
