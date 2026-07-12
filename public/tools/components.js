@@ -441,7 +441,10 @@ async function initComponents({ active = '', version = '' } = {}) {
     st.textContent = `
       #pt-header, #pt-sidebar, #pt-footer, .page-header { display: none !important; }
       body { background: transparent !important; }
-      .app-screen { grid-template-rows: 0 100vh !important; }
+      /* sin la fila del header, main pierde su celda (no tiene grid-area) —
+         se redefine el grid a una sola fila y se le asigna el área */
+      .app-screen { grid-template-rows: 100vh !important; grid-template-areas: "aside main" !important; }
+      .app-screen > main { grid-area: main !important; }
       #pt-main { padding-top: 0 !important; }
       .results-bar { top: 0 !important; }
     `;
