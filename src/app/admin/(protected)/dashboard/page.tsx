@@ -154,20 +154,20 @@ export default function PerfilPage() {
         <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Tu información de agente — se usa en firmas, tarjetas, rótulos, CRM y web. Hacé click en un dato para editarlo.</p>
       </div>
 
-      {/* ── Agente ─────────────────────────────────────────── */}
-      <div style={{ ...card, display: 'flex', gap: 28, marginBottom: 20, flexWrap: 'wrap' }}>
+      {/* ── Agente — foto flotante sobre degradado, pegada a la caja de abajo ── */}
+      <div style={{ background: 'linear-gradient(115deg, #fdeee7 0%, #f5e9fb 45%, #e9effe 100%)', border: '1px solid #ececf0', borderRadius: 14, padding: '24px 24px 0', display: 'flex', gap: 28, marginBottom: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div onClick={() => fileRef.current?.click()} title="Click para cambiar la foto"
-          style={{ width: 220, height: 220, borderRadius: 16, background: profile.photo_url ? 'transparent' : '#f5f5f7', cursor: 'pointer', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          style={{ width: 230, height: 270, marginBottom: -20, zIndex: 1, background: profile.photo_url ? 'transparent' : 'rgba(255,255,255,.45)', borderRadius: profile.photo_url ? 0 : 16, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', position: 'relative' }}>
           {profile.photo_url
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={profile.photo_url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ fontSize: 54, color: '#c5cad3' }}>👤</span>}
+            ? <img src={profile.photo_url} alt="Foto" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }} />
+            : <span style={{ fontSize: 54, color: '#c5cad3', alignSelf: 'center' }}>👤</span>}
           {uploading && <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#666' }}>Subiendo…</div>}
         </div>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
           onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = '' }} />
 
-        <div style={{ flex: 1, minWidth: 280 }}>
+        <div style={{ flex: 1, minWidth: 280, padding: '0 0 24px' }}>
           <div style={{ fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 2 }}>
             <Editable value={profile.name} placeholder="Tu nombre" onSave={v => saveField('name', v)} />
           </div>
@@ -176,7 +176,7 @@ export default function PerfilPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10 }}>
             {contactFields.map(({ key, label, span }) => (
-              <div key={key} style={{ gridColumn: `span ${span}`, background: '#f7f8fa', borderRadius: 10, padding: '9px 13px', minWidth: 0 }}>
+              <div key={key} style={{ gridColumn: `span ${span}`, background: 'rgba(255,255,255,.65)', borderRadius: 10, padding: '9px 13px', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 600, color: '#9aa1ad', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 3 }}>
                   {ICONS[key]}{label}
                 </div>
