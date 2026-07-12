@@ -104,18 +104,15 @@ function Greeting({ name }: { name: string | null }) {
 
   return (
     <div style={{ marginBottom: 20, position: 'relative' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: 0, whiteSpace: 'nowrap' }}>
-          Hola{firstName ? ` ${firstName}` : ''}, {saludo}.
-        </h1>
-        <span style={{ fontSize: 22, fontWeight: 700, color: '#111' }}>
-          {now && <>Hoy es {now.toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz })}, {now.toLocaleTimeString('es-CR', { timeZone: tz })}</>}
-          {weather && <> · {weatherEmoji(weather.code)} {weather.t}°C{cfg.label ? ` ${cfg.label}` : ''}</>}
-          {' '}
-          <button onClick={() => setOpen(o => !o)} title="Zona horaria y clima"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#b6bcc6', padding: 0 }}>⚙</button>
-        </span>
-      </div>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>
+        Hola{firstName ? ` ${firstName}` : ''}, {saludo}
+      </h1>
+      <p style={{ fontSize: 16, color: '#555', margin: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        {now && <>Hoy es {now.toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz })}, {now.toLocaleTimeString('es-CR', { timeZone: tz })}</>}
+        {weather && <> · {weatherEmoji(weather.code)} {weather.t}°C{cfg.label ? ` ${cfg.label}` : ''}</>}
+        <button onClick={() => setOpen(o => !o)} title="Zona horaria y clima"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#b6bcc6', padding: 0 }}>⚙</button>
+      </p>
       {open && (
         <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, background: '#fff', border: '1px solid #e2e5ea', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,.12)', padding: 16, zIndex: 50, width: 300, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div>
