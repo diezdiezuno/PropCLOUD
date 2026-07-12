@@ -467,11 +467,9 @@ async function validateToken() {
 
   const now = new Date().toISOString();
 
-  const { data: invite, error } = await sb
-    .from('invitations')
-    .select('*, tenants(name)')
-    .eq('token', token)
-    .single();
+  // Lookup por RPC security definer: solo devuelve la fila del token exacto
+  // (la RLS ya no permite leer invitaciones ajenas). Ver security-patch-invitations.sql
+  const { data: invite, error } = await sb.rpc('get_invitation', { p_token: token });
 
   // Token no existe
   if (error || !invite) {
@@ -498,7 +496,7 @@ async function validateToken() {
 
   $('reg-email').value           = invite.email;
   $('reg-name').value            = invite.name || '';
-  $('form-tenant-name').textContent = invite.tenants?.name || 'PropTools';
+  $('form-tenant-name').textContent = invite.tenant_name || 'PropTools';
   $('form-invited-by').textContent  = invite.invited_by   || 'tu equipo';
 
   show('state-form');
