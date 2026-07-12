@@ -108,7 +108,7 @@ function Greeting({ name }: { name: string | null }) {
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: 0, whiteSpace: 'nowrap' }}>
           Hola{firstName ? ` ${firstName}` : ''}, {saludo}.
         </h1>
-        <span style={{ fontSize: 13, color: '#888' }}>
+        <span style={{ fontSize: 22, fontWeight: 700, color: '#111' }}>
           {now && <>Hoy es {now.toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz })}, {now.toLocaleTimeString('es-CR', { timeZone: tz })}</>}
           {weather && <> · {weatherEmoji(weather.code)} {weather.t}°C{cfg.label ? ` ${cfg.label}` : ''}</>}
           {' '}
