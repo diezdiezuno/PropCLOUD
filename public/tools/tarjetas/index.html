@@ -32,7 +32,8 @@ body { font-family:'DM Sans',-apple-system,sans-serif; background:var(--bg); col
 /* Embebido en PropCLOUD: transparente para que se vea el fondo del admin
    (se aplica synchronously via <html class="pt-embed">, sin esperar a que
    cargue components.js/la sesión — evita el flash de fondo sólido). */
-html.pt-embed, html.pt-embed body, html.pt-embed .login-screen, html.pt-embed .app-screen { background: transparent !important; }
+html.pt-embed, html.pt-embed body, html.pt-embed .login-screen, html.pt-embed .app-screen,
+html.pt-embed .app-screen > aside, html.pt-embed .app-screen > main { background: transparent !important; }
 .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 24px; }
 .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,.06); }
 .login-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; font-size: 16px; font-weight: 400; color: var(--ink); letter-spacing: -0.2px; }
