@@ -84,6 +84,7 @@ interface VCardContact {
   crm_contact_companies: ContactCompanyRow[] | null
 }
 
+interface VCardProperty { id: string; title: string | null; crm_status: string | null; status: string | null }
 interface ContactType   { id: string; name: string; color: string }
 interface ContactSource { id: string; name: string }
 
@@ -273,6 +274,7 @@ export default function ClientesClient() {
   const [vcardData,      setVcardData]      = useState<VCardContact | null>(null)
   const [vcardLoading,   setVcardLoading]   = useState(false)
   const [docSignedUrls,  setDocSignedUrls]  = useState<Record<string, string>>({})
+  const [vcardProperties, setVcardProperties] = useState<VCardProperty[]>([])
 
   // ── Load contacts ──────────────────────────────────────────
   const loadContacts = useCallback(async (
@@ -381,14 +383,22 @@ export default function ClientesClient() {
   async function openVCard(id: string) {
     setVcardLoading(true)
     setVcardOpen(true)
+    setVcardProperties([])
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (createClient() as any)
+    const sb = createClient() as any
+    const { data } = await sb
       .from('crm_contacts')
       .select('*, crm_contact_types(contact_types(id,name,color)), contact_sources(name), crm_contact_companies(crm_companies(id,name,cedula_juridica))')
       .eq('id', id)
       .single()
     setVcardData(data as VCardContact ?? null)
     setVcardLoading(false)
+    // Propiedades donde este contacto figura como dueño (mismo formato jsonb
+    // que usa el tab Captación de propiedades para "Dueños").
+    const { data: props } = await sb.from('properties')
+      .select('id,title,crm_status,status,features').eq('tenant_id', tenantId)
+      .ilike('features->>owners', `%"type":"contact","id":"${id}"%`)
+    setVcardProperties((props ?? []) as VCardProperty[])
   }
 
   function closeVCard() {
@@ -935,6 +945,26 @@ export default function ClientesClient() {
                     </div>
                   )}
                 </div>
+
+                {/* Propiedades (dueño) */}
+                {vcardProperties.length > 0 && (
+                  <>
+                    <div style={{ height: 1, background: '#E2E5EA', margin: '16px 0' }} />
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+                      Propiedades ({vcardProperties.length})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {vcardProperties.map(p => (
+                        <a key={p.id} href={`/admin/propiedades/${p.id}`} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: '#F9FAFB', borderRadius: 10, border: '1px solid #e2e5ea', textDecoration: 'none' }}>
+                          <span style={{ fontSize: 16, flexShrink: 0 }}>🏘️</span>
+                          <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title || 'Sin título'}</div>
+                          <span style={{ fontSize: 11, color: '#9ca3af', flexShrink: 0 }}>{p.crm_status || p.status}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 {/* Notes */}
                 {vcardData.notes && (
