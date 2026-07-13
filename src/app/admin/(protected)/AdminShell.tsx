@@ -30,6 +30,8 @@ const ICON = {
   trending:  ic(<><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></>),
   calendar:  ic(<><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></>),
   camera:    ic(<><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></>),
+  globe:     ic(<><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></>),
+  logout:    ic(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></>),
 } as const
 
 // ── Nav structure ─────────────────────────────────────────────
@@ -314,12 +316,12 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
             </>
           ) : (
             <>
-              <a href="/" target="_blank" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, textDecoration: 'none', padding: '2px 0' }}>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>🌍</span>
+              <a href="/" target="_blank" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, textDecoration: 'none', padding: '2px 0', color: '#888' }}>
+                {ICON.globe}
                 <span style={{ fontSize: 8, color: '#aaa', whiteSpace: 'nowrap' }}>Sitio</span>
               </a>
-              <button onClick={signOut} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'inherit' }}>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>🚪</span>
+              <button onClick={signOut} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', fontFamily: 'inherit', color: '#e53e3e' }}>
+                {ICON.logout}
                 <span style={{ fontSize: 8, color: '#e53e3e', whiteSpace: 'nowrap' }}>Salir</span>
               </button>
             </>
