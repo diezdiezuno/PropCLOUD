@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>if (window.self !== window.top) document.documentElement.classList.add('pt-embed')</script>
 <script src="/tools/cookie-storage.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +21,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'DM Sans', sans-serif; background: var(--surface2); color: var(--ink); font-size: 14px; }
+html.pt-embed, html.pt-embed body { background: transparent !important; }
 
 /* LAYOUT */
 #pt-header { height: 88px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 0; z-index: 100; }
