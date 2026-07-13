@@ -171,11 +171,10 @@ export default function PerfilPage() {
   const card: React.CSSProperties = { background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid #ececf0', borderRadius: 14, padding: 24, position: 'relative', zIndex: 1 }
   const sectionTitle: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 14px' }
 
+  // El fondo (degradado blanco→gris + acento superior derecho) ahora vive
+  // una sola vez en AdminShell <main>, compartido por todas las páginas.
   return (
-    // degradado gris→blanco en todo el espacio de contenido (bleed sobre el
-    // padding 36/44 del shell)
-    // blanco hasta donde termina la foto (~490px), gris hacia abajo
-    <div style={{ margin: '-36px -44px', padding: '36px 44px', minHeight: 'calc(100vh - 54px)', background: 'radial-gradient(ellipse 55% 45% at 100% 0%, rgba(17,17,17,.045), transparent 70%), linear-gradient(180deg, #ffffff 0px, #ffffff 490px, #e4e7ec 100%)' }}>
+    <div>
       <style>{`.pf-edit:hover::after { content: ' ✎'; font-size: .85em; color: #c5cad3 }`}</style>
       <Greeting name={profile.name} />
 

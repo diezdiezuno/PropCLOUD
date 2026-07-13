@@ -438,6 +438,10 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
         padding: '36px 44px',
         minHeight: `calc(100vh - ${TOPBAR_H}px)`,
         transition: 'margin-left .2s cubic-bezier(.4,0,.2,1)',
+        // Mismo fondo en todas las páginas: acento gris muy claro arriba a
+        // la derecha + degradado blanco→gris hacia abajo (antes solo vivía
+        // en el dashboard, con un truco de márgenes negativos).
+        background: 'radial-gradient(ellipse 55% 45% at 100% 0%, rgba(17,17,17,.045), transparent 70%), linear-gradient(180deg, #ffffff 0px, #ffffff 490px, #e4e7ec 100%)',
       }}>
         <div style={{ maxWidth: WIDE_ROUTES.some(r => pathname === r) || pathname.startsWith('/admin/tools/') ? 'none' : 1100 }}>
           {children}
