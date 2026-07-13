@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import DateTimeWeather from '@/components/admin/DateTimeWeather'
+import { themeCssVars } from '@/lib/theme'
 
 // ── Nav structure ─────────────────────────────────────────────
 // El sidebar solo muestra la operación diaria. Todo lo administrativo
@@ -257,7 +258,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   const sidebarW = open ? SIDEBAR_W_OPEN : SIDEBAR_W_CLOSED
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f5f7', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f5f7', fontFamily: 'system-ui, sans-serif', ...themeCssVars(tenant.theme) }}>
 
       {/* ── Sidebar ─────────────────────────────────────────────── */}
       <aside style={{

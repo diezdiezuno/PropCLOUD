@@ -5,7 +5,10 @@ import { useParams, useRouter } from 'next/navigation'
 
 interface Admin { id: string; user_id: string; email: string; role: string }
 interface Source { id: string; type: string; config: Record<string, string>; is_active: boolean }
-interface Tenant { id: string; name: string; slug: string; domain: string; logo_url: string | null }
+interface TenantTheme { primaryColor: string; accentColor: string; fontHeading: string; fontBody: string; mapStyle: string }
+interface Tenant { id: string; name: string; slug: string; domain: string; logo_url: string | null; theme: TenantTheme }
+
+const DEFAULT_THEME: TenantTheme = { primaryColor: '#111111', accentColor: '#f59e0b', fontHeading: 'system-ui, sans-serif', fontBody: 'system-ui, sans-serif', mapStyle: 'mapbox://styles/mapbox/streets-v12' }
 interface DomainVerification { type: string; domain: string; value: string }
 interface DomainStatus { verified: boolean; misconfigured?: boolean; verification: DomainVerification[]; error?: { message: string } | null }
 interface DomainResult { domain: string; apex: DomainStatus | null; www: DomainStatus | null }
@@ -25,6 +28,7 @@ export default function TenantDetailPage() {
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
+  const [theme, setTheme] = useState<TenantTheme>(DEFAULT_THEME)
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [addingAdmin, setAddingAdmin] = useState(false)
   const [adminError, setAdminError] = useState('')
@@ -37,6 +41,7 @@ export default function TenantDetailPage() {
     setName(data.tenant.name)
     setDomain(data.tenant.domain)
     setLogoUrl(data.tenant.logo_url ?? '')
+    setTheme({ ...DEFAULT_THEME, ...data.tenant.theme })
     setAdmins(data.admins)
     setSources(data.sources)
     setLoading(false)
@@ -73,7 +78,7 @@ export default function TenantDetailPage() {
     const res = await fetch(`/api/superadmin/tenants/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, domain, logo_url: logoUrl }),
+      body: JSON.stringify({ name, domain, logo_url: logoUrl, theme }),
     })
     if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 3000) }
     else { const { error } = await res.json(); setSaveError(error) }
@@ -143,6 +148,28 @@ export default function TenantDetailPage() {
             <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
           </Field>
           {logoUrl && <img src={logoUrl} alt="" style={{ height: 36, objectFit: 'contain', marginTop: 10, filter: 'brightness(0) invert(1)', opacity: 0.7 }} />}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
+            <Field label="Color primario">
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input type="color" value={theme.primaryColor} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} style={{ ...inputStyle, padding: 2, width: 44, flexShrink: 0 }} />
+                <input value={theme.primaryColor} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} style={inputStyle} />
+              </div>
+            </Field>
+            <Field label="Color de acento">
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input type="color" value={theme.accentColor} onChange={e => setTheme({ ...theme, accentColor: e.target.value })} style={{ ...inputStyle, padding: 2, width: 44, flexShrink: 0 }} />
+                <input value={theme.accentColor} onChange={e => setTheme({ ...theme, accentColor: e.target.value })} style={inputStyle} />
+              </div>
+            </Field>
+            <Field label="Fuente títulos">
+              <input value={theme.fontHeading} onChange={e => setTheme({ ...theme, fontHeading: e.target.value })} style={inputStyle} />
+            </Field>
+            <Field label="Fuente texto">
+              <input value={theme.fontBody} onChange={e => setTheme({ ...theme, fontBody: e.target.value })} style={inputStyle} />
+            </Field>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
             <button type="submit" disabled={saving} style={btnStyle}>
               {saving ? 'Guardando…' : 'Guardar'}
