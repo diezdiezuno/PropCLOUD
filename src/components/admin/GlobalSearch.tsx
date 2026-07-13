@@ -125,12 +125,12 @@ export default function GlobalSearch({ tenantId }: { tenantId: string }) {
   const grouped = ORDER.map(k => ({ kind: k, items: results.filter(r => r.type === k) })).filter(g => g.items.length)
 
   return (
-    <div ref={rootRef} style={{ position: 'relative', flex: 1, maxWidth: 480, display: 'flex', gap: 8 }}>
+    <div ref={rootRef} style={{ position: 'relative', flex: 1, maxWidth: 480, display: 'flex', height: 36, border: '1px solid #e2e5ea', borderRadius: 10, background: '#f9fafb' }}>
 
       {/* Filtro por tipo */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <button onClick={() => setScopeOpen(o => !o)}
-          style={{ height: 36, display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', border: '1px solid #e2e5ea', borderRadius: 10, background: '#f9fafb', fontSize: 13, color: '#111', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+          style={{ height: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', border: 'none', borderRight: '1px solid #e2e5ea', borderRadius: '10px 0 0 10px', background: 'transparent', fontSize: 13, color: '#111', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
           {SCOPES.find(s => s.key === scope)!.label}
           <span style={{ fontSize: 9, color: '#9ca3af' }}>▼</span>
         </button>
@@ -153,9 +153,7 @@ export default function GlobalSearch({ tenantId }: { tenantId: string }) {
         <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#aaa', pointerEvents: 'none' }}>🔍</span>
         <input ref={inputRef} value={query} onChange={e => onChange(e.target.value)} onFocus={() => query.length >= 2 && setOpen(true)}
           placeholder="Buscar clientes, empresas, propiedades…"
-          style={{ width: '100%', height: 36, paddingLeft: 36, paddingRight: 60, border: '1px solid #e2e5ea', borderRadius: 10, fontSize: 13, color: '#111', background: '#f9fafb', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
-          onFocusCapture={e => { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.background = '#fff' }}
-          onBlurCapture={e => { e.currentTarget.style.borderColor = '#e2e5ea'; e.currentTarget.style.background = '#f9fafb' }} />
+          style={{ width: '100%', height: '100%', paddingLeft: 36, paddingRight: 60, border: 'none', borderRadius: '0 10px 10px 0', fontSize: 13, color: '#111', background: 'transparent', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
         <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#bbb', background: '#f0f0f0', borderRadius: 5, padding: '2px 5px', pointerEvents: 'none', whiteSpace: 'nowrap' }}>⌘K</span>
 
         {/* Resultados agrupados */}
