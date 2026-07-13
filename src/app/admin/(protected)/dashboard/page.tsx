@@ -34,6 +34,7 @@ interface Profile {
 }
 interface Saved { id: string; save_name: string | null; updated_at: string | null; created_at: string | null; kind: 'rotulos' | 'tarjetas' }
 interface Prop { id: string; title: string | null; price: number | null; currency: string | null; crm_status: string | null; status: string | null; images: string[] | null; address: string | null; lat: number | null; lng: number | null }
+interface Client { id: string; name: string; last_name: string | null; email: string | null; phone: string | null; photo_url: string | null }
 
 // ── Saludo (la fecha/reloj/clima viven en la barra superior) ───
 function Greeting({ name }: { name: string | null }) {
@@ -81,6 +82,7 @@ export default function PerfilPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [material, setMaterial] = useState<Saved[]>([])
   const [props, setProps] = useState<Prop[]>([])
+  const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -121,6 +123,13 @@ export default function PerfilPage() {
       .eq('agent_id', p.id)
       .order('created_at', { ascending: false })
     setProps(pr ?? [])
+
+    // Clientes asignados via crm_contact_agents (un cliente puede tener 2+ agentes)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: cags } = await (sb as any).from('crm_contact_agents')
+      .select('crm_contacts(id,name,last_name,email,phone,photo_url)').eq('user_id', p.id)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setClients(((cags ?? []) as any[]).map(r => r.crm_contacts).filter(Boolean) as Client[])
     setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
@@ -156,14 +165,15 @@ export default function PerfilPage() {
     { key: 'linkedin',  label: 'LinkedIn',  span: 3 },
     { key: 'tiktok',    label: 'TikTok',    span: 3 },
   ]
-  const card: React.CSSProperties = { background: '#fff', border: '1px solid #ececf0', borderRadius: 14, padding: 24 }
+  // Misma transparencia en las 3 tarjetas: se ve el degradado/foto detrás
+  const card: React.CSSProperties = { background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid #ececf0', borderRadius: 14, padding: 24, position: 'relative', zIndex: 1 }
   const sectionTitle: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 14px' }
 
   return (
     // degradado gris→blanco en todo el espacio de contenido (bleed sobre el
     // padding 36/44 del shell)
     // blanco hasta donde termina la foto (~490px), gris hacia abajo
-    <div style={{ margin: '-36px -44px', padding: '36px 44px', minHeight: 'calc(100vh - 54px)', background: 'linear-gradient(180deg, #ffffff 0px, #ffffff 490px, #e4e7ec 100%)' }}>
+    <div style={{ margin: '-36px -44px', padding: '36px 44px', minHeight: 'calc(100vh - 54px)', background: 'radial-gradient(ellipse 55% 45% at 0% 0%, rgba(17,17,17,.045), transparent 70%), linear-gradient(180deg, #ffffff 0px, #ffffff 490px, #e4e7ec 100%)' }}>
       <style>{`.pf-edit:hover::after { content: ' ✎'; font-size: .85em; color: #c5cad3 }`}</style>
       <Greeting name={profile.name} />
 
@@ -202,38 +212,9 @@ export default function PerfilPage() {
         </div>
       </div>
 
-      {/* ── Material de impresión — top translúcido: la foto se ve detrás ── */}
-      <div style={{ ...card, marginBottom: 20, position: 'relative', zIndex: 1, background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-        <h2 style={sectionTitle}>Material de impresión</h2>
-        {material.length === 0
-          ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin material guardado aún — creá rótulos y tarjetas desde el menú PropTools.</p>
-          : (
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {material.map(m => (
-                <a key={`${m.kind}-${m.id}`} href={`/admin/tools/${m.kind}?id=${m.id}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f7f8fa', borderRadius: 10, padding: '10px 16px', textDecoration: 'none', color: '#111', border: '1px solid transparent' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#d5d9e0')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'transparent')}>
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: '#4b5563' }}>
-                    {m.kind === 'rotulos'
-                      ? <><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></>
-                      : <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></>}
-                  </svg>
-                  <span>
-                    <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>{m.save_name || (m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta')}</span>
-                    <span style={{ display: 'block', fontSize: 11, color: '#9aa1ad' }}>
-                      {m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta'} · {new Date(m.updated_at ?? m.created_at ?? '').toLocaleDateString('es-CR')}
-                    </span>
-                  </span>
-                </a>
-              ))}
-            </div>
-          )}
-      </div>
-
-      {/* ── Propiedades asignadas ──────────────────────────── */}
-      <div style={card}>
-        <h2 style={sectionTitle}>Propiedades asignadas</h2>
+      {/* ── Mis Propiedades ──────────────────────────────────── */}
+      <div style={{ ...card, marginBottom: 20 }}>
+        <h2 style={sectionTitle}>Mis Propiedades</h2>
         {props.length === 0
           ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin propiedades asignadas.</p>
           : (
@@ -260,6 +241,63 @@ export default function PerfilPage() {
                       {p.price != null ? `${p.currency === 'CRC' ? '₡' : '$'}${Number(p.price).toLocaleString()}` : ''}
                     </div>
                   </div>
+                </a>
+              ))}
+            </div>
+          )}
+      </div>
+
+      {/* ── Mis Clientes ──────────────────────────────────────── */}
+      <div style={{ ...card, marginBottom: 20 }}>
+        <h2 style={sectionTitle}>Mis Clientes</h2>
+        {clients.length === 0
+          ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin clientes asignados.</p>
+          : (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {clients.map(c => (
+                <a key={c.id} href={`/admin/clientes?id=${c.id}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f7f8fa', borderRadius: 10, padding: '10px 16px', textDecoration: 'none', color: '#111', border: '1px solid transparent' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#d5d9e0')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'transparent')}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#e8eaee', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#6b7280' }}>
+                    {c.photo_url
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={c.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : (c.name?.[0] ?? '?').toUpperCase()}
+                  </div>
+                  <span>
+                    <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>{c.name}{c.last_name ? ` ${c.last_name}` : ''}</span>
+                    <span style={{ display: 'block', fontSize: 11, color: '#9aa1ad' }}>{c.email || c.phone || ''}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+      </div>
+
+      {/* ── Material de impresión ────────────────────────────── */}
+      <div style={card}>
+        <h2 style={sectionTitle}>Material de impresión</h2>
+        {material.length === 0
+          ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin material guardado aún — creá rótulos y tarjetas desde el menú PropTools.</p>
+          : (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {material.map(m => (
+                <a key={`${m.kind}-${m.id}`} href={`/admin/tools/${m.kind}?id=${m.id}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f7f8fa', borderRadius: 10, padding: '10px 16px', textDecoration: 'none', color: '#111', border: '1px solid transparent' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#d5d9e0')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'transparent')}>
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: '#4b5563' }}>
+                    {m.kind === 'rotulos'
+                      ? <><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></>
+                      : <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></>}
+                  </svg>
+                  <span>
+                    <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>{m.save_name || (m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta')}</span>
+                    <span style={{ display: 'block', fontSize: 11, color: '#9aa1ad' }}>
+                      {m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta'} · {new Date(m.updated_at ?? m.created_at ?? '').toLocaleDateString('es-CR')}
+                    </span>
+                  </span>
                 </a>
               ))}
             </div>
