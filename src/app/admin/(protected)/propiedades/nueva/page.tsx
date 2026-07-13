@@ -148,7 +148,7 @@ export default function NuevaPropiedadPage() {
 
       const [{ data: types }, { data: agentList }] = await Promise.all([
         supabase.from('property_types').select('id,label,value,icon').eq('tenant_id', adminRec.tenant_id).order('sort_order'),
-        supabase.from('agents').select('id,name').eq('tenant_id', adminRec.tenant_id).eq('is_active', true).order('name'),
+        supabase.from('users').select('id,name').eq('tenant_id', adminRec.tenant_id).order('name'),
       ])
 
       setPropTypes((types ?? []) as PropertyType[])

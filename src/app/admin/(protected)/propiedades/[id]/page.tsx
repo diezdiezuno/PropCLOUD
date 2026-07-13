@@ -118,7 +118,7 @@ export default function PropiedadPage() {
       const [{ data: p }, { data: types }, { data: agentList }] = await Promise.all([
         sb.from('properties').select('*').eq('id', id).eq('tenant_id', adminRec.tenant_id).single(),
         sb.from('property_types').select('id,label,value,icon').eq('tenant_id', adminRec.tenant_id).order('sort_order'),
-        sb.from('agents').select('id,name').eq('tenant_id', adminRec.tenant_id).eq('is_active', true).order('name'),
+        sb.from('users').select('id,name').eq('tenant_id', adminRec.tenant_id).order('name'),
       ])
       if (p) { setProp(p as PropertyFull); setAgentId((p as PropertyFull).agent_id ?? '') }
       setPropTypes((types ?? []) as PropertyType[])

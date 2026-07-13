@@ -114,18 +114,12 @@ export default function PerfilPage() {
       ...(tar.data ?? []).map(t => ({ ...t, kind: 'tarjetas' as const })),
     ].sort((a, b) => (b.updated_at ?? b.created_at ?? '').localeCompare(a.updated_at ?? a.created_at ?? '')))
 
-    // ponytail: agente web ↔ usuario PropTools se cruzan por email; si más
-    // adelante hay FK directa users↔agents, cambiar este match.
-    if (p.email) {
-      const { data: ags } = await sb.from('agents').select('id').eq('tenant_id', p.tenant_id).ilike('email', p.email)
-      if (ags && ags.length > 0) {
-        const { data: pr } = await sb.from('properties')
-          .select('id,title,price,currency,crm_status,status,images,address')
-          .in('agent_id', ags.map(a => a.id))
-          .order('created_at', { ascending: false })
-        setProps(pr ?? [])
-      }
-    }
+    // Propiedades asignadas: agent_id ahora referencia users.id directo.
+    const { data: pr } = await sb.from('properties')
+      .select('id,title,price,currency,crm_status,status,images,address')
+      .eq('agent_id', p.id)
+      .order('created_at', { ascending: false })
+    setProps(pr ?? [])
     setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])

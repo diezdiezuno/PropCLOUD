@@ -27,28 +27,18 @@ export default async function AgentesPage() {
   if (pageCfg && !pageCfg.visible) notFound()
 
   // Fetch agents — try with social columns, fallback if not migrated yet
+  // Agentes = usuarios (PropTools) marcados para mostrarse en web (show_on_web).
+  // `job_title` es el puesto público (equivale al viejo agents.position).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let agents: any[] = []
   try {
-    const { data, error } = await db
-      .from('agents')
-      .select('id,name,position,email,phone,photo_url,instagram,facebook,linkedin,tiktok,twitter,youtube,threads')
+    const { data } = await db
+      .from('users')
+      .select('id,name,job_title,email,phone,photo_url,instagram,facebook,linkedin,tiktok,twitter,youtube,threads')
       .eq('tenant_id', tenant.id)
-      .eq('is_active', true)
+      .eq('show_on_web', true)
       .order('name')
-
-    if (error) {
-      // Fallback without social columns
-      const { data: base } = await db
-        .from('agents')
-        .select('id,name,position,email,phone,photo_url')
-        .eq('tenant_id', tenant.id)
-        .eq('is_active', true)
-        .order('name')
-      agents = base ?? []
-    } else {
-      agents = data ?? []
-    }
+    agents = (data ?? []).map(u => ({ ...u, position: u.job_title }))
   } catch {
     agents = []
   }
