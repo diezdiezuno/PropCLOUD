@@ -205,7 +205,7 @@ export default function PropiedadesPage() {
         subtitle={props.length === 0 && !search ? 'Sin propiedades manuales aún.' : `${props.length} propiedad${props.length !== 1 ? 'es' : ''} en inventario`}
         right={
           <a href="/admin/propiedades/nueva"
-            style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none' }}>
+            style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none' }}>
             + Nueva propiedad
           </a>
         } />
@@ -232,7 +232,7 @@ export default function PropiedadesPage() {
           </p>
           {!search && (
             <a href="/admin/propiedades/nueva"
-              style={{ display: 'inline-block', background: '#111', color: '#fff', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+              style={{ display: 'inline-block', background: 'var(--color-primary, #111)', color: '#fff', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
               Cargar primera propiedad
             </a>
           )}

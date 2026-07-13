@@ -125,7 +125,7 @@ export default function PaginasPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {savedMsg && <span style={{ fontSize: 13, color: '#38a169' }}>✓ Guardado</span>}
             <button onClick={save} disabled={saving}
-              style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
+              style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
               {saving ? 'Guardando…' : 'Guardar cambios'}
             </button>
           </div>
@@ -200,7 +200,7 @@ export default function PaginasPage() {
               }}
             />
             <button type="button" onClick={addCustomPage}
-              style={{ padding: '6px 12px', borderRadius: 6, background: '#111', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+              style={{ padding: '6px 12px', borderRadius: 6, background: 'var(--color-primary, #111)', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
               Crear
             </button>
             <button type="button" onClick={() => { setAddingPage(false); setNewTitle('') }}
@@ -252,7 +252,7 @@ export default function PaginasPage() {
             <a href={`/admin/paginas/${activePage.slug}`}
               style={{
                 padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                border: '1.5px solid #111', background: '#111', color: '#fff',
+                border: '1.5px solid #111', background: 'var(--color-primary, #111)', color: '#fff',
                 textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
               }}>
               Editar contenido →

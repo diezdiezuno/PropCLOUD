@@ -810,7 +810,7 @@ export default function NuevaPropiedadPage() {
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', paddingTop: 8, paddingBottom: 16 }}>
           <button type="submit" disabled={saving}
-            style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
+            style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
             {saving ? 'Guardando…' : 'Guardar y pasar al siguiente tab →'}
           </button>
           <button type="button" onClick={() => router.push('/admin/propiedades')}

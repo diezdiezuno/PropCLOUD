@@ -222,7 +222,7 @@ export default function AdminReclutamientoPage() {
                           style={{
                             fontSize: 13, fontWeight: 500, padding: '7px 16px',
                             borderRadius: 8, border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer',
-                            background: '#111', color: '#fff', opacity: isSaving ? 0.6 : 1,
+                            background: 'var(--color-primary, #111)', color: '#fff', opacity: isSaving ? 0.6 : 1,
                             fontFamily: 'inherit',
                           }}
                         >
@@ -240,7 +240,7 @@ export default function AdminReclutamientoPage() {
                         {app.email && (
                           <a
                             href={`mailto:${app.email}?subject=Tu aplicación en TEAM SUNRISE | REMAX Central`}
-                            style={{ fontSize: 13, fontWeight: 500, color: '#fff', background: '#111', padding: '8px 18px', borderRadius: 100, textDecoration: 'none' }}
+                            style={{ fontSize: 13, fontWeight: 500, color: '#fff', background: 'var(--color-primary, #111)', padding: '8px 18px', borderRadius: 100, textDecoration: 'none' }}
                           >
                             Responder por email →
                           </a>

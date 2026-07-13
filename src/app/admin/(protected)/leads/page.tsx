@@ -312,7 +312,7 @@ export default function AdminLeadsPage() {
                       />
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
                         <button onClick={() => saveNote(lead)} disabled={isSaving}
-                          style={{ fontSize: 13, fontWeight: 500, padding: '7px 16px', borderRadius: 8, border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', background: '#111', color: '#fff', opacity: isSaving ? 0.6 : 1, fontFamily: 'inherit' }}>
+                          style={{ fontSize: 13, fontWeight: 500, padding: '7px 16px', borderRadius: 8, border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer', background: 'var(--color-primary, #111)', color: '#fff', opacity: isSaving ? 0.6 : 1, fontFamily: 'inherit' }}>
                           {isSaving ? 'Guardando…' : 'Guardar nota'}
                         </button>
                         {noteSaved && <span style={{ fontSize: 12, color: '#38a169' }}>✓ Guardado</span>}
@@ -324,7 +324,7 @@ export default function AdminLeadsPage() {
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                         {lead.email && (
                           <a href={`mailto:${lead.email}`}
-                            style={{ fontSize: 13, fontWeight: 500, color: '#fff', background: '#111', padding: '8px 18px', borderRadius: 100, textDecoration: 'none' }}>
+                            style={{ fontSize: 13, fontWeight: 500, color: '#fff', background: 'var(--color-primary, #111)', padding: '8px 18px', borderRadius: 100, textDecoration: 'none' }}>
                             Responder por email →
                           </a>
                         )}

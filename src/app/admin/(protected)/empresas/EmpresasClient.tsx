@@ -508,7 +508,7 @@ export default function EmpresasClient() {
         subtitle={companies.length === 0 && !hasSearch ? 'Sin empresas aún.' : `${companies.length} empresa${companies.length !== 1 ? 's' : ''}`}
         right={
           <button onClick={() => openDrawer(null)}
-            style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
             + Nueva empresa
           </button>
         } />
@@ -540,7 +540,7 @@ export default function EmpresasClient() {
           </p>
           {!hasSearch && (
             <button onClick={() => openDrawer(null)}
-              style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+              style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
               + Nueva empresa
             </button>
           )}
@@ -903,7 +903,7 @@ export default function EmpresasClient() {
               {editingId ? 'Cerrar' : 'Cancelar'}
             </button>
             <button onClick={save} disabled={saving}
-              style={{ height: 38, padding: '0 24px', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, background: '#111', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: saving ? .6 : 1 }}>
+              style={{ height: 38, padding: '0 24px', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, background: 'var(--color-primary, #111)', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: saving ? .6 : 1 }}>
               {saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear empresa'}
             </button>
           </div>

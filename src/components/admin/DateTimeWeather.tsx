@@ -114,7 +114,7 @@ export default function DateTimeWeather() {
             <div style={{ display: 'flex', gap: 6 }}>
               <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && searchCity()}
                 placeholder="Ej: San José" style={{ flex: 1, fontSize: 12, padding: '6px 8px', borderRadius: 8, border: '1px solid #e2e5ea', fontFamily: 'inherit', outline: 'none' }} />
-              <button onClick={searchCity} style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: 'none', background: '#111', color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>Buscar</button>
+              <button onClick={searchCity} style={{ fontSize: 12, padding: '6px 10px', borderRadius: 8, border: 'none', background: 'var(--color-primary, #111)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>Buscar</button>
             </div>
           </div>
           <button onClick={() => { localStorage.removeItem('dash_clima'); setCfg({}); setWeather(null) }}

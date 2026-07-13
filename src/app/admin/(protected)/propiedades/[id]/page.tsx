@@ -648,7 +648,7 @@ function Tab3Amenidades({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Pr
         {selected.filter(a => !AMENITIES_LIST.includes(a)).length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
             {selected.filter(a => !AMENITIES_LIST.includes(a)).map(a => (
-              <span key={a} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#111', color: '#fff', borderRadius: 20, padding: '5px 12px', fontSize: 12, fontWeight: 500 }}>
+              <span key={a} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--color-primary, #111)', color: '#fff', borderRadius: 20, padding: '5px 12px', fontSize: 12, fontWeight: 500 }}>
                 {a}
                 <button type="button" onClick={() => setSelected(prev => prev.filter(x => x !== a))}
                   style={{ background: 'none', border: 'none', color: '#aaa', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>×</button>
@@ -863,7 +863,7 @@ function Tab6Fotos({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Propert
               <div key={url} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', aspectRatio: '16/10', background: '#f0f0f0', border: i === 0 ? '2px solid #111' : '2px solid transparent' }}>
                 <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 {i === 0 && (
-                  <div style={{ position: 'absolute', top: 6, left: 6, background: '#111', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6 }}>PORTADA</div>
+                  <div style={{ position: 'absolute', top: 6, left: 6, background: 'var(--color-primary, #111)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6 }}>PORTADA</div>
                 )}
                 <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', gap: 4 }}>
                   {i !== 0 && (
@@ -1407,7 +1407,7 @@ function SaveBar({ saving, saved, error }: { saving: boolean; saved: boolean; er
   return (
     <div style={{ display: 'flex', gap: 10, alignItems: 'center', paddingBottom: 16 }}>
       <button type="submit" disabled={saving}
-        style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit', transition: 'opacity .15s' }}>
+        style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit', transition: 'opacity .15s' }}>
         {saving ? 'Guardando…' : 'Guardar cambios'}
       </button>
       {saved  && <span style={{ fontSize: 13, color: '#10B981', fontWeight: 600 }}>✓ Guardado</span>}

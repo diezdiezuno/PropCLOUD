@@ -144,7 +144,7 @@ export default function AgentesPage() {
         subtitle={`${agents.length} agente${agents.length !== 1 ? 's' : ''} · ${visibles} en el sitio web`}
         right={
           <a href="/admin/tools/admin?tab=agentes"
-            style={{ background: '#111', color: '#fff', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, textDecoration: 'none', fontFamily: 'inherit' }}>
+            style={{ background: 'var(--color-primary, #111)', color: '#fff', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, textDecoration: 'none', fontFamily: 'inherit' }}>
             + Invitar agente
           </a>
         } />
@@ -209,7 +209,7 @@ export default function AgentesPage() {
 
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button type="submit" disabled={saving || uploadingPhoto}
-                style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: (saving || uploadingPhoto) ? 'not-allowed' : 'pointer', opacity: (saving || uploadingPhoto) ? 0.7 : 1, fontFamily: 'inherit' }}>
+                style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: (saving || uploadingPhoto) ? 'not-allowed' : 'pointer', opacity: (saving || uploadingPhoto) ? 0.7 : 1, fontFamily: 'inherit' }}>
                 {uploadingPhoto ? 'Subiendo foto…' : saving ? 'Guardando…' : 'Guardar cambios'}
               </button>
               <button type="button" onClick={cancel}

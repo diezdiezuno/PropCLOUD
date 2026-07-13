@@ -143,7 +143,7 @@ export default function SeoAdminPage() {
         {/* Save */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingTop: 4 }}>
           <button type="submit" disabled={saving}
-            style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 24px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
+            style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 24px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>
           {savedMsg && <span style={{ fontSize: 13, color: '#38a169' }}>✓ Guardado</span>}

@@ -577,7 +577,7 @@ export default function GeneralPage() {
                 Visualizá leads y actividad interna del sitio.
               </p>
               <a href="/admin/metricas"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: '#111', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'var(--color-primary, #111)', color: '#fff', borderRadius: 8, textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>
                 📊 Ver métricas →
               </a>
             </Section>
@@ -592,7 +592,7 @@ export default function GeneralPage() {
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingTop: 4 }}>
           <button type="submit" disabled={saving} style={{
-            background: '#111', color: '#fff', border: 'none', borderRadius: 10,
+            background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10,
             padding: '11px 24px', fontSize: 14, fontWeight: 600,
             cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit',
           }}>

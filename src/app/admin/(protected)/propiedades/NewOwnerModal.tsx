@@ -214,7 +214,7 @@ function CompanyForm({ tenantId, country, initial, onCreated, onClose }: Omit<Pr
 
       <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
         <button onClick={save} disabled={saving || !!cedJurDupe}
-          style={{ flex: 1, height: 40, background: '#111', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: (saving || !!cedJurDupe) ? 'not-allowed' : 'pointer', opacity: (saving || !!cedJurDupe) ? 0.7 : 1, fontFamily: 'inherit' }}>
+          style={{ flex: 1, height: 40, background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: (saving || !!cedJurDupe) ? 'not-allowed' : 'pointer', opacity: (saving || !!cedJurDupe) ? 0.7 : 1, fontFamily: 'inherit' }}>
           {saving ? 'Guardando…' : 'Registrar empresa'}
         </button>
         <button onClick={onClose}

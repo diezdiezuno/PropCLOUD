@@ -141,7 +141,7 @@ export default function FuentesPage() {
             </Field>
           )}
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button type="submit" disabled={adding} style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: adding ? 'not-allowed' : 'pointer', opacity: adding ? 0.7 : 1, fontFamily: 'inherit' }}>
+            <button type="submit" disabled={adding} style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: adding ? 'not-allowed' : 'pointer', opacity: adding ? 0.7 : 1, fontFamily: 'inherit' }}>
               {adding ? 'Agregando…' : 'Agregar fuente'}
             </button>
             <button type="button" onClick={() => setShowAdd(false)} style={{ background: 'none', border: '1px solid #e0e0e0', borderRadius: 10, padding: '10px 20px', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>

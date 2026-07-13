@@ -546,7 +546,7 @@ export default function ClientesClient() {
         subtitle={contacts.length === 0 && !hasFilters ? 'Sin clientes aún.' : `${contacts.length} cliente${contacts.length !== 1 ? 's' : ''}`}
         right={
           <button onClick={() => openDrawer(null)}
-            style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
             + Nuevo cliente
           </button>
         } />
@@ -598,7 +598,7 @@ export default function ClientesClient() {
           </p>
           {!hasFilters && (
             <button onClick={() => openDrawer(null)}
-              style={{ background: '#111', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+              style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
               + Nuevo cliente
             </button>
           )}
@@ -749,7 +749,7 @@ export default function ClientesClient() {
                   closeVCard()
                   setTimeout(() => openDrawer(id), 200)
                 }}
-                style={{ height: 32, padding: '0 14px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                style={{ height: 32, padding: '0 14px', background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                 Editar
               </button>
               <button
