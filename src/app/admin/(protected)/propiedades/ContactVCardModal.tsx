@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
+import { glass, glassScrim } from '@/lib/theme'
 
 /* ── Types ───────────────────────────────────────────────────── */
 interface DocUrl { path: string; name: string; size: number; uploaded_at: string }
@@ -128,16 +129,16 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
   return (
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(13,15,18,.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+      style={{ position: 'fixed', inset: 0, ...glassScrim, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
     >
       <div style={{
         width: 780, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
-        background: '#fff', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        ...glass(0.8), borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,.18)',
         fontFamily: 'system-ui, sans-serif',
       }}>
         {/* Header */}
-        <div style={{ height: 52, background: '#E2E5EA', borderBottom: '1px solid #CDD1D8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
+        <div style={{ height: 52, background: 'rgba(226,229,234,.5)', borderBottom: '1px solid rgba(205,209,216,.7)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>{fullName}</span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <a href={view.type === 'contact' ? `/admin/clientes?id=${view.id}` : `/admin/empresas?id=${view.id}`} target="_blank"
@@ -159,7 +160,7 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
           <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '220px 1fr', overflow: 'hidden' }}>
 
             {/* LEFT */}
-            <div style={{ width: 220, background: '#F4F5F7', borderRight: '1px solid #E2E5EA', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
+            <div style={{ width: 220, background: 'rgba(244,245,247,.5)', borderRight: '1px solid rgba(226,229,234,.7)', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
               {/* Avatar */}
               {(() => {
                 const ac = nameToColor(contactData.name + (contactData.last_name ?? ''))
@@ -328,7 +329,7 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
           <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '220px 1fr', overflow: 'hidden' }}>
 
             {/* LEFT */}
-            <div style={{ width: 220, background: '#F4F5F7', borderRight: '1px solid #E2E5EA', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
+            <div style={{ width: 220, background: 'rgba(244,245,247,.5)', borderRight: '1px solid rgba(226,229,234,.7)', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
               {(() => {
                 const ac = nameToColor(companyData.trade_name || companyData.name)
                 return (

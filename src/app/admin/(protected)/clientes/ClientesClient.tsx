@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { COUNTRIES } from '@/data/countries'
 import ContactForm from '@/components/crm/ContactForm'
 import { getMembership } from '@/lib/membership'
+import { glass, glassScrim } from '@/lib/theme'
 import ContactVCardModal, { type VCardViewType } from '../propiedades/ContactVCardModal'
 import PageHeader from '@/components/admin/PageHeader'
 
@@ -738,16 +739,16 @@ export default function ClientesClient() {
       {/* ── VCard Modal ──────────────────────────────────── */}
       <div
         onClick={e => { if (e.target === e.currentTarget) closeVCard() }}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(13,15,18,.5)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: vcardOpen ? 1 : 0, pointerEvents: vcardOpen ? 'all' : 'none', transition: 'opacity .2s' }}>
+        style={{ position: 'fixed', inset: 0, ...glassScrim, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: vcardOpen ? 1 : 0, pointerEvents: vcardOpen ? 'all' : 'none', transition: 'opacity .2s' }}>
         <div style={{
           width: 780, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
-          background: '#fff', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          ...glass(0.8), borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
           boxShadow: '0 20px 60px rgba(0,0,0,.18)',
           transform: vcardOpen ? 'scale(1) translateY(0)' : 'scale(.96) translateY(8px)',
           transition: 'transform .2s',
         }}>
           {/* VCard Header */}
-          <div style={{ height: 52, background: '#E2E5EA', borderBottom: '1px solid #CDD1D8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
+          <div style={{ height: 52, background: 'rgba(226,229,234,.5)', borderBottom: '1px solid rgba(205,209,216,.7)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>
               {vcardData ? `${vcardData.name}${vcardData.last_name ? ' ' + vcardData.last_name : ''}` : ''}
             </span>
@@ -777,7 +778,7 @@ export default function ClientesClient() {
             <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '220px 1fr', overflow: 'hidden' }}>
 
               {/* LEFT column */}
-              <div style={{ width: 220, background: '#F4F5F7', borderRight: '1px solid #E2E5EA', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
+              <div style={{ width: 220, background: 'rgba(244,245,247,.5)', borderRight: '1px solid rgba(226,229,234,.7)', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
                 {/* Avatar */}
                 {(() => {
                   const ac = nameToColor(vcardData.name + (vcardData.last_name ?? ''))

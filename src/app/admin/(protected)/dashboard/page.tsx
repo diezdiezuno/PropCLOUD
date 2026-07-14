@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { getClimaTz } from '@/components/admin/DateTimeWeather'
 import ContactVCardModal, { type VCardViewType } from '../propiedades/ContactVCardModal'
+import { glass } from '@/lib/theme'
 
 // Dashboard "Mi perfil": info del agente (editable inline), material de
 // impresión guardado (rótulos/tarjetas) y propiedades asignadas en el CRM.
@@ -167,8 +168,9 @@ export default function PerfilPage() {
     { key: 'linkedin',  label: 'LinkedIn',  span: 3 },
     { key: 'tiktok',    label: 'TikTok',    span: 3 },
   ]
-  // Misma transparencia en las 3 tarjetas: se ve el degradado/foto detrás
-  const card: React.CSSProperties = { background: 'rgba(255,255,255,.72)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid #ececf0', borderRadius: 14, padding: 24, position: 'relative', zIndex: 1 }
+  // Misma transparencia en las 3 tarjetas (token compartido glass()): se ve
+  // el degradado/foto detrás.
+  const card: React.CSSProperties = { ...glass(), borderRadius: 14, padding: 24, position: 'relative', zIndex: 1 }
   const sectionTitle: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 14px' }
 
   // El fondo (degradado blanco→gris + acento superior derecho) ahora vive

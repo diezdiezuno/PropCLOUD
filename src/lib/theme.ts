@@ -10,6 +10,26 @@ export const DEFAULT_THEME: TenantTheme = {
   mapStyle: 'mapbox://styles/mapbox/streets-v12',
 }
 
+// ── Superficie "glass" compartida ──────────────────────────────
+// Tarjeta translúcida con blur: se ve el degradado (o el scrim difuminado)
+// detrás. Fuente única para unificar el look en todo el admin — dashboard,
+// vCards, y donde se quiera. Cada lugar agrega su radius/padding.
+export function glass(alpha = 0.72): CSSProperties {
+  return {
+    background: `rgba(255,255,255,${alpha})`,
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    border: '1px solid rgba(236,236,240,.85)',
+  }
+}
+// Scrim claro y difuminado para modales glass: en vez del velo oscuro, un
+// velo tenue + blur del fondo, así la tarjeta translúcida se lee clara.
+export const glassScrim: CSSProperties = {
+  background: 'rgba(17,19,24,.30)',
+  backdropFilter: 'blur(3px)',
+  WebkitBackdropFilter: 'blur(3px)',
+}
+
 // CSS variables que consumen los componentes admin (PageHeader, etc.)
 // para que el superadmin pueda definir el theme por tenant sin tocar código.
 export function themeCssVars(theme?: Partial<TenantTheme> | null): CSSProperties {
