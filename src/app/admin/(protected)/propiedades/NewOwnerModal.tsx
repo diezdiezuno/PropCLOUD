@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { countryHas } from '@/lib/country'
 import ContactForm from '@/components/crm/ContactForm'
+import { Icon } from '@/lib/icons'
 
 /* ── Types ───────────────────────────────────────────────────── */
 interface DupeCompany { id: string; name: string }
@@ -236,7 +237,7 @@ export default function NewOwnerModal({ type, tenantId, country, initial, onCrea
     return () => window.removeEventListener('keydown', handle)
   }, [onClose])
 
-  const title = type === 'contact' ? '👤 Nuevo cliente' : '🏢 Nueva empresa'
+  const title = type === 'contact' ? 'Nuevo cliente' : 'Nueva empresa'
 
   return (
     <div
@@ -252,7 +253,7 @@ export default function NewOwnerModal({ type, tenantId, country, initial, onCrea
       }}>
         {/* Header */}
         <div style={{ height: 52, background: '#f4f5f7', borderBottom: '1px solid #e2e5ea', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', flexShrink: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>{title}</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12', display: 'flex', alignItems: 'center', gap: 8 }}><Icon name={type === 'contact' ? 'user' : 'building'} size={17} color="#5a6070" /> {title}</span>
           <button onClick={onClose}
             style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid #e2e5ea', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#5a6070' }}>✕</button>
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { glass, glassScrim } from '@/lib/theme'
+import { Icon, type IconName } from '@/lib/icons'
 
 /* ── Types ───────────────────────────────────────────────────── */
 interface DocUrl { path: string; name: string; size: number; uploaded_at: string }
@@ -248,34 +249,34 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
               <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 12 }}>Información</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {contactData.cedula && (
-                  <VCardRow icon="🪪" bg="#F4F5F7" label="Cédula">
+                  <VCardRow icon="idCard" color="#5a6070" bg="#F4F5F7" label="Cédula">
                     {contactData.cedula}
                     {contactData.cedula_tipo && <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 6 }}>{contactData.cedula_tipo}</span>}
                   </VCardRow>
                 )}
                 {contactData.birth_date && (
-                  <VCardRow icon="🎂" bg="#FEF3C7" label="Nacimiento">{formatDateEsCR(contactData.birth_date)}</VCardRow>
+                  <VCardRow icon="cake" color="#D97706" bg="#FEF3C7" label="Nacimiento">{formatDateEsCR(contactData.birth_date)}</VCardRow>
                 )}
                 {contactData.phone && (
-                  <VCardRow icon="📱" bg="#E7F7EE" label="Teléfono">{contactData.phone}</VCardRow>
+                  <VCardRow icon="smartphone" color="#128C48" bg="#E7F7EE" label="Teléfono">{contactData.phone}</VCardRow>
                 )}
                 {contactData.phone_alt && (
-                  <VCardRow icon="📞" bg="#F0FDF4" label="Teléfono alternativo">{contactData.phone_alt}</VCardRow>
+                  <VCardRow icon="phone" color="#16A34A" bg="#F0FDF4" label="Teléfono alternativo">{contactData.phone_alt}</VCardRow>
                 )}
                 {contactData.email && (
-                  <VCardRow icon="✉" bg="#EEF4FF" label="Email">
+                  <VCardRow icon="mail" color="#1B6EF3" bg="#EEF4FF" label="Email">
                     <a href={`mailto:${contactData.email}`} style={{ fontSize: 14, color: '#1B6EF3', textDecoration: 'none' }}>{contactData.email}</a>
                   </VCardRow>
                 )}
                 {(contactData.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean).map(co => (
-                  <VCardRow key={co!.id} icon="🏢" bg="#F5F5F0" label="Empresa">
+                  <VCardRow key={co!.id} icon="building" color="#8a7a4a" bg="#F5F5F0" label="Empresa">
                     <div>{co!.trade_name || co!.name}</div>
                     {co!.trade_name && <div style={{ fontSize: 12, color: '#5a6070' }}>{co!.name}</div>}
                     {co!.cedula_juridica && <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>{co!.cedula_juridica}</div>}
                   </VCardRow>
                 ))}
                 {contactData.contact_sources?.name && (
-                  <VCardRow icon="📡" bg="#FFF7ED" label="Fuente">{contactData.contact_sources.name}</VCardRow>
+                  <VCardRow icon="broadcast" color="#D97706" bg="#FFF7ED" label="Fuente">{contactData.contact_sources.name}</VCardRow>
                 )}
               </div>
 
@@ -312,7 +313,7 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
                           <div style={{ height: 100, background: isPdf ? '#FEE2E2' : '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                             {isImage && signedUrl
                               ? <img src={signedUrl} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              : <><span style={{ fontSize: 28 }}>{isPdf ? '📄' : '🖼'}</span>{isPdf && <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginLeft: 6 }}>PDF</span>}</>
+                              : <><Icon name={isPdf ? 'file' : 'image'} size={28} color={isPdf ? '#DC2626' : '#5a6070'} />{isPdf && <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginLeft: 6 }}>PDF</span>}</>
                             }
                           </div>
                           <div style={{ padding: '6px 10px', fontSize: 12, color: '#5a6070', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</div>
@@ -352,7 +353,7 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
               <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 12 }}>Información</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
                 {companyData.cedula_juridica && (
-                  <VCardRow icon="🪪" bg="#F4F5F7" label="Cédula jurídica">{companyData.cedula_juridica}</VCardRow>
+                  <VCardRow icon="idCard" color="#5a6070" bg="#F4F5F7" label="Cédula jurídica">{companyData.cedula_juridica}</VCardRow>
                 )}
               </div>
 
@@ -389,10 +390,10 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
   )
 }
 
-function VCardRow({ icon, bg, label, children }: { icon: string; bg: string; label: string; children: React.ReactNode }) {
+function VCardRow({ icon, color, bg, label, children }: { icon: IconName; color: string; bg: string; label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-      <div style={{ width: 32, height: 32, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{icon}</div>
+      <div style={{ width: 32, height: 32, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color }}><Icon name={icon} /></div>
       <div>
         <div style={{ fontSize: 11, color: '#9ca3af' }}>{label}</div>
         <div style={{ fontSize: 14, color: '#0d0f12' }}>{children}</div>

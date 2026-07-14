@@ -7,6 +7,7 @@ import { COUNTRIES } from '@/data/countries'
 import ContactForm from '@/components/crm/ContactForm'
 import { getMembership } from '@/lib/membership'
 import { glass, glassScrim } from '@/lib/theme'
+import { Icon } from '@/lib/icons'
 import ContactVCardModal, { type VCardViewType } from '../propiedades/ContactVCardModal'
 import PageHeader from '@/components/admin/PageHeader'
 
@@ -180,25 +181,6 @@ const TrashIcon = () => (
     <path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M6 6v14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6" /><path d="M10 11v6M14 11v6" />
   </svg>
 )
-
-// Íconos de línea para las filas de la vCard (reemplazan emojis).
-function RowIcon({ children, size = 16 }: { children: React.ReactNode; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      {children}
-    </svg>
-  )
-}
-const ROW_ICON: Record<string, { color: string; paths: React.ReactNode }> = {
-  cedula:   { color: '#5a6070', paths: <><rect x="2" y="5" width="20" height="14" rx="2" /><circle cx="8" cy="12" r="2" /><line x1="13" y1="10" x2="18" y2="10" /><line x1="13" y1="14" x2="18" y2="14" /></> },
-  birth:    { color: '#D97706', paths: <><path d="M4 21h16v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2Z" /><path d="M4 16c1.5 0 1.5 1.2 3 1.2S9.5 16 11 16s1.5 1.2 3 1.2S16.5 16 18 16s1.5 1.2 2 1.2" /><line x1="8" y1="5" x2="8" y2="8" /><line x1="12" y1="4" x2="12" y2="8" /><line x1="16" y1="5" x2="16" y2="8" /></> },
-  phone:    { color: '#128C48', paths: <><rect x="6" y="2" width="12" height="20" rx="2" /><line x1="11" y1="18" x2="13" y2="18" /></> },
-  phoneAlt: { color: '#16A34A', paths: <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3A19.5 19.5 0 0 1 5.2 13 19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.8.7a2 2 0 0 1 1.7 2Z" /> },
-  email:    { color: '#1B6EF3', paths: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m2 6 10 7 10-7" /></> },
-  company:  { color: '#8a7a4a', paths: <><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path d="M10 6h4M10 10h4M10 14h4M10 18h4" /></> },
-  source:   { color: '#D97706', paths: <><path d="M4 11a9 9 0 0 1 9 9" /><path d="M4 4a16 16 0 0 1 16 16" /><circle cx="5" cy="19" r="1" /></> },
-  property: { color: '#5a6070', paths: <><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M9 22V12h6v10" /></> },
-}
 
 // ── Component ─────────────────────────────────────────────────
 export default function ClientesClient() {
@@ -727,8 +709,8 @@ export default function ClientesClient() {
                       </div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-                      {c.email && <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#5a6070', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>✉ {c.email}</a>}
-                      {c.phone && <a href={whatsappHref(c.phone, c.phone_country)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#5a6070', textDecoration: 'none' }}>💬 {c.phone}</a>}
+                      {c.email && <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#5a6070', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="mail" size={13} /> {c.email}</a>}
+                      {c.phone && <a href={whatsappHref(c.phone, c.phone_country)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#5a6070', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="message" size={13} color="#128C48" /> {c.phone}</a>}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <ContactActions c={c} />
@@ -889,7 +871,7 @@ export default function ClientesClient() {
                   {/* Cédula */}
                   {vcardData.cedula && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: ROW_ICON.cedula.color }}><RowIcon>{ROW_ICON.cedula.paths}</RowIcon></div>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#5a6070" }}><Icon name="idCard" /></div>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Cédula</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.cedula}
@@ -901,7 +883,7 @@ export default function ClientesClient() {
                   {/* Nacimiento */}
                   {vcardData.birth_date && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: ROW_ICON.birth.color }}><RowIcon>{ROW_ICON.birth.paths}</RowIcon></div>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#D97706" }}><Icon name="cake" /></div>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Nacimiento</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{formatDateEsCR(vcardData.birth_date)}</div>
@@ -911,7 +893,7 @@ export default function ClientesClient() {
                   {/* Teléfono */}
                   {vcardData.phone && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E7F7EE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: ROW_ICON.phone.color }}><RowIcon>{ROW_ICON.phone.paths}</RowIcon></div>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E7F7EE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#128C48" }}><Icon name="smartphone" /></div>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Teléfono</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.phone}</div>
@@ -921,7 +903,7 @@ export default function ClientesClient() {
                   {/* Teléfono alt */}
                   {vcardData.phone_alt && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: ROW_ICON.phoneAlt.color }}><RowIcon>{ROW_ICON.phoneAlt.paths}</RowIcon></div>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#16A34A" }}><Icon name="phone" /></div>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Teléfono alternativo</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.phone_alt}</div>
@@ -931,7 +913,7 @@ export default function ClientesClient() {
                   {/* Email */}
                   {vcardData.email && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: ROW_ICON.email.color }}><RowIcon>{ROW_ICON.email.paths}</RowIcon></div>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#1B6EF3" }}><Icon name="mail" /></div>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Email</div>
                         <a href={`mailto:${vcardData.email}`} style={{ fontSize: 14, color: '#1B6EF3', textDecoration: 'none' }}>{vcardData.email}</a>
@@ -944,7 +926,7 @@ export default function ClientesClient() {
                     if (cos.length === 0) return null
                     return cos.map(co => (
                       <div key={co!.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F5F5F0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: ROW_ICON.company.color }}><RowIcon>{ROW_ICON.company.paths}</RowIcon></div>
+                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F5F5F0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#8a7a4a" }}><Icon name="building" /></div>
                         <div>
                           <div style={{ fontSize: 11, color: '#9ca3af' }}>Empresa</div>
                           <div style={{ fontSize: 14, color: '#0d0f12' }}>{co!.trade_name || co!.name}</div>
@@ -957,7 +939,7 @@ export default function ClientesClient() {
                   {/* Fuente */}
                   {vcardData.contact_sources?.name && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: ROW_ICON.source.color }}><RowIcon>{ROW_ICON.source.paths}</RowIcon></div>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#D97706" }}><Icon name="broadcast" /></div>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Fuente</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.contact_sources.name}</div>
@@ -977,7 +959,7 @@ export default function ClientesClient() {
                       {vcardProperties.map(p => (
                         <a key={p.id} href={`/admin/propiedades/${p.id}`} target="_blank" rel="noopener noreferrer"
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: '#F9FAFB', borderRadius: 10, border: '1px solid #e2e5ea', textDecoration: 'none' }}>
-                          <span style={{ flexShrink: 0, color: ROW_ICON.property.color, display: 'flex' }}><RowIcon>{ROW_ICON.property.paths}</RowIcon></span>
+                          <span style={{ flexShrink: 0, color: "#5a6070", display: "flex" }}><Icon name="home" /></span>
                           <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title || 'Sin título'}</div>
                           <span style={{ fontSize: 11, color: '#9ca3af', flexShrink: 0 }}>{p.crm_status || p.status}</span>
                         </a>
@@ -1019,13 +1001,7 @@ export default function ClientesClient() {
                                 <img src={signedUrl} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               ) : (
                                 <>
-                                  <span style={{ display: 'flex', color: isPdf ? '#DC2626' : '#5a6070' }}>
-                                    <RowIcon size={28}>
-                                      {isPdf
-                                        ? <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></>
-                                        : <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.5-3.5L9 20" /></>}
-                                    </RowIcon>
-                                  </span>
+                                  <Icon name={isPdf ? 'file' : 'image'} size={28} color={isPdf ? '#DC2626' : '#5a6070'} />
                                   {isPdf && <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626' }}>PDF</span>}
                                 </>
                               )}

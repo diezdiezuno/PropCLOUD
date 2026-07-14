@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { getMembership } from '@/lib/membership'
 import { countryHas } from '@/lib/country'
 import PageHeader from '@/components/admin/PageHeader'
+import { Icon } from '@/lib/icons'
 
 // ── Types ─────────────────────────────────────────────────────
 interface Company {
@@ -525,7 +526,7 @@ export default function EmpresasClient() {
       {/* ── Toolbar ────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: 380 }}>
-          <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: 14, pointerEvents: 'none' }}>🔍</span>
+          <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none', display: 'flex' }}><Icon name="search" size={15} /></span>
           <input type="text" placeholder="Buscar por nombre…" value={search}
             onChange={e => handleSearch(e.target.value)}
             style={{ ...sInput, paddingLeft: 36 }} />
@@ -540,7 +541,7 @@ export default function EmpresasClient() {
       {/* ── List ───────────────────────────────────────────── */}
       {companies.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: 12, padding: '60px 24px', border: '1px solid #ebebeb', textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🏢</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, color: '#c5cad3' }}><Icon name="building" size={32} /></div>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: '#5a6070', margin: '0 0 8px' }}>
             {hasSearch ? 'Sin resultados' : 'Sin empresas aún'}
           </h3>
@@ -762,7 +763,7 @@ export default function EmpresasClient() {
               {!editingId ? (
                 /* New company — prompt to save first */
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10 }}>
-                  <span style={{ fontSize: 18 }}>💡</span>
+                  <span style={{ display: 'flex', color: '#D97706' }}><Icon name="lightbulb" size={18} /></span>
                   <span style={{ fontSize: 13, color: '#92610A' }}>
                     Guardá la empresa primero para poder vincular clientes.
                   </span>
@@ -772,8 +773,8 @@ export default function EmpresasClient() {
                   {/* Contact search */}
                   <div ref={contactSearchRef} style={{ position: 'relative', marginBottom: 12 }}>
                     <div style={{ position: 'relative' }}>
-                      <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: 14, pointerEvents: 'none' }}>
-                        {contactSearching ? '⏳' : '🔍'}
+                      <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none', display: 'flex' }}>
+                        {contactSearching ? <span style={{ fontSize: 14 }}>⏳</span> : <Icon name="search" size={15} />}
                       </span>
                       <input
                         type="text"
@@ -852,7 +853,7 @@ export default function EmpresasClient() {
                   {/* Linked contacts list */}
                   {linkedContacts.length === 0 ? (
                     <div style={{ padding: '20px 16px', background: '#F9FAFB', borderRadius: 10, border: '1px dashed #e2e5ea', textAlign: 'center' }}>
-                      <div style={{ fontSize: 22, marginBottom: 6 }}>👥</div>
+                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6, color: '#c5cad3' }}><Icon name="users" size={22} /></div>
                       <div style={{ fontSize: 13, color: '#9ca3af' }}>Sin clientes vinculados aún</div>
                     </div>
                   ) : (
