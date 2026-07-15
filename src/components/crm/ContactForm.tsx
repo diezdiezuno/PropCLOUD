@@ -11,9 +11,11 @@ import { createClient } from '@/lib/supabase-browser'
 import { countryHas } from '@/lib/country'
 import PhoneInput from '@/components/PhoneInput'
 import TaxonomyManager from '@/components/crm/TaxonomyManager'
+import { Icon } from '@/lib/icons'
 
 /* ── Types ───────────────────────────────────────────────────── */
-interface ContactType   { id: string; name: string; color: string }
+interface ContactType   { id: string; name: string; color: string; role?: 'referral_in' | 'referral_out' | null }
+interface Referral      { kind: 'user' | 'contact'; id: string; name: string; subtitle?: string }
 interface ContactSource { id: string; name: string }
 interface DupeContact   { id: string; name: string; last_name: string | null }
 interface Company       { id: string; name: string; trade_name: string | null; cedula_juridica: string | null }
@@ -145,6 +147,126 @@ function QuickAddOption({ onAdd }: { onAdd: (name: string) => Promise<void> }) {
   )
 }
 
+/* ── ReferrerPicker ───────────────────────────────────────────
+   Busca asesores internos (users) y contactos (crm_contacts),
+   agrupa los resultados por sección, y permite crear un contacto
+   nuevo si no existe. Se usa para "Referido por" y "Referido a".
+─────────────────────────────────────────────────────────────── */
+function ReferrerPicker({ tenantId, value, onChange, placeholder }: {
+  tenantId: string; value: Referral | null; onChange: (r: Referral | null) => void; placeholder: string
+}) {
+  const [q, setQ]             = useState('')
+  const [groups, setGroups]   = useState<{ header: string; items: Referral[] }[]>([])
+  const [open, setOpen]       = useState(false)
+  const [busy, setBusy]       = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handle(val: string) {
+    setQ(val); setOpen(true)
+    if (timer.current) clearTimeout(timer.current)
+    if (!val.trim()) { setGroups([]); setOpen(false); return }
+    timer.current = setTimeout(async () => {
+      setBusy(true)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = createClient() as any
+      const [{ data: users }, { data: contacts }] = await Promise.all([
+        sb.from('users').select('id,name').eq('tenant_id', tenantId).ilike('name', `%${val}%`).order('name').limit(6),
+        sb.from('crm_contacts').select('id,name,last_name,cedula,crm_contact_types(contact_types(name))')
+          .eq('tenant_id', tenantId).or(`name.ilike.%${val}%,last_name.ilike.%${val}%`).order('name').limit(12),
+      ])
+      const g: { header: string; items: Referral[] }[] = []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const us = ((users ?? []) as any[]).map(u => ({ kind: 'user' as const, id: u.id, name: u.name }))
+      if (us.length) g.push({ header: 'Asesores internos', items: us })
+      // Contactos agrupados por tipo
+      const byType = new Map<string, Referral[]>()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const c of (contacts ?? []) as any[]) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const typeName = (c.crm_contact_types ?? []).map((r: any) => r.contact_types?.name).filter(Boolean)[0] ?? 'Sin tipo'
+        const full = [c.name, c.last_name].filter(Boolean).join(' ')
+        if (!byType.has(typeName)) byType.set(typeName, [])
+        byType.get(typeName)!.push({ kind: 'contact', id: c.id, name: full, subtitle: c.cedula ?? undefined })
+      }
+      for (const [typeName, items] of byType) g.push({ header: typeName, items })
+      setGroups(g)
+      setBusy(false)
+    }, 250)
+  }
+
+  async function createContact() {
+    const nm = q.trim()
+    if (!nm) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (createClient() as any).from('crm_contacts')
+      .insert({ tenant_id: tenantId, name: nm, active: true }).select('id,name').single()
+    if (data) { onChange({ kind: 'contact', id: data.id, name: data.name }); setQ(''); setGroups([]); setOpen(false) }
+  }
+
+  if (value) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', background: '#F9FAFB', borderRadius: 10, border: '1px solid #e2e5ea', marginBottom: 10 }}>
+        <Icon name={value.kind === 'user' ? 'users' : 'user'} size={16} color="#5a6070" />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#0d0f12' }}>{value.name}</div>
+          <div style={{ fontSize: 11, color: '#9ca3af' }}>{value.kind === 'user' ? 'Asesor interno' : 'Contacto'}{value.subtitle ? ` · ${value.subtitle}` : ''}</div>
+        </div>
+        <button type="button" onClick={() => onChange(null)}
+          style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>✕</button>
+      </div>
+    )
+  }
+
+  const noResults = open && !busy && q.trim() && groups.length === 0
+  return (
+    <div style={{ position: 'relative', marginBottom: 10 }}>
+      <div style={{ position: 'relative' }}>
+        <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', display: 'flex', pointerEvents: 'none' }}><Icon name="search" size={15} /></span>
+        <input type="text" placeholder={placeholder} value={q}
+          onChange={e => handle(e.target.value)}
+          onFocus={() => { if (groups.length > 0) setOpen(true) }}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          style={{ ...inputSt, paddingLeft: 34, paddingRight: q ? 34 : 12 }} />
+        {q && (
+          <button type="button" onClick={() => { setQ(''); setGroups([]); setOpen(false) }}
+            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 16, padding: 0 }}>✕</button>
+        )}
+      </div>
+      {open && (groups.length > 0 || noResults) && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #e2e5ea', borderRadius: 10, boxShadow: '0 8px 20px rgba(0,0,0,.1)', zIndex: 60, overflow: 'hidden', marginTop: 4, maxHeight: 320, overflowY: 'auto' }}>
+          {groups.map(grp => (
+            <div key={grp.header}>
+              <div style={{ padding: '7px 12px 4px', fontSize: 10, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', background: '#fafbfc' }}>{grp.header}</div>
+              {grp.items.map(it => (
+                <div key={it.kind + it.id} onMouseDown={() => { onChange(it); setQ(''); setGroups([]); setOpen(false) }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f4f5f7' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f9fafb'}
+                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ''}>
+                  <Icon name={it.kind === 'user' ? 'users' : 'user'} size={16} color="#5a6070" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#0d0f12' }}>{it.name}</div>
+                    {it.subtitle && <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>{it.subtitle}</div>}
+                  </div>
+                  <span style={{ fontSize: 13, color: '#1B6EF3' }}>＋</span>
+                </div>
+              ))}
+            </div>
+          ))}
+          {noResults && (
+            <div onMouseDown={createContact}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer' }}
+              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f9fafb'}
+              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = ''}>
+              <span style={{ fontSize: 16, color: '#1B6EF3' }}>＋</span>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1B6EF3' }}>Crear contacto «{q.trim()}»</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Social icons ────────────────────────────────────────────── */
 const IgIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -217,6 +339,10 @@ export default function ContactForm({
   const [showAgResults, setShowAgResults] = useState(false)
   const agSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  /* Referidos — se habilitan si el contacto tiene un tipo con role referral_in/out */
+  const [referredBy, setReferredBy] = useState<Referral | null>(null)
+  const [referredTo, setReferredTo] = useState<Referral | null>(null)
+
   /* Propiedades relacionadas (donde este contacto figura como dueño) — solo lectura */
   const [ownedProperties, setOwnedProperties] = useState<OwnedProperty[]>([])
 
@@ -243,7 +369,7 @@ export default function ContactForm({
   const reloadTaxonomy = useCallback(async () => {
     const sb = createClient()
     const [{ data: t }, { data: s }] = await Promise.all([
-      sb.from('contact_types').select('id,name,color').eq('tenant_id', tenantId).order('position'),
+      sb.from('contact_types').select('id,name,color,role').eq('tenant_id', tenantId).order('position'),
       sb.from('contact_sources').select('id,name').eq('tenant_id', tenantId).order('position'),
     ])
     setTypes((t ?? []) as ContactType[])
@@ -309,6 +435,21 @@ export default function ContactForm({
       const ags = ((cags ?? []) as any[]).map(r => r.users).filter(Boolean) as AgentUser[]
       setLinkedAgents(ags)
       setLoading(false)
+
+      // Referidos: resolver nombre del referidor guardado (user o contacto)
+      async function resolveRef(userId?: string | null, contactId?: string | null): Promise<Referral | null> {
+        if (userId) {
+          const { data: u } = await sb.from('users').select('id,name').eq('id', userId).single()
+          return u ? { kind: 'user', id: u.id, name: u.name } : null
+        }
+        if (contactId) {
+          const { data: rc } = await sb.from('crm_contacts').select('id,name,last_name').eq('id', contactId).single()
+          return rc ? { kind: 'contact', id: rc.id, name: [rc.name, rc.last_name].filter(Boolean).join(' ') } : null
+        }
+        return null
+      }
+      if (c?.referred_by_user_id || c?.referred_by_contact_id) setReferredBy(await resolveRef(c.referred_by_user_id, c.referred_by_contact_id))
+      if (c?.referred_to_user_id || c?.referred_to_contact_id) setReferredTo(await resolveRef(c.referred_to_user_id, c.referred_to_contact_id))
 
       // Propiedades donde este contacto figura como dueño (features.owners es
       // un JSON string con [{type,id,name,subtitle}], mismo formato que
@@ -484,6 +625,11 @@ export default function ContactForm({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any
 
+    // Referidos: solo se persisten si el contacto tiene el tipo con ese rol.
+    const selRoles = new Set(types.filter(t => typeIds.includes(t.id)).map(t => t.role).filter(Boolean))
+    const rb = selRoles.has('referral_in')  ? referredBy : null
+    const rt = selRoles.has('referral_out') ? referredTo : null
+
     const payload = {
       cedula:            cedula.trim()    || null,
       cedula_tipo:       cedulaTipo,
@@ -491,6 +637,10 @@ export default function ContactForm({
       last_name:         lastName.trim()  || null,
       birth_date:        birthDate        || null,
       source_id:         sourceId         || null,
+      referred_by_user_id:    rb?.kind === 'user'    ? rb.id : null,
+      referred_by_contact_id: rb?.kind === 'contact' ? rb.id : null,
+      referred_to_user_id:    rt?.kind === 'user'    ? rt.id : null,
+      referred_to_contact_id: rt?.kind === 'contact' ? rt.id : null,
       email:             email.trim()     || null,
       phone:             phone.trim()     || null,
       phone_country:     phoneCountry,
@@ -713,6 +863,29 @@ export default function ContactForm({
             </div>
           )}
         </div>
+
+        {/* ── REFERIDOS ────────────────────────────────────── */}
+        {(() => {
+          const selRoles = new Set(types.filter(t => typeIds.includes(t.id)).map(t => t.role).filter(Boolean))
+          return (
+            <>
+              {selRoles.has('referral_in') && (
+                <>
+                  <SectionTitle>Referido por</SectionTitle>
+                  <ReferrerPicker tenantId={tenantId} value={referredBy} onChange={setReferredBy}
+                    placeholder="Buscar asesor o contacto que refirió…" />
+                </>
+              )}
+              {selRoles.has('referral_out') && (
+                <>
+                  <SectionTitle>Referido a</SectionTitle>
+                  <ReferrerPicker tenantId={tenantId} value={referredTo} onChange={setReferredTo}
+                    placeholder="Buscar asesor o contacto a quien se refirió…" />
+                </>
+              )}
+            </>
+          )
+        })()}
 
         {/* ── CONTACTO ─────────────────────────────────────── */}
         <SectionTitle>Contacto</SectionTitle>
