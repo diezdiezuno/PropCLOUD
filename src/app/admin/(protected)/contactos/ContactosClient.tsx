@@ -84,6 +84,15 @@ interface VCardContact {
   crm_contact_types: ContactTypeRow[] | null
   contact_sources: { name: string } | null
   crm_contact_companies: ContactCompanyRow[] | null
+  referred_by_user?: { name: string } | null
+  referred_by_contact?: { name: string; last_name: string | null } | null
+  referred_to_user?: { name: string } | null
+  referred_to_contact?: { name: string; last_name: string | null } | null
+}
+function refName(u?: { name: string } | null, c?: { name: string; last_name: string | null } | null): string | null {
+  if (u) return u.name
+  if (c) return [c.name, c.last_name].filter(Boolean).join(' ')
+  return null
 }
 
 interface VCardProperty { id: string; title: string | null; crm_status: string | null; status: string | null }
@@ -394,7 +403,7 @@ export default function ContactosClient() {
     const sb = createClient() as any
     const { data } = await sb
       .from('crm_contacts')
-      .select('*, crm_contact_types(contact_types(id,name,color)), contact_sources(name), crm_contact_companies(crm_companies(id,name,cedula_juridica))')
+      .select('*, crm_contact_types(contact_types(id,name,color)), contact_sources(name), crm_contact_companies(crm_companies(id,name,cedula_juridica)), referred_by_user:users!referred_by_user_id(name), referred_by_contact:crm_contacts!referred_by_contact_id(name,last_name), referred_to_user:users!referred_to_user_id(name), referred_to_contact:crm_contacts!referred_to_contact_id(name,last_name)')
       .eq('id', id)
       .single()
     setVcardData(data as VCardContact ?? null)
@@ -925,6 +934,26 @@ export default function ContactosClient() {
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Fuente</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.contact_sources.name}</div>
+                      </div>
+                    </div>
+                  )}
+                  {/* Referido por */}
+                  {refName(vcardData.referred_by_user, vcardData.referred_by_contact) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ display: 'flex', flexShrink: 0, color: "#8B5CF6" }}><Icon name="user" size={18} /></span>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Referido por</div>
+                        <div style={{ fontSize: 14, color: '#0d0f12' }}>{refName(vcardData.referred_by_user, vcardData.referred_by_contact)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {/* Referido a */}
+                  {refName(vcardData.referred_to_user, vcardData.referred_to_contact) && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ display: 'flex', flexShrink: 0, color: "#EC4899" }}><Icon name="user" size={18} /></span>
+                      <div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>Referido a</div>
+                        <div style={{ fontSize: 14, color: '#0d0f12' }}>{refName(vcardData.referred_to_user, vcardData.referred_to_contact)}</div>
                       </div>
                     </div>
                   )}

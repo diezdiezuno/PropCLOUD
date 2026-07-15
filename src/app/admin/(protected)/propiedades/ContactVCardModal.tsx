@@ -18,6 +18,15 @@ interface ContactFull {
   crm_contact_types: { contact_types: { id?: string; name: string; color: string } | null }[] | null
   contact_sources: { name: string } | null
   crm_contact_companies: { crm_companies: { id: string; name: string; trade_name: string | null; cedula_juridica: string | null } | null }[] | null
+  referred_by_user?: { name: string } | null
+  referred_by_contact?: { name: string; last_name: string | null } | null
+  referred_to_user?: { name: string } | null
+  referred_to_contact?: { name: string; last_name: string | null } | null
+}
+function refName(u?: { name: string } | null, c?: { name: string; last_name: string | null } | null): string | null {
+  if (u) return u.name
+  if (c) return [c.name, c.last_name].filter(Boolean).join(' ')
+  return null
 }
 interface CompanyFull {
   id: string; name: string; trade_name: string | null; cedula_juridica: string | null
@@ -92,7 +101,7 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
     if (view.type === 'contact') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ;(sb as any).from('crm_contacts')
-        .select('*, crm_contact_types(contact_types(id,name,color)), contact_sources(name), crm_contact_companies(crm_companies(id,name,trade_name,cedula_juridica))')
+        .select('*, crm_contact_types(contact_types(id,name,color)), contact_sources(name), crm_contact_companies(crm_companies(id,name,trade_name,cedula_juridica)), referred_by_user:users!referred_by_user_id(name), referred_by_contact:crm_contacts!referred_by_contact_id(name,last_name), referred_to_user:users!referred_to_user_id(name), referred_to_contact:crm_contacts!referred_to_contact_id(name,last_name)')
         .eq('id', view.id).single()
         .then(({ data }: { data: ContactFull }) => { setContactData(data); setLoading(false) })
       // Propiedades donde el contacto es dueño/vendedor
@@ -284,6 +293,12 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
                 ))}
                 {contactData.contact_sources?.name && (
                   <VCardRow icon="broadcast" color="#D97706" label="Fuente">{contactData.contact_sources.name}</VCardRow>
+                )}
+                {refName(contactData.referred_by_user, contactData.referred_by_contact) && (
+                  <VCardRow icon="user" color="#8B5CF6" label="Referido por">{refName(contactData.referred_by_user, contactData.referred_by_contact)}</VCardRow>
+                )}
+                {refName(contactData.referred_to_user, contactData.referred_to_contact) && (
+                  <VCardRow icon="user" color="#EC4899" label="Referido a">{refName(contactData.referred_to_user, contactData.referred_to_contact)}</VCardRow>
                 )}
               </div>
 
