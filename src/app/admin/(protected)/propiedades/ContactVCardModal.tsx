@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
-import { glass, glassScrim } from '@/lib/theme'
+import { glassScrim } from '@/lib/theme'
 import { Icon, type IconName } from '@/lib/icons'
 
 /* ── Types ───────────────────────────────────────────────────── */
@@ -76,6 +76,7 @@ const TkIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="#0d0f
 const LiIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
 const YtIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
 const XIcon  = () => <svg width="15" height="15" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#000"/><path d="M17.75 4h-2.3L12 8.5 8.8 4H4l5.25 7L4 20h2.3L10 15l3.5 5H18l-5.5-7.5L17.75 4z" fill="#fff"/></svg>
+const WaGlyph = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.5A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-2.9-.4-4.2-1.1l-.3-.18-2.85.89.9-2.78-.2-.32A8.2 8.2 0 1 1 12 20.2Zm4.6-6.13c-.25-.13-1.48-.73-1.71-.82-.23-.08-.4-.12-.56.13-.17.25-.64.81-.79.98-.14.16-.29.18-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.66-1.25-1.48-1.4-1.73-.14-.25-.01-.39.11-.51.11-.11.25-.29.37-.44.13-.15.17-.25.25-.42.08-.16.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.42l-.48-.01c-.16 0-.42.06-.64.31-.22.25-.85.83-.85 2.03 0 1.2.87 2.36.99 2.52.12.16 1.71 2.61 4.14 3.66.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.48-.6 1.69-1.19.21-.58.21-1.08.14-1.19-.06-.11-.22-.17-.47-.29Z"/></svg>
 
 /* ── Main component ───────────────────────────────────────────── */
 export default function ContactVCardModal({ view, onClose }: { view: VCardViewType; onClose: () => void }) {
@@ -131,9 +132,9 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
     return () => window.removeEventListener('keydown', handle)
   }, [onClose])
 
-  const fullName = contactData
-    ? `${contactData.name}${contactData.last_name ? ' ' + contactData.last_name : ''}`
-    : companyData ? (companyData.trade_name || companyData.name) : ''
+  const avatarColor = contactData
+    ? nameToColor(contactData.name + (contactData.last_name ?? ''))
+    : companyData ? nameToColor(companyData.trade_name || companyData.name) : '#5a6070'
 
   return (
     <div
@@ -141,150 +142,148 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
       style={{ position: 'fixed', inset: 0, ...glassScrim, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
     >
       <div style={{
-        width: 780, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
-        ...glass(0.8), borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,.18)',
+        width: 400, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
+        position: 'relative', paddingTop: 54, display: 'flex', flexDirection: 'column',
         fontFamily: 'system-ui, sans-serif',
       }}>
-        {/* Header */}
-        <div style={{ height: 52, background: 'rgba(226,229,234,.5)', borderBottom: '1px solid rgba(205,209,216,.7)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>{fullName}</span>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <a href={view.type === 'contact' ? `/admin/clientes?id=${view.id}` : `/admin/empresas?id=${view.id}`} target="_blank"
-              style={{ height: 32, padding: '0 14px', background: 'transparent', color: '#5a6070', border: '1px solid #CDD1D8', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              Abrir en CRM ↗
-            </a>
-            <button onClick={onClose}
-              style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #CDD1D8', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#5a6070' }}>
-              ✕
-            </button>
+        {/* Avatar (sobresale del cuadro) */}
+        {!loading && (contactData || companyData) && (
+          <div style={{
+            position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 3,
+            width: 108, height: 108, borderRadius: 30, overflow: 'hidden',
+            background: contactData?.photo_url ? '#fff' : avatarColor + '22',
+            border: '4px solid #fff', boxShadow: '0 8px 22px rgba(0,0,0,.20)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {contactData?.photo_url
+              ? <img src={contactData.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ fontSize: 38, fontWeight: 800, color: avatarColor, letterSpacing: '-1px' }}>
+                  {contactData ? getInitials(contactData.name, contactData.last_name) : coInitials(companyData!.trade_name || companyData!.name)}
+                </span>}
           </div>
-        </div>
+        )}
 
-        {/* Body */}
-        {loading ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>Cargando…</div>
+        {/* Cerrar */}
+        <button onClick={onClose}
+          style={{ position: 'absolute', top: 66, right: 14, zIndex: 4, width: 30, height: 30, borderRadius: '50%', border: '1px solid #E2E5EA', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#5a6070' }}>
+          ✕
+        </button>
 
-        ) : view.type === 'contact' && contactData ? (
-          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '220px 1fr', overflow: 'hidden' }}>
+        {/* Cuadro blanco */}
+        <div style={{ background: '#fff', borderRadius: 22, boxShadow: '0 20px 60px rgba(0,0,0,.18)', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {loading ? (
+            <div style={{ minHeight: 220, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>Cargando…</div>
 
-            {/* LEFT */}
-            <div style={{ width: 220, background: 'rgba(244,245,247,.5)', borderRight: '1px solid rgba(226,229,234,.7)', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
-              {/* Avatar */}
-              {(() => {
-                const ac = nameToColor(contactData.name + (contactData.last_name ?? ''))
-                return (
-                  <div style={{ width: 120, height: 120, borderRadius: '50%', overflow: 'hidden', background: contactData.photo_url ? 'transparent' : ac + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 14, border: `3px solid ${ac}44` }}>
-                    {contactData.photo_url
-                      ? <img src={contactData.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 40, fontWeight: 800, color: ac, letterSpacing: '-1px' }}>{getInitials(contactData.name, contactData.last_name)}</span>}
-                  </div>
-                )
-              })()}
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#0d0f12', textAlign: 'center', marginBottom: 8 }}>
-                {contactData.name}{contactData.last_name ? ' ' + contactData.last_name : ''}
-              </div>
-              {(() => {
-                const cTypes = (contactData.crm_contact_types ?? []).map(r => r.contact_types).filter(Boolean) as { id?: string; name: string; color: string }[]
-                if (cTypes.length === 0) return null
-                return (
-                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 10 }}>
-                    {cTypes.map((t, i) => (
-                      <span key={t.id ?? i} style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: (t.color || '#1B6EF3') + '22', color: t.color || '#1B6EF3' }}>
-                        {t.name}
-                      </span>
-                    ))}
-                  </div>
-                )
-              })()}
-              {/* Companies */}
-              {(() => {
-                const cos = (contactData.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean)
-                if (!cos.length) return null
-                return (
-                  <div style={{ textAlign: 'center', marginBottom: 10, width: '100%' }}>
-                    {cos.map(co => (
-                      <div key={co!.id} style={{ marginBottom: 4 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#5a6070' }}>{co!.trade_name || co!.name}</div>
-                        {co!.trade_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>{co!.name}</div>}
-                        {co!.cedula_juridica && <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>{co!.cedula_juridica}</div>}
-                      </div>
-                    ))}
-                  </div>
-                )
-              })()}
-              {/* Action buttons */}
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 7, marginTop: 14 }}>
-                {contactData.phone && (
-                  <button onClick={() => openWhatsapp(contactData.phone, contactData.phone_country)}
-                    style={{ width: '100%', height: 36, background: '#128C48', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    WhatsApp
-                  </button>
-                )}
-                {contactData.email && (
-                  <button onClick={() => { window.location.href = `mailto:${contactData.email}` }}
-                    style={{ width: '100%', height: 36, background: '#1B6EF3', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    Email
-                  </button>
-                )}
-              </div>
-              {/* Social icons */}
-              {(() => {
-                const socials = [
-                  { field: contactData.instagram, Icon: IgIcon, label: 'Instagram' },
-                  { field: contactData.linkedin,  Icon: LiIcon, label: 'LinkedIn'  },
-                  { field: contactData.facebook,  Icon: FbIcon, label: 'Facebook'  },
-                  { field: contactData.tiktok,    Icon: TkIcon, label: 'TikTok'    },
-                  { field: contactData.youtube,   Icon: YtIcon, label: 'YouTube'   },
-                  { field: contactData.x,         Icon: XIcon,  label: 'X'         },
-                ].filter(s => !!s.field)
-                if (!socials.length) return null
-                return (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 14 }}>
-                    {socials.map(({ field, Icon, label }) => (
-                      <a key={label} href={field!} target="_blank" rel="noreferrer" title={label}
-                        style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #e2e5ea', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-                        <Icon />
+          ) : view.type === 'contact' && contactData ? (
+            <div style={{ overflowY: 'auto', padding: '64px 24px 22px' }}>
+              {/* Cabecera centrada */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 23, fontWeight: 800, color: '#0d0f12', letterSpacing: '-.4px' }}>
+                  {contactData.name}{contactData.last_name ? ' ' + contactData.last_name : ''}
+                </div>
+                {(() => {
+                  const cTypes = (contactData.crm_contact_types ?? []).map(r => r.contact_types).filter(Boolean) as { id?: string; name: string; color: string }[]
+                  if (cTypes.length === 0) return null
+                  return (
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
+                      {cTypes.map((t, i) => (
+                        <span key={t.id ?? i} style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: (t.color || '#1B6EF3') + '22', color: t.color || '#1B6EF3' }}>
+                          {t.name}
+                        </span>
+                      ))}
+                    </div>
+                  )
+                })()}
+                {(() => {
+                  const cos = (contactData.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean)
+                  if (!cos.length) return null
+                  return (
+                    <div style={{ marginTop: 8 }}>
+                      {cos.map(co => (
+                        <div key={co!.id} style={{ fontSize: 13, fontWeight: 600, color: '#5a6070' }}>{co!.trade_name || co!.name}</div>
+                      ))}
+                    </div>
+                  )
+                })()}
+
+                {/* Botones de contacto (íconos a color) */}
+                {(contactData.phone || contactData.email) && (
+                  <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 18 }}>
+                    {contactData.phone && (
+                      <button onClick={() => openWhatsapp(contactData.phone, contactData.phone_country)} title="WhatsApp"
+                        style={actionBtnStyle('#25D366')}>
+                        <WaGlyph />
+                      </button>
+                    )}
+                    {contactData.phone && (
+                      <a href={`tel:${contactData.phone}`} title="Llamar" style={actionBtnStyle('#0EA5E9')}>
+                        <Icon name="phone" size={20} color="#fff" />
                       </a>
-                    ))}
+                    )}
+                    {contactData.email && (
+                      <a href={`mailto:${contactData.email}`} title="Email" style={actionBtnStyle('#EA4335')}>
+                        <Icon name="mail" size={20} color="#fff" />
+                      </a>
+                    )}
                   </div>
-                )
-              })()}
-            </div>
+                )}
 
-            {/* RIGHT */}
-            <div style={{ padding: '16px 24px', overflowY: 'auto' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 12 }}>Información</div>
+                {/* Redes sociales */}
+                {(() => {
+                  const socials = [
+                    { field: contactData.instagram, Ico: IgIcon, label: 'Instagram' },
+                    { field: contactData.linkedin,  Ico: LiIcon, label: 'LinkedIn'  },
+                    { field: contactData.facebook,  Ico: FbIcon, label: 'Facebook'  },
+                    { field: contactData.tiktok,    Ico: TkIcon, label: 'TikTok'    },
+                    { field: contactData.youtube,   Ico: YtIcon, label: 'YouTube'   },
+                    { field: contactData.x,         Ico: XIcon,  label: 'X'         },
+                  ].filter(s => !!s.field)
+                  if (!socials.length) return null
+                  return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 14 }}>
+                      {socials.map(({ field, Ico, label }) => (
+                        <a key={label} href={field!} target="_blank" rel="noreferrer" title={label}
+                          style={{ width: 38, height: 38, borderRadius: 10, border: '1px solid #e2e5ea', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+                          <Ico />
+                        </a>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* Información */}
+              <div style={{ height: 1, background: '#E2E5EA', margin: '20px 0 16px' }} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {contactData.cedula && (
-                  <VCardRow icon="idCard" color="#5a6070" bg="#F4F5F7" label="Cédula">
+                  <VCardRow icon="idCard" color="#5a6070" label="Cédula">
                     {contactData.cedula}
                     {contactData.cedula_tipo && <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 6 }}>{contactData.cedula_tipo}</span>}
                   </VCardRow>
                 )}
                 {contactData.birth_date && (
-                  <VCardRow icon="cake" color="#D97706" bg="#FEF3C7" label="Nacimiento">{formatDateEsCR(contactData.birth_date)}</VCardRow>
+                  <VCardRow icon="cake" color="#D97706" label="Nacimiento">{formatDateEsCR(contactData.birth_date)}</VCardRow>
                 )}
                 {contactData.phone && (
-                  <VCardRow icon="smartphone" color="#128C48" bg="#E7F7EE" label="Teléfono">{contactData.phone}</VCardRow>
+                  <VCardRow icon="smartphone" color="#128C48" label="Teléfono">{contactData.phone}</VCardRow>
                 )}
                 {contactData.phone_alt && (
-                  <VCardRow icon="phone" color="#16A34A" bg="#F0FDF4" label="Teléfono alternativo">{contactData.phone_alt}</VCardRow>
+                  <VCardRow icon="phone" color="#16A34A" label="Teléfono alternativo">{contactData.phone_alt}</VCardRow>
                 )}
                 {contactData.email && (
-                  <VCardRow icon="mail" color="#1B6EF3" bg="#EEF4FF" label="Email">
+                  <VCardRow icon="mail" color="#1B6EF3" label="Email">
                     <a href={`mailto:${contactData.email}`} style={{ fontSize: 14, color: '#1B6EF3', textDecoration: 'none' }}>{contactData.email}</a>
                   </VCardRow>
                 )}
                 {(contactData.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean).map(co => (
-                  <VCardRow key={co!.id} icon="building" color="#8a7a4a" bg="#F5F5F0" label="Empresa">
+                  <VCardRow key={co!.id} icon="building" color="#8a7a4a" label="Empresa">
                     <div>{co!.trade_name || co!.name}</div>
                     {co!.trade_name && <div style={{ fontSize: 12, color: '#5a6070' }}>{co!.name}</div>}
                     {co!.cedula_juridica && <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>{co!.cedula_juridica}</div>}
                   </VCardRow>
                 ))}
                 {contactData.contact_sources?.name && (
-                  <VCardRow icon="broadcast" color="#D97706" bg="#FFF7ED" label="Fuente">{contactData.contact_sources.name}</VCardRow>
+                  <VCardRow icon="broadcast" color="#D97706" label="Fuente">{contactData.contact_sources.name}</VCardRow>
                 )}
               </div>
 
@@ -350,43 +349,37 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
                   </div>
                 </>
               )}
-            </div>
-          </div>
 
-        ) : view.type === 'company' && companyData ? (
-          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '220px 1fr', overflow: 'hidden' }}>
-
-            {/* LEFT */}
-            <div style={{ width: 220, background: 'rgba(244,245,247,.5)', borderRight: '1px solid rgba(226,229,234,.7)', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
-              {(() => {
-                const ac = nameToColor(companyData.trade_name || companyData.name)
-                return (
-                  <div style={{ width: 120, height: 120, borderRadius: 24, background: ac + '20', border: `3px solid ${ac}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 14, fontSize: 36, fontWeight: 800, color: ac, letterSpacing: '-1px' }}>
-                    {coInitials(companyData.trade_name || companyData.name)}
-                  </div>
-                )
-              })()}
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#0d0f12', textAlign: 'center', marginBottom: 4 }}>
-                {companyData.trade_name || companyData.name}
+              <div style={{ textAlign: 'center', marginTop: 20 }}>
+                <a href={`/admin/clientes?id=${view.id}`} target="_blank"
+                  style={{ fontSize: 13, fontWeight: 600, color: '#5a6070', textDecoration: 'none' }}>Abrir en CRM ↗</a>
               </div>
-              {companyData.trade_name && (
-                <div style={{ fontSize: 13, color: '#9ca3af', textAlign: 'center', marginBottom: 8 }}>{companyData.name}</div>
-              )}
-              <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: '#F59E0B22', color: '#D97706' }}>Jurídico</span>
             </div>
 
-            {/* RIGHT */}
-            <div style={{ padding: '16px 24px', overflowY: 'auto' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 12 }}>Información</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+          ) : view.type === 'company' && companyData ? (
+            <div style={{ overflowY: 'auto', padding: '64px 24px 22px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 23, fontWeight: 800, color: '#0d0f12', letterSpacing: '-.4px' }}>
+                  {companyData.trade_name || companyData.name}
+                </div>
+                {companyData.trade_name && (
+                  <div style={{ fontSize: 13, color: '#9ca3af', marginTop: 2 }}>{companyData.name}</div>
+                )}
+                <div style={{ marginTop: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: '#F59E0B22', color: '#D97706' }}>Jurídico</span>
+                </div>
+              </div>
+
+              <div style={{ height: 1, background: '#E2E5EA', margin: '20px 0 16px' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {companyData.cedula_juridica && (
-                  <VCardRow icon="idCard" color="#5a6070" bg="#F4F5F7" label="Cédula jurídica">{companyData.cedula_juridica}</VCardRow>
+                  <VCardRow icon="idCard" color="#5a6070" label="Cédula jurídica">{companyData.cedula_juridica}</VCardRow>
                 )}
               </div>
 
               {compContacts.length > 0 && (
                 <>
-                  <div style={{ height: 1, background: '#E2E5EA', margin: '0 0 16px' }} />
+                  <div style={{ height: 1, background: '#E2E5EA', margin: '16px 0' }} />
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 10 }}>
                     Personas físicas ({compContacts.length})
                   </div>
@@ -409,12 +402,21 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
                   </div>
                 </>
               )}
+
+              <div style={{ textAlign: 'center', marginTop: 20 }}>
+                <a href={`/admin/empresas?id=${view.id}`} target="_blank"
+                  style={{ fontSize: 13, fontWeight: 600, color: '#5a6070', textDecoration: 'none' }}>Abrir en CRM ↗</a>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </div>
   )
+}
+
+function actionBtnStyle(bg: string): React.CSSProperties {
+  return { width: 46, height: 46, borderRadius: 14, background: bg, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', boxShadow: `0 4px 12px ${bg}55` }
 }
 
 function VCardRow({ icon, color, label, children }: { icon: IconName; color: string; bg?: string; label: string; children: React.ReactNode }) {

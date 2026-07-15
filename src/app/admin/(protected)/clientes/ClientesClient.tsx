@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, type CSSProperties } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { COUNTRIES } from '@/data/countries'
 import ContactForm from '@/components/crm/ContactForm'
 import { getMembership } from '@/lib/membership'
-import { glass, glassScrim } from '@/lib/theme'
+import { glassScrim } from '@/lib/theme'
 import { Icon } from '@/lib/icons'
 import ContactVCardModal, { type VCardViewType } from '../propiedades/ContactVCardModal'
 import PageHeader from '@/components/admin/PageHeader'
@@ -171,6 +171,10 @@ const XIcon = () => (
     <path d="M17.75 4h-2.3L12 8.5 8.8 4H4l5.25 7L4 20h2.3L10 15l3.5 5H18l-5.5-7.5L17.75 4z" fill="#fff"/>
   </svg>
 )
+const WaGlyph = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.5A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-2.9-.4-4.2-1.1l-.3-.18-2.85.89.9-2.78-.2-.32A8.2 8.2 0 1 1 12 20.2Zm4.6-6.13c-.25-.13-1.48-.73-1.71-.82-.23-.08-.4-.12-.56.13-.17.25-.64.81-.79.98-.14.16-.29.18-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.66-1.25-1.48-1.4-1.73-.14-.25-.01-.39.11-.51.11-.11.25-.29.37-.44.13-.15.17-.25.25-.42.08-.16.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.42l-.48-.01c-.16 0-.42.06-.64.31-.22.25-.85.83-.85 2.03 0 1.2.87 2.36.99 2.52.12.16 1.71 2.61 4.14 3.66.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.48-.6 1.69-1.19.21-.58.21-1.08.14-1.19-.06-.11-.22-.17-.47-.29Z"/></svg>
+function actionBtnStyle(bg: string): CSSProperties {
+  return { width: 46, height: 46, borderRadius: 14, background: bg, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', boxShadow: `0 4px 12px ${bg}55` }
+}
 const EditIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
@@ -742,62 +746,43 @@ export default function ClientesClient() {
         onClick={e => { if (e.target === e.currentTarget) closeVCard() }}
         style={{ position: 'fixed', inset: 0, ...glassScrim, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: vcardOpen ? 1 : 0, pointerEvents: vcardOpen ? 'all' : 'none', transition: 'opacity .2s' }}>
         <div style={{
-          width: 780, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
-          ...glass(0.8), borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-          boxShadow: '0 20px 60px rgba(0,0,0,.18)',
+          width: 400, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
+          position: 'relative', paddingTop: 54, display: 'flex', flexDirection: 'column',
           transform: vcardOpen ? 'scale(1) translateY(0)' : 'scale(.96) translateY(8px)',
           transition: 'transform .2s',
         }}>
-          {/* VCard Header */}
-          <div style={{ height: 52, background: 'rgba(226,229,234,.5)', borderBottom: '1px solid rgba(205,209,216,.7)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#0d0f12' }}>
-              {vcardData ? `${vcardData.name}${vcardData.last_name ? ' ' + vcardData.last_name : ''}` : ''}
-            </span>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button
-                onClick={() => {
-                  if (!vcardData) return
-                  const id = vcardData.id
-                  closeVCard()
-                  setTimeout(() => openDrawer(id), 200)
-                }}
-                style={{ height: 32, padding: '0 14px', background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                Editar
-              </button>
-              <button
-                onClick={closeVCard}
-                style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #CDD1D8', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: '#5a6070' }}>
-                ✕
-              </button>
-            </div>
-          </div>
+          {/* Avatar (sobresale del cuadro) */}
+          {!vcardLoading && vcardData && (() => {
+            const ac = nameToColor(vcardData.name + (vcardData.last_name ?? ''))
+            return (
+              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 3, width: 108, height: 108, borderRadius: 30, overflow: 'hidden', background: vcardData.photo_url ? '#fff' : ac + '22', border: '4px solid #fff', boxShadow: '0 8px 22px rgba(0,0,0,.20)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {vcardData.photo_url
+                  ? <img src={vcardData.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ fontSize: 38, fontWeight: 800, color: ac, letterSpacing: '-1px' }}>{getInitials(vcardData.name, vcardData.last_name)}</span>}
+              </div>
+            )
+          })()}
 
-          {/* VCard Body */}
+          {/* Cerrar */}
+          <button onClick={closeVCard}
+            style={{ position: 'absolute', top: 66, right: 14, zIndex: 4, width: 30, height: 30, borderRadius: '50%', border: '1px solid #E2E5EA', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: '#5a6070' }}>
+            ✕
+          </button>
+
+          {/* Cuadro blanco */}
+          <div style={{ background: '#fff', borderRadius: 22, boxShadow: '0 20px 60px rgba(0,0,0,.18)', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {vcardLoading ? (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>Cargando…</div>
+            <div style={{ minHeight: 220, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: 14 }}>Cargando…</div>
           ) : vcardData ? (
-            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '220px 1fr', overflow: 'hidden' }}>
+            <div style={{ overflowY: 'auto', padding: '64px 24px 22px' }}>
 
-              {/* LEFT column */}
-              <div style={{ width: 220, background: 'rgba(244,245,247,.5)', borderRight: '1px solid rgba(226,229,234,.7)', padding: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
-                {/* Avatar */}
-                {(() => {
-                  const ac = nameToColor(vcardData.name + (vcardData.last_name ?? ''))
-                  return (
-                    <div style={{ width: 120, height: 120, borderRadius: '50%', overflow: 'hidden', background: vcardData.photo_url ? 'transparent' : ac + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginBottom: 14, border: `3px solid ${ac}44` }}>
-                      {vcardData.photo_url
-                        ? <img src={vcardData.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ fontSize: 40, fontWeight: 800, color: ac, letterSpacing: '-1px' }}>{getInitials(vcardData.name, vcardData.last_name)}</span>}
-                    </div>
-                  )
-                })()}
-                {/* Name */}
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#0d0f12', textAlign: 'center', marginBottom: 8 }}>
+              {/* Cabecera centrada */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 23, fontWeight: 800, color: '#0d0f12', letterSpacing: '-.4px' }}>
                   {vcardData.name}{vcardData.last_name ? ' ' + vcardData.last_name : ''}
                 </div>
-                {/* Type badges (múltiples) */}
                 {contactTypeList(vcardData.crm_contact_types).length > 0 && (
-                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
                     {contactTypeList(vcardData.crm_contact_types).map((t, i) => (
                       <span key={t.id ?? i} style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: (t.color || '#1B6EF3') + '22', color: t.color || '#1B6EF3' }}>
                         {t.name}
@@ -805,57 +790,56 @@ export default function ClientesClient() {
                     ))}
                   </div>
                 )}
-                {/* Companies */}
                 {(() => {
                   const cos = (vcardData.crm_contact_companies ?? []).map(r => r.crm_companies).filter(Boolean)
                   if (cos.length === 0) return null
                   return (
-                    <div style={{ textAlign: 'center', marginBottom: 10, width: '100%' }}>
+                    <div style={{ marginTop: 8 }}>
                       {cos.map(co => (
-                        <div key={co!.id} style={{ marginBottom: 4 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#5a6070' }}>{co!.trade_name || co!.name}</div>
-                          {co!.trade_name && <div style={{ fontSize: 11, color: '#9ca3af' }}>{co!.name}</div>}
-                          {co!.cedula_juridica && <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>{co!.cedula_juridica}</div>}
-                        </div>
+                        <div key={co!.id} style={{ fontSize: 13, fontWeight: 600, color: '#5a6070' }}>{co!.trade_name || co!.name}</div>
                       ))}
                     </div>
                   )
                 })()}
-                {/* Action buttons */}
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 7, marginTop: 14 }}>
-                  {vcardData.phone && (
-                    <button
-                      onClick={() => openWhatsapp(vcardData.phone, vcardData.phone_country)}
-                      style={{ width: '100%', height: 36, background: '#128C48', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                      WhatsApp
-                    </button>
-                  )}
-                  {vcardData.email && (
-                    <button
-                      onClick={() => { window.location.href = `mailto:${vcardData.email}` }}
-                      style={{ width: '100%', height: 36, background: '#1B6EF3', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                      Email
-                    </button>
-                  )}
-                </div>
-                {/* Social icons */}
+
+                {/* Botones de contacto (íconos a color) */}
+                {(vcardData.phone || vcardData.email) && (
+                  <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 18 }}>
+                    {vcardData.phone && (
+                      <button onClick={() => openWhatsapp(vcardData.phone, vcardData.phone_country)} title="WhatsApp" style={actionBtnStyle('#25D366')}>
+                        <WaGlyph />
+                      </button>
+                    )}
+                    {vcardData.phone && (
+                      <a href={`tel:${vcardData.phone}`} title="Llamar" style={actionBtnStyle('#0EA5E9')}>
+                        <Icon name="phone" size={20} color="#fff" />
+                      </a>
+                    )}
+                    {vcardData.email && (
+                      <a href={`mailto:${vcardData.email}`} title="Email" style={actionBtnStyle('#EA4335')}>
+                        <Icon name="mail" size={20} color="#fff" />
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {/* Redes sociales */}
                 {(() => {
                   const socials = [
-                    { field: vcardData.instagram, Icon: IgIcon,  label: 'Instagram' },
-                    { field: vcardData.linkedin,  Icon: LiIcon,  label: 'LinkedIn'  },
-                    { field: vcardData.facebook,  Icon: FbIcon,  label: 'Facebook'  },
-                    { field: vcardData.tiktok,    Icon: TkIcon,  label: 'TikTok'    },
-                    { field: vcardData.youtube,   Icon: YtIcon,  label: 'YouTube'   },
-                    { field: vcardData.x,         Icon: XIcon,   label: 'X'         },
+                    { field: vcardData.instagram, Ico: IgIcon,  label: 'Instagram' },
+                    { field: vcardData.linkedin,  Ico: LiIcon,  label: 'LinkedIn'  },
+                    { field: vcardData.facebook,  Ico: FbIcon,  label: 'Facebook'  },
+                    { field: vcardData.tiktok,    Ico: TkIcon,  label: 'TikTok'    },
+                    { field: vcardData.youtube,   Ico: YtIcon,  label: 'YouTube'   },
+                    { field: vcardData.x,         Ico: XIcon,   label: 'X'         },
                   ].filter(s => !!s.field)
                   if (socials.length === 0) return null
                   return (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 14 }}>
-                      {socials.map(({ field, Icon, label }) => (
-                        <a key={label} href={field!} target="_blank" rel="noreferrer"
-                          title={label}
-                          style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid #e2e5ea', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-                          <Icon />
+                      {socials.map(({ field, Ico, label }) => (
+                        <a key={label} href={field!} target="_blank" rel="noreferrer" title={label}
+                          style={{ width: 38, height: 38, borderRadius: 10, border: '1px solid #e2e5ea', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+                          <Ico />
                         </a>
                       ))}
                     </div>
@@ -863,10 +847,8 @@ export default function ClientesClient() {
                 })()}
               </div>
 
-              {/* RIGHT column */}
-              <div style={{ padding: '16px 24px', overflowY: 'auto' }}>
-                {/* Información section */}
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 12 }}>Información</div>
+              {/* Información */}
+              <div style={{ height: 1, background: '#E2E5EA', margin: '20px 0 16px' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {/* Cédula */}
                   {vcardData.cedula && (
@@ -1013,9 +995,18 @@ export default function ClientesClient() {
                     </div>
                   </>
                 )}
-              </div>
+
+                {/* Editar */}
+                <div style={{ textAlign: 'center', marginTop: 20 }}>
+                  <button
+                    onClick={() => { if (!vcardData) return; const id = vcardData.id; closeVCard(); setTimeout(() => openDrawer(id), 200) }}
+                    style={{ height: 40, padding: '0 28px', background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 20, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Editar
+                  </button>
+                </div>
             </div>
           ) : null}
+          </div>
         </div>
       </div>
 
