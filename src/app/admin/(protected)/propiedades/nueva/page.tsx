@@ -330,7 +330,7 @@ export default function NuevaPropiedadPage() {
     const sb   = createClient()
     const term = `%${q.trim()}%`
     const [{ data: contacts }, { data: companies }] = await Promise.all([
-      sb.from('crm_contacts').select('id,name,last_name,cedula,email').eq('tenant_id', tenantId)
+      sb.from('crm_contacts').select('id,name,last_name,cedula,email').eq('tenant_id', tenantId).eq('active', true)
         .or(`name.ilike.${term},last_name.ilike.${term},cedula.ilike.${term}`).limit(5),
       sb.from('crm_companies').select('id,name,trade_name,cedula_juridica').eq('tenant_id', tenantId)
         .or(`name.ilike.${term},trade_name.ilike.${term},cedula_juridica.ilike.${term}`).limit(5),

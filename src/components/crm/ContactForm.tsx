@@ -181,7 +181,7 @@ function ReferrerPicker({ tenantId, defaultCountry, value, onChange, placeholder
       const [{ data: users }, { data: contacts }] = await Promise.all([
         sb.from('users').select('id,name').eq('tenant_id', tenantId).ilike('name', `%${val}%`).order('name').limit(6),
         sb.from('crm_contacts').select('id,name,last_name,cedula,crm_contact_types(contact_types(name))')
-          .eq('tenant_id', tenantId).or(`name.ilike.%${val}%,last_name.ilike.%${val}%`).order('name').limit(12),
+          .eq('tenant_id', tenantId).eq('active', true).or(`name.ilike.%${val}%,last_name.ilike.%${val}%`).order('name').limit(12),
       ])
       const g: { header: string; items: Referral[] }[] = []
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

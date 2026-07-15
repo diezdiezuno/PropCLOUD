@@ -64,7 +64,7 @@ export default function GlobalSearch({ tenantId }: { tenantId: string }) {
 
     const [contacts, companies, props] = await Promise.all([
       want('contact')
-        ? sb.from('crm_contacts').select('id, name, last_name, email, cedula').eq('tenant_id', tenantId)
+        ? sb.from('crm_contacts').select('id, name, last_name, email, cedula').eq('tenant_id', tenantId).eq('active', true)
             .or(`name.ilike.${term},last_name.ilike.${term},email.ilike.${term},cedula.ilike.${term}`).limit(8)
         : Promise.resolve({ data: [] }),
       want('company')
