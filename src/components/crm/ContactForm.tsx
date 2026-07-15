@@ -164,6 +164,7 @@ function ReferrerPicker({ tenantId, defaultCountry, value, onChange, placeholder
   /* Mini-form de creación (nombre + email/teléfono con código de país) */
   const [creating, setCreating] = useState(false)
   const [cName,    setCName]    = useState('')
+  const [cLast,    setCLast]    = useState('')
   const [cEmail,   setCEmail]   = useState('')
   const [cPhone,   setCPhone]   = useState('')
   const [cCountry, setCCountry] = useState(defaultCountry || 'CR')
@@ -203,7 +204,10 @@ function ReferrerPicker({ tenantId, defaultCountry, value, onChange, placeholder
   }
 
   function startCreate() {
-    setCName(q.trim()); setCEmail(''); setCPhone(''); setCCountry(defaultCountry || 'CR')
+    // Prellenar: primera palabra → nombre, resto → apellidos
+    const parts = q.trim().split(/\s+/)
+    setCName(parts[0] ?? ''); setCLast(parts.slice(1).join(' '))
+    setCEmail(''); setCPhone(''); setCCountry(defaultCountry || 'CR')
     setCreating(true); setOpen(false)
   }
   async function createContact() {
@@ -213,14 +217,14 @@ function ReferrerPicker({ tenantId, defaultCountry, value, onChange, placeholder
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (createClient() as any).from('crm_contacts')
       .insert({
-        tenant_id: tenantId, name: nm, active: true,
+        tenant_id: tenantId, name: nm, last_name: cLast.trim() || null, active: true,
         email: cEmail.trim() || null,
         phone: cPhone.trim() || null,
         phone_country: cCountry,
-      }).select('id,name').single()
+      }).select('id,name,last_name').single()
     setCSaving(false)
     if (data) {
-      onChange({ kind: 'contact', id: data.id, name: data.name, subtitle: cPhone.trim() || cEmail.trim() || undefined })
+      onChange({ kind: 'contact', id: data.id, name: [data.name, data.last_name].filter(Boolean).join(' '), subtitle: cPhone.trim() || cEmail.trim() || undefined })
       setQ(''); setGroups([]); setOpen(false); setCreating(false)
     }
   }
@@ -288,10 +292,17 @@ function ReferrerPicker({ tenantId, defaultCountry, value, onChange, placeholder
       {creating && (
         <div style={{ marginTop: 8, padding: 12, background: '#F9FAFB', borderRadius: 10, border: '1px solid #e2e5ea' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div>
-              <FieldLabel>Nombre</FieldLabel>
-              <input type="text" value={cName} onChange={e => setCName(e.target.value)} autoFocus
-                style={inputSt} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <FieldLabel>Nombre</FieldLabel>
+                <input type="text" value={cName} onChange={e => setCName(e.target.value)} autoFocus
+                  style={inputSt} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <FieldLabel>Apellidos</FieldLabel>
+                <input type="text" value={cLast} onChange={e => setCLast(e.target.value)}
+                  style={inputSt} />
+              </div>
             </div>
             <div>
               <FieldLabel>Email</FieldLabel>
