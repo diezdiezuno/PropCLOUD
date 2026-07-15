@@ -13,11 +13,11 @@ interface SearchResult { type: Kind; id: string; title: string; subtitle: string
 
 const SCOPES: { key: Scope; label: string }[] = [
   { key: 'all',      label: 'Todo'        },
-  { key: 'contact',  label: 'Clientes'    },
+  { key: 'contact',  label: 'Contactos'   },
   { key: 'company',  label: 'Empresas'    },
   { key: 'property', label: 'Propiedades' },
 ]
-const SECTION: Record<Kind, string> = { contact: 'Clientes', company: 'Empresas', property: 'Propiedades' }
+const SECTION: Record<Kind, string> = { contact: 'Contactos', company: 'Empresas', property: 'Propiedades' }
 const ICONS:   Record<Kind, string> = { contact: '👤', company: '🏢', property: '🏘️' }
 const ORDER: Kind[] = ['contact', 'company', 'property']
 
@@ -79,7 +79,7 @@ export default function GlobalSearch({ tenantId }: { tenantId: string }) {
 
     const out: SearchResult[] = []
     for (const c of (contacts.data ?? []) as Record<string, string>[])
-      out.push({ type: 'contact', id: c.id, title: [c.name, c.last_name].filter(Boolean).join(' '), subtitle: c.email ?? c.cedula ?? 'Cliente', href: `/admin/clientes?id=${c.id}` })
+      out.push({ type: 'contact', id: c.id, title: [c.name, c.last_name].filter(Boolean).join(' '), subtitle: c.email ?? c.cedula ?? 'Contacto', href: `/admin/contactos?id=${c.id}` })
     for (const co of (companies.data ?? []) as Record<string, string>[])
       out.push({ type: 'company', id: co.id, title: co.trade_name || co.name, subtitle: co.trade_name ? co.name : (co.cedula_juridica ?? 'Empresa'), href: `/admin/empresas?id=${co.id}` })
     for (const p of (props.data ?? []) as Record<string, string>[])
@@ -152,7 +152,7 @@ export default function GlobalSearch({ tenantId }: { tenantId: string }) {
       <div style={{ position: 'relative', flex: 1 }}>
         <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#aaa', pointerEvents: 'none' }}>🔍</span>
         <input ref={inputRef} value={query} onChange={e => onChange(e.target.value)} onFocus={() => query.length >= 2 && setOpen(true)}
-          placeholder="Buscar clientes, empresas, propiedades…"
+          placeholder="Buscar contactos, empresas, propiedades…"
           style={{ width: '100%', height: '100%', paddingLeft: 36, paddingRight: 60, border: 'none', borderRadius: '0 10px 10px 0', fontSize: 13, color: '#111', background: 'transparent', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
         <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: '#bbb', background: '#f0f0f0', borderRadius: 5, padding: '2px 5px', pointerEvents: 'none', whiteSpace: 'nowrap' }}>⌘K</span>
 

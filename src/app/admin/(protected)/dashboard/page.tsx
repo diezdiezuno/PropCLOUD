@@ -250,11 +250,11 @@ export default function PerfilPage() {
           )}
       </div>
 
-      {/* ── Mis Clientes ──────────────────────────────────────── */}
+      {/* ── Mis Contactos ──────────────────────────────────────── */}
       <div style={{ ...card, marginBottom: 20 }}>
-        <h2 style={sectionTitle}>Mis Clientes</h2>
+        <h2 style={sectionTitle}>Mis Contactos</h2>
         {clients.length === 0
-          ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin clientes asignados.</p>
+          ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin contactos asignados.</p>
           : (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {clients.map(c => (

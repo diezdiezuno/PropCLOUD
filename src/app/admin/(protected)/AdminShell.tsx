@@ -45,7 +45,7 @@ const NAV_GROUPS = [
     icon:  ICON.crm,
     items: [
       { href: '/admin/propiedades', icon: ICON.home,     label: 'Propiedades' },
-      { href: '/admin/clientes',   icon: ICON.user,     label: 'Clientes'   },
+      { href: '/admin/contactos',  icon: ICON.user,     label: 'Contactos'  },
       { href: '/admin/empresas',   icon: ICON.building, label: 'Empresas'   },
       { href: '/admin/leads',      icon: ICON.inbox,    label: 'Leads'      },
     ],
@@ -70,7 +70,7 @@ const PROPTOOLS_CATALOG: Record<string, { icon: ReactNode; label: string; href: 
 }
 
 // Rutas de listado que usan el ancho completo de la pantalla
-const WIDE_ROUTES = ['/admin/dashboard', '/admin/clientes', '/admin/empresas', '/admin/leads', '/admin/propiedades']
+const WIDE_ROUTES = ['/admin/dashboard', '/admin/contactos', '/admin/empresas', '/admin/leads', '/admin/propiedades']
 
 const SIDEBAR_W_OPEN   = 216
 const SIDEBAR_W_CLOSED = 72
@@ -120,7 +120,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   // (Los datos igual están protegidos por RLS; esto es solo UI.)
   useEffect(() => {
     if (role !== 'agent') return
-    const allowed = ['/admin/propiedades', '/admin/clientes', '/admin/empresas', '/admin/leads', '/admin/tools/', '/admin/dashboard']
+    const allowed = ['/admin/propiedades', '/admin/contactos', '/admin/empresas', '/admin/leads', '/admin/tools/', '/admin/dashboard']
     const ok = allowed.some(p => pathname.startsWith(p)) && !pathname.startsWith('/admin/tools/admin')
     if (!ok) router.replace('/admin/dashboard')
   }, [role, pathname, router])
@@ -162,7 +162,7 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   }, [])
 
   const QUICK_ADD = [
-    { icon: ICON.user,     label: 'Nuevo cliente',    href: '/admin/clientes?new=1'   },
+    { icon: ICON.user,     label: 'Nuevo contacto',   href: '/admin/contactos?new=1'  },
     { icon: ICON.building, label: 'Nueva empresa',    href: '/admin/empresas?new=1'   },
     { icon: ICON.home,     label: 'Nueva propiedad',  href: '/admin/propiedades/nueva' },
   ]

@@ -25,9 +25,9 @@ export default function CrmConfigPage() {
 
   return (
     <div style={{ maxWidth: 640 }}>
-      <PageHeader title={<>Configuración CRM</>} subtitle={<>Taxonomías de clientes y propiedades.</>} />
+      <PageHeader title={<>Configuración CRM</>} subtitle={<>Taxonomías de contactos y propiedades.</>} />
 
-      <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 12px' }}>Clientes</h2>
+      <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 12px' }}>Contactos</h2>
       <div style={{ background: '#fff', borderRadius: 12, padding: '22px 24px', border: '1px solid #ebebeb', marginBottom: 28 }}>
         {tenantId && <TaxonomyManager tenantId={tenantId} canEdit={isAdmin} />}
       </div>

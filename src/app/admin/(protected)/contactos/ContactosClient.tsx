@@ -187,7 +187,7 @@ const TrashIcon = () => (
 )
 
 // ── Component ─────────────────────────────────────────────────
-export default function ClientesClient() {
+export default function ContactosClient() {
   const searchParams = useSearchParams()
   const router       = useRouter()
   const isNew        = searchParams.get('new')
@@ -342,7 +342,7 @@ export default function ClientesClient() {
   useEffect(() => {
     if (isNew === '1' && tenantId) {
       openDrawer(null)
-      router.replace('/admin/clientes')
+      router.replace('/admin/contactos')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew, tenantId])
@@ -352,7 +352,7 @@ export default function ClientesClient() {
   useEffect(() => {
     if (idParam && tenantId) {
       openVCard(idParam)
-      router.replace('/admin/clientes')
+      router.replace('/admin/contactos')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idParam, tenantId])
@@ -436,7 +436,7 @@ export default function ClientesClient() {
     const { error } = await (createClient() as any).from('crm_contacts').update({ active: false }).eq('id', id)
     setDeleting(null); setConfirmDelete(null)
     if (error) { showToast('Error al eliminar', 'error'); return }
-    showToast('Cliente eliminado', 'success')
+    showToast('Contacto eliminado', 'success')
     await loadContacts(tenantId, search, typeFilter, sourceFilter)
   }
 
@@ -558,12 +558,12 @@ export default function ClientesClient() {
   return (
     <>
       {/* ── Header ───────────────────────────────────────── */}
-      <PageHeader title="Clientes"
-        subtitle={contacts.length === 0 && !hasFilters ? 'Sin clientes aún.' : `${contacts.length} cliente${contacts.length !== 1 ? 's' : ''}`}
+      <PageHeader title="Contactos"
+        subtitle={contacts.length === 0 && !hasFilters ? 'Sin contactos aún.' : `${contacts.length} contacto${contacts.length !== 1 ? 's' : ''}`}
         right={
           <button onClick={() => openDrawer(null)}
             style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-            + Nuevo cliente
+            + Nuevo contacto
           </button>
         } />
 
@@ -607,15 +607,15 @@ export default function ClientesClient() {
         <div style={{ background: '#fff', borderRadius: 12, padding: '60px 24px', border: '1px solid #ebebeb', textAlign: 'center' }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>👥</div>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: '#5a6070', margin: '0 0 8px' }}>
-            {hasFilters ? 'Sin resultados' : 'Sin clientes aún'}
+            {hasFilters ? 'Sin resultados' : 'Sin contactos aún'}
           </h3>
           <p style={{ fontSize: 14, color: '#9ca3af', margin: '0 0 20px' }}>
-            {hasFilters ? 'Probá otra búsqueda o cambiá los filtros.' : 'Agregá el primer cliente del CRM.'}
+            {hasFilters ? 'Probá otra búsqueda o cambiá los filtros.' : 'Agregá el primer contacto del CRM.'}
           </p>
           {!hasFilters && (
             <button onClick={() => openDrawer(null)}
               style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-              + Nuevo cliente
+              + Nuevo contacto
             </button>
           )}
         </div>
@@ -1019,7 +1019,7 @@ export default function ClientesClient() {
 
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e5ea', flexShrink: 0 }}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: '#0d0f12' }}>{editingId ? 'Editar cliente' : 'Nuevo cliente'}</span>
+            <span style={{ fontSize: 17, fontWeight: 700, color: '#0d0f12' }}>{editingId ? 'Editar contacto' : 'Nuevo contacto'}</span>
             <button onClick={closeDrawer} style={{ width: 32, height: 32, border: 'none', background: 'none', cursor: 'pointer', fontSize: 18, color: '#5a6070', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </div>
 
@@ -1033,7 +1033,7 @@ export default function ClientesClient() {
               isAdmin={isAdmin}
               editId={editingId}
               onSaved={async () => {
-                showToast(editingId ? 'Cliente actualizado ✓' : 'Cliente creado ✓', 'success')
+                showToast(editingId ? 'Contacto actualizado ✓' : 'Contacto creado ✓', 'success')
                 closeDrawer()
                 await loadContacts(tenantId, search, typeFilter, sourceFilter)
               }}

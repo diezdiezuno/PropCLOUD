@@ -37,7 +37,7 @@ interface Props {
   isAdmin?:     boolean       // muestra el botón "+" para tipo/fuente
   editId?:      string | null // null/undefined = crear; id = editar
   initialName?: string        // prefill de nombre al crear
-  submitLabel?: string        // texto del botón al crear (default "Guardar cliente")
+  submitLabel?: string        // texto del botón al crear (default "Guardar contacto")
   onSaved:      (r: ContactSavedResult) => void
   onCancel:     () => void
 }
@@ -470,14 +470,14 @@ export default function ContactForm({
         .eq('tenant_id', tenantId).eq('cedula', cedula.trim()).eq('active', true)
       if (editId) q = q.neq('id', editId)
       const { data } = await q.limit(1)
-      if (data?.[0]) { setCedulaDupe(data[0]); setSaving(false); setError('Ya existe un cliente con esta cédula.'); return }
+      if (data?.[0]) { setCedulaDupe(data[0]); setSaving(false); setError('Ya existe un contacto con esta cédula.'); return }
     }
     if (email.trim()) {
       let q = sb0.from('crm_contacts').select('id,name,last_name')
         .eq('tenant_id', tenantId).eq('email', email.trim()).eq('active', true)
       if (editId) q = q.neq('id', editId)
       const { data } = await q.limit(1)
-      if (data?.[0]) { setEmailDupe(data[0]); setSaving(false); setError('Ya existe un cliente con este email.'); return }
+      if (data?.[0]) { setEmailDupe(data[0]); setSaving(false); setError('Ya existe un contacto con este email.'); return }
     }
 
     const supabase = createClient()
@@ -578,7 +578,7 @@ export default function ContactForm({
   }
 
   const showPhoto = photoPreview || photoUrl
-  const saveLabel = saving ? 'Guardando…' : editId ? 'Actualizar' : (submitLabel ?? 'Guardar cliente')
+  const saveLabel = saving ? 'Guardando…' : editId ? 'Actualizar' : (submitLabel ?? 'Guardar contacto')
 
   /* ── Render ──────────────────────────────────────────────── */
   return (
@@ -887,7 +887,7 @@ export default function ContactForm({
         {/* ── COMENTARIOS ──────────────────────────────────── */}
         <SectionTitle>Comentarios</SectionTitle>
         <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-          placeholder="Notas internas, preferencias, contexto del cliente…"
+          placeholder="Notas internas, preferencias, contexto del contacto…"
           style={{ ...inputSt, height: 'auto', padding: '8px 12px', resize: 'vertical', lineHeight: 1.5, marginBottom: 4 }} />
 
         {/* ── DOCUMENTOS ───────────────────────────────────── */}

@@ -237,7 +237,7 @@ export default function NewOwnerModal({ type, tenantId, country, initial, onCrea
     return () => window.removeEventListener('keydown', handle)
   }, [onClose])
 
-  const title = type === 'contact' ? 'Nuevo cliente' : 'Nueva empresa'
+  const title = type === 'contact' ? 'Nuevo contacto' : 'Nueva empresa'
 
   return (
     <div
@@ -263,7 +263,7 @@ export default function NewOwnerModal({ type, tenantId, country, initial, onCrea
               tenantId={tenantId}
               country={country}
               initialName={initial}
-              submitLabel="Registrar cliente"
+              submitLabel="Registrar contacto"
               onSaved={r => onCreated({
                 type:     'contact',
                 id:       r.id,

@@ -351,7 +351,7 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
               )}
 
               <div style={{ textAlign: 'center', marginTop: 20 }}>
-                <a href={`/admin/clientes?id=${view.id}`} target="_blank"
+                <a href={`/admin/contactos?id=${view.id}`} target="_blank"
                   style={{ fontSize: 13, fontWeight: 600, color: '#5a6070', textDecoration: 'none' }}>Abrir en CRM ↗</a>
               </div>
             </div>

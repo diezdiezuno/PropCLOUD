@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
       { source: "/tools/:slug/", destination: "/tools/:slug/index.html" },
     ];
   },
+  async redirects() {
+    return [
+      // Clientes → Contactos (rename). Next preserva el query string.
+      { source: "/admin/clientes", destination: "/admin/contactos", permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

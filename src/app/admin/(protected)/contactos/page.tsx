@@ -1,10 +1,10 @@
 import { Suspense } from 'react'
-import ClientesClient from './ClientesClient'
+import ContactosClient from './ContactosClient'
 
-export default function ClientesPage() {
+export default function ContactosPage() {
   return (
     <Suspense fallback={<div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>}>
-      <ClientesClient />
+      <ContactosClient />
     </Suspense>
   )
 }

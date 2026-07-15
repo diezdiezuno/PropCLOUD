@@ -443,7 +443,7 @@ export default function EmpresasClient() {
         [...prev, { id: newId, name: payload.name, trade_name: payload.trade_name ?? null, cedula_juridica: payload.cedula_juridica }]
           .sort((a, b) => a.name.localeCompare(b.name))
       )
-      showToast('Empresa creada ✓ — ahora podés vincular clientes', 'success')
+      showToast('Empresa creada ✓ — ahora podés vincular contactos', 'success')
     }
   }
 
@@ -575,7 +575,7 @@ export default function EmpresasClient() {
               </colgroup>
               <thead>
                 <tr style={{ background: '#f9fafb', color: '#5a6070', textAlign: 'left' }}>
-                  {([['Nombre', 'name'], ['Razón social', 'razon'], ['Cédula jurídica', 'cedula'], ['Clientes', 'count'], ['', null]] as [string, SortKey | null][]).map(([label, key], i) => (
+                  {([['Nombre', 'name'], ['Razón social', 'razon'], ['Cédula jurídica', 'cedula'], ['Contactos', 'count'], ['', null]] as [string, SortKey | null][]).map(([label, key], i) => (
                     <th key={i}
                       onClick={key ? () => toggleSort(key) : undefined}
                       style={{ padding: '9px 12px', fontWeight: 500, position: 'relative', cursor: key ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap', borderRight: i < colWidths.length - 1 ? '1px solid #e5e7eb' : undefined }}>
@@ -614,8 +614,8 @@ export default function EmpresasClient() {
                           {!isConfirming ? (
                             <>
                               <button className="em-btn em-btn-edit" title="Editar" onClick={() => openDrawer(co)}><EditIcon /></button>
-                              <button className="em-btn em-btn-del" title={hasContacts ? `Tiene ${count} cliente${count !== 1 ? 's' : ''} vinculado${count !== 1 ? 's' : ''}` : 'Eliminar'}
-                                onClick={() => hasContacts ? showToast(`No se puede eliminar: tiene ${count} cliente${count !== 1 ? 's' : ''} vinculado${count !== 1 ? 's' : ''}`, 'error') : setConfirmDelete(co.id)}
+                              <button className="em-btn em-btn-del" title={hasContacts ? `Tiene ${count} contacto${count !== 1 ? 's' : ''} vinculado${count !== 1 ? 's' : ''}` : 'Eliminar'}
+                                onClick={() => hasContacts ? showToast(`No se puede eliminar: tiene ${count} contacto${count !== 1 ? 's' : ''} vinculado${count !== 1 ? 's' : ''}`, 'error') : setConfirmDelete(co.id)}
                                 style={{ opacity: hasContacts ? 0.4 : 1, cursor: hasContacts ? 'not-allowed' : 'pointer' }}><TrashIcon /></button>
                             </>
                           ) : (
@@ -765,7 +765,7 @@ export default function EmpresasClient() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10 }}>
                   <span style={{ display: 'flex', color: '#D97706' }}><Icon name="lightbulb" size={18} /></span>
                   <span style={{ fontSize: 13, color: '#92610A' }}>
-                    Guardá la empresa primero para poder vincular clientes.
+                    Guardá la empresa primero para poder vincular contactos.
                   </span>
                 </div>
               ) : (
@@ -778,7 +778,7 @@ export default function EmpresasClient() {
                       </span>
                       <input
                         type="text"
-                        placeholder="Buscar y vincular cliente por nombre o cédula…"
+                        placeholder="Buscar y vincular contacto por nombre o cédula…"
                         value={contactQuery}
                         onChange={e => handleContactQuery(e.target.value)}
                         onFocus={() => { if (contactResults.length > 0) setShowResults(true) }}
@@ -854,7 +854,7 @@ export default function EmpresasClient() {
                   {linkedContacts.length === 0 ? (
                     <div style={{ padding: '20px 16px', background: '#F9FAFB', borderRadius: 10, border: '1px dashed #e2e5ea', textAlign: 'center' }}>
                       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6, color: '#c5cad3' }}><Icon name="users" size={22} /></div>
-                      <div style={{ fontSize: 13, color: '#9ca3af' }}>Sin clientes vinculados aún</div>
+                      <div style={{ fontSize: 13, color: '#9ca3af' }}>Sin contactos vinculados aún</div>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
