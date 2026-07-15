@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-browser'
-import { glass, glassScrim } from '@/lib/theme'
+import { glassScrim } from '@/lib/theme'
 import { Icon, type IconName } from '@/lib/icons'
 
 /* ── Types ───────────────────────────────────────────────────── */
@@ -25,6 +25,7 @@ interface CompanyFull {
 interface LinkedContact {
   id: string; name: string; last_name: string | null; cedula: string | null; photo_url: string | null
 }
+interface OwnedProperty { id: string; title: string | null; crm_status: string | null; status: string | null }
 
 export type VCardViewType = { type: 'contact' | 'company'; id: string }
 
@@ -81,6 +82,7 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
   const [contactData,  setContactData]  = useState<ContactFull | null>(null)
   const [companyData,  setCompanyData]  = useState<CompanyFull | null>(null)
   const [compContacts, setCompContacts] = useState<LinkedContact[]>([])
+  const [properties,   setProperties]   = useState<OwnedProperty[]>([])
   const [loading,      setLoading]      = useState(true)
   const [docSignedUrls, setDocSignedUrls] = useState<Record<string, string>>({})
 
@@ -92,6 +94,12 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
         .select('*, crm_contact_types(contact_types(id,name,color)), contact_sources(name), crm_contact_companies(crm_companies(id,name,trade_name,cedula_juridica))')
         .eq('id', view.id).single()
         .then(({ data }: { data: ContactFull }) => { setContactData(data); setLoading(false) })
+      // Propiedades donde el contacto es dueño/vendedor
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(sb as any).from('properties')
+        .select('id,title,crm_status,status,features')
+        .ilike('features->>owners', `%"type":"contact","id":"${view.id}"%`)
+        .then(({ data }: { data: OwnedProperty[] | null }) => setProperties(data ?? []))
     } else {
       Promise.all([
         sb.from('crm_companies').select('id,name,trade_name,cedula_juridica').eq('id', view.id).single(),
@@ -134,7 +142,7 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
     >
       <div style={{
         width: 780, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
-        ...glass(0.8), borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        background: '#fff', border: '1px solid #ECECF0', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,.18)',
         fontFamily: 'system-ui, sans-serif',
       }}>
@@ -280,6 +288,25 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
                 )}
               </div>
 
+              {properties.length > 0 && (
+                <>
+                  <div style={{ height: 1, background: '#E2E5EA', margin: '16px 0' }} />
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+                    Propiedades ({properties.length})
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {properties.map(p => (
+                      <a key={p.id} href={`/admin/propiedades/${p.id}`} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: '#F9FAFB', borderRadius: 10, border: '1px solid #e2e5ea', textDecoration: 'none' }}>
+                        <span style={{ flexShrink: 0, color: '#5a6070', display: 'flex' }}><Icon name="home" /></span>
+                        <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title || 'Sin título'}</div>
+                        <span style={{ fontSize: 11, color: '#9ca3af', flexShrink: 0 }}>{p.crm_status || p.status}</span>
+                      </a>
+                    ))}
+                  </div>
+                </>
+              )}
+
               {contactData.notes && (
                 <>
                   <div style={{ height: 1, background: '#E2E5EA', margin: '16px 0' }} />
@@ -390,10 +417,10 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
   )
 }
 
-function VCardRow({ icon, color, bg, label, children }: { icon: IconName; color: string; bg: string; label: string; children: React.ReactNode }) {
+function VCardRow({ icon, color, label, children }: { icon: IconName; color: string; bg?: string; label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-      <div style={{ width: 32, height: 32, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color }}><Icon name={icon} /></div>
+      <span style={{ display: 'flex', flexShrink: 0, color, marginTop: 1 }}><Icon name={icon} size={18} /></span>
       <div>
         <div style={{ fontSize: 11, color: '#9ca3af' }}>{label}</div>
         <div style={{ fontSize: 14, color: '#0d0f12' }}>{children}</div>

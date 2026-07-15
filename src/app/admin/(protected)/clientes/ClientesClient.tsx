@@ -743,7 +743,7 @@ export default function ClientesClient() {
         style={{ position: 'fixed', inset: 0, ...glassScrim, zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: vcardOpen ? 1 : 0, pointerEvents: vcardOpen ? 'all' : 'none', transition: 'opacity .2s' }}>
         <div style={{
           width: 780, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 48px)',
-          ...glass(0.8), borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          background: '#fff', border: '1px solid #ECECF0', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column',
           boxShadow: '0 20px 60px rgba(0,0,0,.18)',
           transform: vcardOpen ? 'scale(1) translateY(0)' : 'scale(.96) translateY(8px)',
           transition: 'transform .2s',
@@ -871,7 +871,7 @@ export default function ClientesClient() {
                   {/* Cédula */}
                   {vcardData.cedula && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#5a6070" }}><Icon name="idCard" /></div>
+                      <span style={{ display: 'flex', flexShrink: 0, color: "#5a6070" }}><Icon name="idCard" size={18} /></span>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Cédula</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.cedula}
@@ -883,7 +883,7 @@ export default function ClientesClient() {
                   {/* Nacimiento */}
                   {vcardData.birth_date && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#D97706" }}><Icon name="cake" /></div>
+                      <span style={{ display: 'flex', flexShrink: 0, color: "#D97706" }}><Icon name="cake" size={18} /></span>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Nacimiento</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{formatDateEsCR(vcardData.birth_date)}</div>
@@ -893,7 +893,7 @@ export default function ClientesClient() {
                   {/* Teléfono */}
                   {vcardData.phone && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#E7F7EE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#128C48" }}><Icon name="smartphone" /></div>
+                      <span style={{ display: 'flex', flexShrink: 0, color: "#128C48" }}><Icon name="smartphone" size={18} /></span>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Teléfono</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.phone}</div>
@@ -903,7 +903,7 @@ export default function ClientesClient() {
                   {/* Teléfono alt */}
                   {vcardData.phone_alt && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#16A34A" }}><Icon name="phone" /></div>
+                      <span style={{ display: 'flex', flexShrink: 0, color: "#16A34A" }}><Icon name="phone" size={18} /></span>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Teléfono alternativo</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.phone_alt}</div>
@@ -913,7 +913,7 @@ export default function ClientesClient() {
                   {/* Email */}
                   {vcardData.email && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#1B6EF3" }}><Icon name="mail" /></div>
+                      <span style={{ display: 'flex', flexShrink: 0, color: "#1B6EF3" }}><Icon name="mail" size={18} /></span>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Email</div>
                         <a href={`mailto:${vcardData.email}`} style={{ fontSize: 14, color: '#1B6EF3', textDecoration: 'none' }}>{vcardData.email}</a>
@@ -926,7 +926,7 @@ export default function ClientesClient() {
                     if (cos.length === 0) return null
                     return cos.map(co => (
                       <div key={co!.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F5F5F0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#8a7a4a" }}><Icon name="building" /></div>
+                        <span style={{ display: 'flex', flexShrink: 0, color: "#8a7a4a" }}><Icon name="building" size={18} /></span>
                         <div>
                           <div style={{ fontSize: 11, color: '#9ca3af' }}>Empresa</div>
                           <div style={{ fontSize: 14, color: '#0d0f12' }}>{co!.trade_name || co!.name}</div>
@@ -939,7 +939,7 @@ export default function ClientesClient() {
                   {/* Fuente */}
                   {vcardData.contact_sources?.name && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: "#D97706" }}><Icon name="broadcast" /></div>
+                      <span style={{ display: 'flex', flexShrink: 0, color: "#D97706" }}><Icon name="broadcast" size={18} /></span>
                       <div>
                         <div style={{ fontSize: 11, color: '#9ca3af' }}>Fuente</div>
                         <div style={{ fontSize: 14, color: '#0d0f12' }}>{vcardData.contact_sources.name}</div>
