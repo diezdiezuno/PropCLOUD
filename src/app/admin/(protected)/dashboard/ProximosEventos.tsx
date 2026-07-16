@@ -23,6 +23,7 @@ interface UpcomingItem {
   subtitle?: string
   timeLabel?: string      // hora del evento / días restantes
   urgent?: boolean
+  href?: string           // a dónde lleva el click (si no abre vCard)
   contactId?: string      // para abrir la vCard
   phone?: string | null
   phoneCountry?: string | null
@@ -130,11 +131,33 @@ async function loadCumples(sb: any, userId: string, from: Date, to: Date): Promi
   return out
 }
 
-// ponytail: los contratos aún no existen (falta la tabla `contracts`).
-// Cuando exista, este provider filtra end_date en la ventana + status vigente
-// y devuelve UpcomingItem con urgent=true. El layout no cambia.
-async function loadContratos(): Promise<UpcomingItem[]> {
-  return []
+// Contratos por vencer. Ventana propia y más larga que la del resto: un
+// contrato necesita más anticipación que un cumpleaños, así que mira al
+// menos 60 días aunque el selector esté en 7 o 30.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadContratos(sb: any, from: Date, to: Date): Promise<UpcomingItem[]> {
+  const hasta = new Date(Math.max(to.getTime(), from.getTime() + 60 * 86400000))
+  const { data } = await sb.from('contracts')
+    .select('id,end_date,kind,property_id,properties(title),crm_contacts(name,last_name)')
+    .eq('status', 'vigente').eq('active', true)
+    .gte('end_date', toISO(from)).lte('end_date', toISO(hasta))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[]).map(c => {
+    const date = parseDateOnly(c.end_date)
+    const dias = daysBetween(from, date)
+    const dueño = c.crm_contacts ? [c.crm_contacts.name, c.crm_contacts.last_name].filter(Boolean).join(' ') : null
+    const tipo  = c.kind ? c.kind[0].toUpperCase() + c.kind.slice(1) : 'Contrato'
+    return {
+      id: `co-${c.id}`,
+      kind: 'contrato' as const,
+      date,
+      title: `Vence ${c.kind ?? 'contrato'} — ${c.properties?.title || 'Sin título'}`,
+      subtitle: [tipo, dueño].filter(Boolean).join(' · '),
+      timeLabel: dias === 0 ? 'Hoy' : `${dias} días`,
+      urgent: dias <= 15,
+      href: `/admin/propiedades/${c.property_id}?tab=4`,
+    }
+  })
 }
 
 /* ── Componente ───────────────────────────────────────────────── */
@@ -164,7 +187,8 @@ export default function ProximosEventos({ userId, onOpenContact, cardStyle, titl
       loadEventos(sb as any, user.id, today, to),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       loadCumples(sb as any, userId, today, to),
-      loadContratos(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      loadContratos(sb as any, today, to),
     ])
     setItems([...ev, ...cu, ...co].sort((a, b) => a.date.getTime() - b.date.getTime()))
     setLoading(false)
@@ -235,11 +259,14 @@ export default function ProximosEventos({ userId, onOpenContact, cardStyle, titl
               const meta = KIND_META[it.kind]
               return (
                 <div key={it.id}
-                  onClick={() => it.contactId && onOpenContact(it.contactId)}
+                  onClick={() => {
+                    if (it.contactId) onOpenContact(it.contactId)
+                    else if (it.href) window.open(it.href, '_blank')
+                  }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0',
                     borderTop: '1px solid #eef0f2',
-                    cursor: it.contactId ? 'pointer' : 'default',
+                    cursor: (it.contactId || it.href) ? 'pointer' : 'default',
                     ...(it.urgent ? { borderLeft: '3px solid #DC2626', paddingLeft: 10, background: '#FEF2F2' } : {}),
                   }}>
                   {/* Avatar (cumpleaños) o tile del tipo */}
