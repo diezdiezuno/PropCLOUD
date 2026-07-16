@@ -853,15 +853,26 @@ async function loadSaved(){
   }catch(e){console.error('[loadSaved]',e);el('saved-list').innerHTML='<p class="saved-empty">Error al cargar</p>';}
 }
 
-// Thumbnail para el dashboard: escala el canvas del frente y lo sube a
-// Cloudinary. Si falla, devuelve null y se guarda igual (sin thumb).
+// Thumbnail para el dashboard: compone tiro y retiro lado a lado
+// conservando la proporción real de la tarjeta, y lo sube a Cloudinary.
+// Si falla, devuelve null y se guarda igual (sin thumb).
 async function makeThumb(){
   try{
-    const src = el('canvas-front');
-    if(!src || !src.width) return null;
-    const W = 480, H = Math.round(src.height * (W / src.width));
+    const f = el('canvas-front'), b = el('canvas-back');
+    if(!f || !f.width) return null;
+    const GAP = 10;
+    const fullH = Math.max(f.height, b && b.width ? b.height : 0);
+    const fullW = f.width + (b && b.width ? GAP + b.width : 0);
+    const full = document.createElement('canvas');
+    full.width = fullW; full.height = fullH;
+    const fx = full.getContext('2d');
+    fx.fillStyle = '#ffffff'; fx.fillRect(0, 0, fullW, fullH);  // el JPEG no tiene alpha
+    fx.drawImage(f, 0, 0);
+    if(b && b.width) fx.drawImage(b, f.width + GAP, 0);
+    // Escalar al ancho objetivo manteniendo proporción
+    const W = 640, H = Math.round(fullH * (W / fullW));
     const c = document.createElement('canvas'); c.width = W; c.height = H;
-    c.getContext('2d').drawImage(src, 0, 0, W, H);
+    c.getContext('2d').drawImage(full, 0, 0, W, H);
     const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
     if(!blob) return null;
     const fd = new FormData();

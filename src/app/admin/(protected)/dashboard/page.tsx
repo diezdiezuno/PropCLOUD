@@ -242,24 +242,26 @@ export default function PerfilPage() {
             : material.length === 0
             ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin material guardado aún — creá rótulos y tarjetas desde el menú PropTools.</p>
             : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 12 }}>
+              <div style={{ columns: '130px', columnGap: 12 }}>
                 {material.map(m => (
                   <div key={`${m.kind}-${m.id}`}
                     title={`Descargar PDF — ${m.save_name || (m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta')}`}
                     onClick={() => window.open(`/tools/${m.kind}/?id=${m.id}&download=pdf`, '_blank')}
-                    style={{ cursor: 'pointer' }}
+                    style={{ breakInside: 'avoid', marginBottom: 12, cursor: 'pointer' }}
                     onMouseEnter={e => { const t = e.currentTarget.querySelector('div') as HTMLDivElement; if (t) t.style.borderColor = '#0d0f12' }}
                     onMouseLeave={e => { const t = e.currentTarget.querySelector('div') as HTMLDivElement; if (t) t.style.borderColor = '#e2e5ea' }}>
-                    <div style={{ position: 'relative', aspectRatio: '3 / 4', borderRadius: 10, overflow: 'hidden', background: '#f0f1f4', border: '1px solid #e2e5ea', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color .15s' }}>
+                    <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', background: '#f0f1f4', border: '1px solid #e2e5ea', transition: 'border-color .15s' }}>
                       {m.thumb_url
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={m.thumb_url} alt={m.save_name ?? ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img src={m.thumb_url} alt={m.save_name ?? ''} style={{ width: '100%', height: 'auto', display: 'block' }} />
                         : (
-                          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#b6bcc6' }}>
-                            {m.kind === 'rotulos'
-                              ? <><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></>
-                              : <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></>}
-                          </svg>
+                          <div style={{ aspectRatio: '3 / 4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#b6bcc6' }}>
+                              {m.kind === 'rotulos'
+                                ? <><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></>
+                                : <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></>}
+                            </svg>
+                          </div>
                         )}
                       <span style={{ position: 'absolute', right: 5, bottom: 5, fontSize: 9, fontWeight: 700, letterSpacing: '.04em', color: '#fff', background: 'rgba(13,15,18,.75)', borderRadius: 5, padding: '2px 5px' }}>PDF</span>
                     </div>
