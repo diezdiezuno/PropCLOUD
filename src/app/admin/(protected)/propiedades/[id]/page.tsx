@@ -38,14 +38,17 @@ const AMENITIES_LIST = [
   'Aire acondicionado', 'Calefacción',
   'Área gourmet', 'Salón de eventos', 'Parqueo visitas',
 ]
+// El orden refleja el flujo de captación, pero los tabs no se bloquean:
+// en la práctica los datos llegan desordenados (las fotos antes que el
+// contrato). El punto de progreso muestra lo que falta sin frustrar.
 const TABS = [
-  { id: 1, label: 'Captación',       icon: '📋' },
-  { id: 2, label: 'Características', icon: '📐' },
-  { id: 3, label: 'Amenidades',      icon: '✨' },
-  { id: 4, label: 'Precio',          icon: '💰' },
-  { id: 5, label: 'Descripción',     icon: '📝' },
-  { id: 6, label: 'Fotos',           icon: '📸' },
-  { id: 7, label: 'Estudios',        icon: '🔎' },
+  { id: 1, label: 'Captación',                  icon: '📋' },
+  { id: 2, label: 'Características y amenidades', icon: '📐' },
+  { id: 3, label: 'Estudios',                   icon: '🔎' },
+  { id: 4, label: 'Contrato',                   icon: '📄' },
+  { id: 5, label: 'Descripción',                icon: '📝' },
+  { id: 6, label: 'Media',                      icon: '📸' },
+  { id: 7, label: 'Portales',                   icon: '🌐' },
 ]
 
 /* ── Types ───────────────────────────────────────────────────── */
@@ -115,20 +118,28 @@ export default function PropiedadPage() {
   const [agentId,   setAgentId]   = useState('')
   const [loading,   setLoading]   = useState(true)
   const [activeTab, setActiveTab] = useState(Number(searchParams.get('tab') ?? '1'))
+  const [estudiosCount,  setEstudiosCount]  = useState(0)
+  const [contratosCount, setContratosCount] = useState(0)
 
   useEffect(() => {
     const sb = createClient()
     getMembership().then(async m => {
       if (!m) return
       const adminRec = { tenant_id: m.tenantId }
-      const [{ data: p }, { data: types }, { data: sts }, { data: ams }, { data: agentList }] = await Promise.all([
+      const [{ data: p }, { data: types }, { data: sts }, { data: ams }, { data: agentList }, { data: est }, { data: con }] = await Promise.all([
         sb.from('properties').select('*').eq('id', id).eq('tenant_id', adminRec.tenant_id).single(),
         sb.from('property_types').select('id,label,value,icon').eq('tenant_id', adminRec.tenant_id).order('sort_order'),
         sb.from('property_statuses').select('value,label,web_status').eq('tenant_id', adminRec.tenant_id).order('position'),
         sb.from('property_amenities').select('name').eq('tenant_id', adminRec.tenant_id).order('position'),
         sb.from('users').select('id,name').eq('tenant_id', adminRec.tenant_id).order('name'),
+        // Solo para el punto de progreso de esos tabs
+        sb.from('crm_estudios').select('id').eq('property_id', id),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sb as any).from('contracts').select('id').eq('property_id', id).eq('active', true),
       ])
       if (p) { setProp(p as PropertyFull); setAgentId((p as PropertyFull).agent_id ?? '') }
+      setEstudiosCount((est ?? []).length)
+      setContratosCount((con ?? []).length)
       setPropTypes((types ?? []) as PropertyType[])
       if (sts && sts.length) setStatuses(sts as CrmStatus[])
       if (ams && ams.length) setAmenities((ams as { name: string }[]).map(a => a.name))
@@ -137,11 +148,28 @@ export default function PropiedadPage() {
     })
   }, [id])
 
+  const webStatusFor = (v: string) => statuses.find(s => s.value === v)?.web_status ?? 'inactive'
+
+  async function saveStatus(newStatus: string) {
+    if (!prop) return
+    const { data } = await createClient().from('properties')
+      .update({ crm_status: newStatus, status: webStatusFor(newStatus) })
+      .eq('id', prop.id).select('*').single()
+    if (data) setProp(data as PropertyFull)
+  }
+
   async function saveAgent(newId: string) {
     if (!prop) return
     setAgentId(newId)
+    // Al asignar agente, borrador → en captación. Solo avanza: nunca pisa un
+    // estado posterior, ni vuelve atrás al desasignar.
+    const patch: Record<string, string | null> = { agent_id: newId || null }
+    if (newId && prop.crm_status === 'draft') {
+      patch.crm_status = 'captacion'
+      patch.status     = webStatusFor('captacion')
+    }
     const { data } = await createClient().from('properties')
-      .update({ agent_id: newId || null }).eq('id', prop.id).select('*').single()
+      .update(patch).eq('id', prop.id).select('*').single()
     if (data) setProp(data as PropertyFull)
   }
 
@@ -154,6 +182,17 @@ export default function PropiedadPage() {
 
   if (loading) return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>
   if (!prop)   return <div style={{ padding: 40, color: '#e53e3e', fontSize: 14 }}>Propiedad no encontrada.</div>
+
+  // Qué etapa ya tiene datos. No bloquea nada: solo pinta el punto del tab.
+  const progress: Record<number, boolean> = {
+    1: Boolean(prop.type && prop.provincia),
+    2: Boolean((prop.area_m2 || prop.bedrooms) && prop.price > 0),
+    3: estudiosCount > 0,
+    4: contratosCount > 0,
+    5: Boolean(prop.description_es),
+    6: (prop.images?.length ?? 0) > 0,
+    7: false,
+  }
 
   return (
     <div>
@@ -168,7 +207,7 @@ export default function PropiedadPage() {
             <EditableTitle value={prop.title} onSave={saveTitle} />
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {prop.provincia && <span style={{ fontSize: 13, color: '#888' }}>📍 {[prop.canton, prop.provincia].filter(Boolean).join(', ')}</span>}
-              <StatusPill status={prop.crm_status} statuses={statuses} />
+              <StatusSelect value={prop.crm_status} statuses={statuses} onChange={saveStatus} />
             </div>
           </div>
           {agents.length > 0 && (
@@ -184,13 +223,12 @@ export default function PropiedadPage() {
         </div>
       </div>
 
-      {/* Tab bar */}
+      {/* Tab bar — el punto verde marca la etapa que ya tiene datos */}
       <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #ebebeb', marginBottom: 24, overflowX: 'auto' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
             display: 'flex', alignItems: 'center', gap: 7,
             padding: '11px 18px', cursor: 'pointer', whiteSpace: 'nowrap',
-            borderBottom: activeTab === t.id ? '2px solid #111' : '2px solid transparent',
             marginBottom: -2, background: 'none', border: 'none',
             borderBottomStyle: 'solid',
             borderBottomWidth: 2,
@@ -201,18 +239,22 @@ export default function PropiedadPage() {
           }}>
             <span style={{ fontSize: 15 }}>{t.icon}</span>
             {t.id}. {t.label}
+            <span title={progress[t.id] ? 'Con datos' : 'Pendiente'} style={{
+              width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+              background: progress[t.id] ? '#10B981' : '#d5d9e0',
+            }} />
           </button>
         ))}
       </div>
 
       {/* Tab content */}
-      {activeTab === 1 && <Tab1Captacion    prop={prop} propTypes={propTypes} statuses={statuses} onSaved={setProp} />}
-      {activeTab === 2 && <Tab2Caracteristicas prop={prop} onSaved={setProp} />}
-      {activeTab === 3 && <Tab3Amenidades   prop={prop} amenities={amenities} onSaved={setProp} />}
-      {activeTab === 4 && <Tab4Precio       prop={prop} onSaved={setProp} />}
-      {activeTab === 5 && <Tab5Descripcion  prop={prop} onSaved={setProp} />}
-      {activeTab === 6 && <Tab6Fotos        prop={prop} onSaved={setProp} />}
-      {activeTab === 7 && <Tab7Estudios     prop={prop} />}
+      {activeTab === 1 && <Tab1Captacion prop={prop} propTypes={propTypes} onSaved={setProp} />}
+      {activeTab === 2 && <Tab2CaracteristicasAmenidades prop={prop} amenities={amenities} onSaved={setProp} />}
+      {activeTab === 3 && <Tab7Estudios  prop={prop} />}
+      {activeTab === 4 && <TabContrato   prop={prop} />}
+      {activeTab === 5 && <Tab5Descripcion prop={prop} onSaved={setProp} />}
+      {activeTab === 6 && <Tab6Fotos     prop={prop} onSaved={setProp} />}
+      {activeTab === 7 && <TabPortales />}
     </div>
   )
 }
@@ -250,13 +292,12 @@ function EditableTitle({ value, onSave }: { value: string | null; onSave: (v: st
 /* ══════════════════════════════════════════════════════════════
    TAB 1 — Captación
 ══════════════════════════════════════════════════════════════ */
-function Tab1Captacion({ prop, propTypes, statuses, onSaved }: {
-  prop: PropertyFull; propTypes: PropertyType[]; statuses: CrmStatus[]
+function Tab1Captacion({ prop, propTypes, onSaved }: {
+  prop: PropertyFull; propTypes: PropertyType[]
   onSaved: (p: PropertyFull) => void
 }) {
   const [propType,    setPropType]    = useState(prop.type ?? '')
   const [transaction, setTransaction] = useState(prop.transaction ?? 'sale')
-  const [crmStatus,   setCrmStatus]   = useState(prop.crm_status ?? 'captacion')
   const [provincia,   setProvincia]   = useState(prop.provincia ?? '')
   const [canton,      setCanton]      = useState(prop.canton ?? '')
   const [distrito,    setDistrito]    = useState(prop.distrito ?? '')
@@ -448,11 +489,10 @@ function Tab1Captacion({ prop, propTypes, statuses, onSaved }: {
       ...(planoDocUrl ? { plano_catastrado_url: planoDocUrl }  : {}),
       ...(gmapsLink   ? { gmaps_link: gmapsLink }              : {}),
     }
+    // crm_status/status no se tocan acá: los maneja el selector del header.
     const { data, error } = await sb.from('properties').update({
       type:       propType,
       transaction: transaction,
-      crm_status: crmStatus,
-      status: (statuses.find(s => s.value === crmStatus)?.web_status) ?? 'inactive',
       provincia: provincia   || null,
       canton:    canton      || null,
       distrito:  distrito    || null,
@@ -470,18 +510,9 @@ function Tab1Captacion({ prop, propTypes, statuses, onSaved }: {
   return (
     <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── 1. Estado CRM ─────────────────────────────────── */}
-      <FormSection title="Estado CRM">
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {statuses.map(s => (
-            <PillBtn key={s.value} active={crmStatus === s.value} onClick={() => setCrmStatus(s.value)}>
-              {s.label}
-            </PillBtn>
-          ))}
-        </div>
-      </FormSection>
+      {/* El Estado CRM vive en el header (visible en todos los tabs). */}
 
-      {/* ── 2. Datos básicos ──────────────────────────────── */}
+      {/* ── 1. Datos básicos ──────────────────────────────── */}
       <FormSection title="Datos básicos">
         <FieldLabel>Tipo de transacción</FieldLabel>
         <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -584,7 +615,12 @@ function Tab1Captacion({ prop, propTypes, statuses, onSaved }: {
 /* ══════════════════════════════════════════════════════════════
    TAB 2 — Características
 ══════════════════════════════════════════════════════════════ */
-function Tab2Caracteristicas({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: PropertyFull) => void }) {
+// Medidas + amenidades + precio en un solo tab y un solo guardado.
+// El precio vive acá (y no en Contrato) porque es insumo del contrato:
+// se define antes de firmarlo.
+function Tab2CaracteristicasAmenidades({ prop, amenities, onSaved }: {
+  prop: PropertyFull; amenities: string[]; onSaved: (p: PropertyFull) => void
+}) {
   const [bedrooms,   setBedrooms]   = useState(prop.bedrooms   ?? '')
   const [bathrooms,  setBathrooms]  = useState(prop.bathrooms  ?? '')
   const [areaM2,     setAreaM2]     = useState(prop.area_m2    ?? '')
@@ -592,12 +628,36 @@ function Tab2Caracteristicas({ prop, onSaved }: { prop: PropertyFull; onSaved: (
   const [parking,    setParking]    = useState(prop.parking    ?? '')
   const [floors,     setFloors]     = useState(prop.floors     ?? '')
   const [yearBuilt,  setYearBuilt]  = useState(prop.year_built ?? '')
+  const [selected,   setSelected]   = useState<string[]>(prop.amenities ?? [])
+  const [custom,     setCustom]     = useState('')
+  const [price,      setPrice]      = useState<string | number>(prop.price ?? '')
+  const [currency,   setCurrency]   = useState(prop.currency ?? 'USD')
+  const [maintFee,   setMaintFee]   = useState(prop.features?.maintenance_fee ?? '')
+  const [maintCurr,  setMaintCurr]  = useState(prop.features?.maintenance_currency ?? 'USD')
   const [saving,     setSaving]     = useState(false)
   const [saved,      setSaved]      = useState(false)
   const [saveError,  setSaveError]  = useState<string | null>(null)
 
+  function toggle(a: string) {
+    setSelected(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a])
+  }
+  function addCustom() {
+    const v = custom.trim()
+    if (!v || selected.includes(v)) return
+    setSelected(prev => [...prev, v]); setCustom('')
+  }
+
+  // El área en edición, no la guardada: si la cambiás, el precio/m² sigue.
+  const priceNum   = Number(String(price).replace(/,/g, ''))
+  const areaNum    = areaM2 !== '' ? Number(areaM2) : 0
+  const pricePerM2 = (priceNum > 0 && areaNum > 0) ? (priceNum / areaNum).toFixed(0) : null
+
   async function save(e: React.FormEvent) {
     e.preventDefault(); setSaving(true); setSaveError(null); setSaved(false)
+    const newFeatures = {
+      ...(prop.features ?? {}),
+      ...(maintFee ? { maintenance_fee: maintFee, maintenance_currency: maintCurr } : { maintenance_fee: '', maintenance_currency: '' }),
+    }
     const { data, error } = await createClient().from('properties').update({
       bedrooms:   bedrooms   !== '' ? Number(bedrooms)  : null,
       bathrooms:  bathrooms  !== '' ? Number(bathrooms) : null,
@@ -606,6 +666,10 @@ function Tab2Caracteristicas({ prop, onSaved }: { prop: PropertyFull; onSaved: (
       parking:    parking    !== '' ? Number(parking)   : null,
       floors:     floors     !== '' ? Number(floors)    : null,
       year_built: yearBuilt  !== '' ? Number(yearBuilt) : null,
+      amenities:  selected,
+      price:      priceNum || 0,
+      currency:   currency,
+      features:   newFeatures,
     }).eq('id', prop.id).select('*').single()
     if (error) { setSaveError(`Error: ${error.message}`); setSaving(false); return }
     onSaved(data as PropertyFull); setSaving(false); setSaved(true)
@@ -627,42 +691,8 @@ function Tab2Caracteristicas({ prop, onSaved }: { prop: PropertyFull; onSaved: (
           <NumberField label="Plantas / Pisos" value={floors}  onChange={setFloors}   placeholder="Ej: 2" icon="🏠" />
         </div>
       </FormSection>
-      <SaveBar saving={saving} saved={saved} error={saveError} />
-    </form>
-  )
-}
 
-/* ══════════════════════════════════════════════════════════════
-   TAB 3 — Amenidades
-══════════════════════════════════════════════════════════════ */
-function Tab3Amenidades({ prop, amenities, onSaved }: { prop: PropertyFull; amenities: string[]; onSaved: (p: PropertyFull) => void }) {
-  const [selected, setSelected] = useState<string[]>(prop.amenities ?? [])
-  const [custom,   setCustom]   = useState('')
-  const [saving,   setSaving]   = useState(false)
-  const [saved,    setSaved]    = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-
-  function toggle(a: string) {
-    setSelected(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a])
-  }
-  function addCustom() {
-    const v = custom.trim()
-    if (!v || selected.includes(v)) return
-    setSelected(prev => [...prev, v]); setCustom('')
-  }
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true); setSaveError(null); setSaved(false)
-    const { data, error } = await createClient().from('properties').update({ amenities: selected }).eq('id', prop.id).select('*').single()
-    if (error) { setSaveError(`Error: ${error.message}`); setSaving(false); return }
-    onSaved(data as PropertyFull); setSaving(false); setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
-  }
-
-  return (
-    <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <FormSection title={`Amenidades seleccionadas (${selected.length})`}>
-        {/* Preset checkboxes */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
           {amenities.map(a => {
             const on = selected.includes(a)
@@ -675,7 +705,6 @@ function Tab3Amenidades({ prop, amenities, onSaved }: { prop: PropertyFull; amen
             )
           })}
         </div>
-        {/* Custom amenity */}
         <div>
           <FieldLabel>Agregar amenidad personalizada</FieldLabel>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -689,7 +718,6 @@ function Tab3Amenidades({ prop, amenities, onSaved }: { prop: PropertyFull; amen
             </button>
           </div>
         </div>
-        {/* Custom chips */}
         {selected.filter(a => !amenities.includes(a)).length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
             {selected.filter(a => !amenities.includes(a)).map(a => (
@@ -702,45 +730,7 @@ function Tab3Amenidades({ prop, amenities, onSaved }: { prop: PropertyFull; amen
           </div>
         )}
       </FormSection>
-      <SaveBar saving={saving} saved={saved} error={saveError} />
-    </form>
-  )
-}
 
-/* ══════════════════════════════════════════════════════════════
-   TAB 4 — Precio
-══════════════════════════════════════════════════════════════ */
-function Tab4Precio({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: PropertyFull) => void }) {
-  const [price,        setPrice]        = useState<string | number>(prop.price ?? '')
-  const [currency,     setCurrency]     = useState(prop.currency ?? 'USD')
-  const [maintFee,     setMaintFee]     = useState(prop.features?.maintenance_fee ?? '')
-  const [maintCurr,    setMaintCurr]    = useState(prop.features?.maintenance_currency ?? 'USD')
-  const [saving,       setSaving]       = useState(false)
-  const [saved,        setSaved]        = useState(false)
-  const [saveError,    setSaveError]    = useState<string | null>(null)
-
-  const priceNum = Number(String(price).replace(/,/g, ''))
-  const areaM2   = prop.area_m2
-  const pricePerM2 = (priceNum > 0 && areaM2 && areaM2 > 0) ? (priceNum / areaM2).toFixed(0) : null
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true); setSaveError(null); setSaved(false)
-    const newFeatures = {
-      ...(prop.features ?? {}),
-      ...(maintFee ? { maintenance_fee: maintFee, maintenance_currency: maintCurr } : { maintenance_fee: '', maintenance_currency: '' }),
-    }
-    const { data, error } = await createClient().from('properties').update({
-      price:    priceNum || 0,
-      currency: currency,
-      features: newFeatures,
-    }).eq('id', prop.id).select('*').single()
-    if (error) { setSaveError(`Error: ${error.message}`); setSaving(false); return }
-    onSaved(data as PropertyFull); setSaving(false); setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
-  }
-
-  return (
-    <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <FormSection title="Precio de venta / alquiler">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 14, marginBottom: 8 }}>
           <div>
@@ -771,11 +761,18 @@ function Tab4Precio({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Proper
         </div>
         <p style={{ fontSize: 11, color: '#aaa', margin: '6px 0 0' }}>Se mostrará como información adicional en el sitio.</p>
       </FormSection>
+
       <SaveBar saving={saving} saved={saved} error={saveError} />
     </form>
   )
 }
 
+/* ══════════════════════════════════════════════════════════════
+   TAB 3 — Amenidades
+══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   TAB 4 — Precio
+══════════════════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════════════════
    TAB 5 — Descripción
 ══════════════════════════════════════════════════════════════ */
@@ -1459,7 +1456,194 @@ function SaveBar({ saving, saved, error }: { saving: boolean; saved: boolean; er
     </div>
   )
 }
-function StatusPill({ status, statuses }: { status: string; statuses?: CrmStatus[] }) {
+/* ── Tab Contrato ─────────────────────────────────────────────
+   Un contrato vigente por propiedad (la tabla guarda el historial).
+   Alimenta "Contratos por vencer" en Próximos eventos del dashboard.
+─────────────────────────────────────────────────────────────── */
+const CONTRACT_KINDS = [
+  { value: 'exclusiva', label: 'Exclusiva' },
+  { value: 'abierta',   label: 'Abierta' },
+  { value: 'alquiler',  label: 'Alquiler' },
+  { value: 'venta',     label: 'Venta' },
+]
+const CONTRACT_STATUSES = [
+  { value: 'vigente',   label: 'Vigente' },
+  { value: 'vencido',   label: 'Vencido' },
+  { value: 'renovado',  label: 'Renovado' },
+  { value: 'cancelado', label: 'Cancelado' },
+]
+interface Contract {
+  id: string; kind: string | null; start_date: string | null; end_date: string | null
+  price: number | null; currency: string | null; commission: number | null
+  status: string; notes: string | null
+}
+
+function TabContrato({ prop }: { prop: PropertyFull }) {
+  const [row,        setRow]        = useState<Contract | null>(null)
+  const [loading,    setLoading]    = useState(true)
+  const [kind,       setKind]       = useState('exclusiva')
+  const [startDate,  setStartDate]  = useState('')
+  const [endDate,    setEndDate]    = useState('')
+  const [price,      setPrice]      = useState<string | number>('')
+  const [currency,   setCurrency]   = useState('USD')
+  const [commission, setCommission] = useState<string | number>('')
+  const [status,     setStatus]     = useState('vigente')
+  const [notes,      setNotes]      = useState('')
+  const [saving,     setSaving]     = useState(false)
+  const [saved,      setSaved]      = useState(false)
+  const [saveError,  setSaveError]  = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (createClient() as any).from('contracts')
+        .select('id,kind,start_date,end_date,price,currency,commission,status,notes')
+        .eq('property_id', prop.id).eq('active', true)
+        .order('created_at', { ascending: false }).limit(1)
+      if (cancelled) return
+      const c = (data ?? [])[0] as Contract | undefined
+      if (c) {
+        setRow(c); setKind(c.kind ?? 'exclusiva')
+        setStartDate(c.start_date ?? ''); setEndDate(c.end_date ?? '')
+        setPrice(c.price ?? ''); setCurrency(c.currency ?? 'USD')
+        setCommission(c.commission ?? ''); setStatus(c.status); setNotes(c.notes ?? '')
+      } else {
+        // El precio de la propiedad es el insumo del contrato: se prellena.
+        setPrice(prop.price || ''); setCurrency(prop.currency || 'USD')
+      }
+      setLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [prop.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault(); setSaving(true); setSaveError(null); setSaved(false)
+    const payload = {
+      tenant_id: prop.tenant_id, property_id: prop.id,
+      kind, start_date: startDate || null, end_date: endDate || null,
+      price:      price      !== '' ? Number(price)      : null,
+      currency,
+      commission: commission !== '' ? Number(commission) : null,
+      status, notes: notes.trim() || null,
+      updated_at: new Date().toISOString(),
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = createClient() as any
+    const { data, error } = row
+      ? await sb.from('contracts').update(payload).eq('id', row.id).select('*').single()
+      : await sb.from('contracts').insert(payload).select('*').single()
+    if (error) { setSaveError(`Error: ${error.message}`); setSaving(false); return }
+    setRow(data as Contract); setSaving(false); setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  if (loading) return <p style={{ fontSize: 13, color: '#888', padding: '8px 2px' }}>Cargando contrato…</p>
+
+  const dias = endDate ? Math.round((new Date(endDate + 'T12:00:00').getTime() - Date.now()) / 86400000) : null
+
+  return (
+    <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <FormSection title="Contrato de captación">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div>
+            <FieldLabel>Tipo de contrato</FieldLabel>
+            <select value={kind} onChange={e => setKind(e.target.value)} style={inputSt}>
+              {CONTRACT_KINDS.map(k => <option key={k.value} value={k.value}>{k.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Estado del contrato</FieldLabel>
+            <select value={status} onChange={e => setStatus(e.target.value)} style={inputSt}>
+              {CONTRACT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 4 }}>
+          <div>
+            <FieldLabel>Fecha de inicio</FieldLabel>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputSt} />
+          </div>
+          <div>
+            <FieldLabel>Fecha de vencimiento</FieldLabel>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputSt} />
+          </div>
+        </div>
+        {dias !== null && status === 'vigente' && (
+          <p style={{ fontSize: 12, margin: '8px 0 0', fontWeight: 600, color: dias < 0 ? '#DC2626' : dias <= 30 ? '#D97706' : '#059669' }}>
+            {dias < 0 ? `Venció hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence hoy' : `Vence en ${dias} días`}
+          </p>
+        )}
+      </FormSection>
+
+      <FormSection title="Condiciones">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 1fr', gap: 14 }}>
+          <div>
+            <FieldLabel>Precio pactado</FieldLabel>
+            <input type="text" inputMode="numeric" value={price} onChange={e => setPrice(e.target.value)}
+              placeholder="Ej: 150000" style={inputSt} />
+          </div>
+          <div>
+            <FieldLabel>Moneda</FieldLabel>
+            <select value={currency} onChange={e => setCurrency(e.target.value)} style={inputSt}>
+              {CURRENCIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Comisión (%)</FieldLabel>
+            <input type="text" inputMode="decimal" value={commission} onChange={e => setCommission(e.target.value)}
+              placeholder="Ej: 5" style={inputSt} />
+          </div>
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <FieldLabel>Notas</FieldLabel>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+            placeholder="Condiciones particulares, acuerdos…"
+            style={{ ...inputSt, resize: 'vertical', fontFamily: 'inherit' }} />
+        </div>
+      </FormSection>
+
+      <SaveBar saving={saving} saved={saved} error={saveError} />
+    </form>
+  )
+}
+
+function TabPortales() {
+  return (
+    <FormSection title="Portales inmobiliarios">
+      <div style={{ textAlign: 'center', padding: '28px 12px', color: '#888' }}>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>🌐</div>
+        <p style={{ fontSize: 14, margin: '0 0 6px', fontWeight: 600, color: '#5a6070' }}>Pendiente de definir</p>
+        <p style={{ fontSize: 13, margin: 0, maxWidth: 460, marginInline: 'auto', lineHeight: 1.6 }}>
+          Falta decidir los portales concretos y si la publicación va por feed JSON/XML que ellos consumen,
+          o por push a la API de cada uno.
+        </p>
+      </div>
+    </FormSection>
+  )
+}
+
+// Estado CRM editable desde el header — visible en todos los tabs, porque
+// la etapa acompaña todo el proceso y no pertenece a ninguno en particular.
+function StatusSelect({ value, statuses, onChange }: {
+  value: string; statuses: CrmStatus[]; onChange: (v: string) => void
+}) {
+  const c = statusColor(value)
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} title="Estado CRM"
+      style={{
+        fontSize: 12, fontWeight: 700, padding: '4px 26px 4px 10px', borderRadius: 20,
+        background: c.bg, color: c.color, border: `1px solid ${c.color}33`,
+        fontFamily: 'inherit', cursor: 'pointer', appearance: 'none',
+        backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(c.color)}' stroke-width='3'><path d='m6 9 6 6 6-6'/></svg>")`,
+        backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center',
+      }}>
+      {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+    </select>
+  )
+}
+
+function statusColor(status: string): { bg: string; color: string } {
   const map: Record<string, { bg: string; color: string }> = {
     draft:       { bg: '#f3f4f6', color: '#6b7280' },
     captacion:   { bg: '#fef3c7', color: '#d97706' },
@@ -1470,9 +1654,5 @@ function StatusPill({ status, statuses }: { status: string; statuses?: CrmStatus
     sold:        { bg: '#fce7f3', color: '#db2777' },
     archived:    { bg: '#f3f4f6', color: '#9ca3af' },
   }
-  // Label desde la taxonomía del tenant (soporta estados custom); color por
-  // value conocido o neutro para los nuevos.
-  const label = statuses?.find(s => s.value === status)?.label ?? status
-  const c = map[status] ?? { bg: '#f3f4f6', color: '#6b7280' }
-  return <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: c.bg, color: c.color }}>{label}</span>
+  return map[status] ?? { bg: '#f3f4f6', color: '#6b7280' }
 }
