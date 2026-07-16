@@ -574,7 +574,7 @@ function Tab1Captacion({ prop, propTypes, statuses, onSaved }: {
       </FormSection>
 
       {/* ── 4. Dueños ─────────────────────────────────────── */}
-      <OwnerSection prop={prop} onSaved={onSaved} />
+      <OwnerSection prop={prop} />
 
       <SaveBar saving={saving} saved={saved} error={saveError} />
     </form>
@@ -1123,7 +1123,7 @@ function MercadoComparables({ comps, metodo }: { comps: Comparable[]; metodo?: s
 /* ══════════════════════════════════════════════════════════════
    OWNER SECTION — Información del dueño
 ══════════════════════════════════════════════════════════════ */
-function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: PropertyFull) => void }) {
+function OwnerSection({ prop }: { prop: PropertyFull }) {
   const [country, setCountry] = useState('CR')
   useEffect(() => { getMembership().then(m => { if (m) setCountry(m.country) }) }, [])
   const [owners,       setOwners]       = useState<OwnerResult[]>([])
@@ -1139,35 +1139,42 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
   const wrapRef  = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Load existing owners on mount — supports both new array format and legacy single owner
-  // Also re-fetches linkedContacts for companies to always have fresh photo_url
+  // Dueños desde property_owners (tabla real). El nombre/subtítulo se derivan
+  // del contacto/empresa vinculado, así no quedan copias desactualizadas.
   useEffect(() => {
-    const f = prop.features
-    if (!f) return
-
-    let initial: OwnerResult[] = []
-    if (f.owners) {
-      try { initial = JSON.parse(f.owners) } catch { /* ignore */ }
-    } else if (f.owner_id && f.owner_type && f.owner_name) {
-      initial = [{ type: f.owner_type as 'contact' | 'company', id: f.owner_id, name: f.owner_name, subtitle: f.owner_subtitle ?? '' }]
-    }
-    if (!initial.length) return
-
-    // Set immediately so names appear without waiting
-    setOwners(initial)
-
-    // Re-fetch linkedContacts for company owners to get fresh photo_url
-    const companyOwners = initial.filter(o => o.type === 'company')
-    if (!companyOwners.length) return
-    Promise.all(
-      companyOwners.map(async o => ({ id: o.id, linkedContacts: await fetchLinkedContacts(o.id) }))
-    ).then(updates => {
+    let cancelled = false
+    ;(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (createClient() as any).from('property_owners')
+        .select('contact_id, company_id, crm_contacts(id,name,last_name,cedula,email), crm_companies(id,name,trade_name,cedula_juridica)')
+        .eq('property_id', prop.id)
+      if (cancelled) return
+      const out: OwnerResult[] = []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const r of (data ?? []) as any[]) {
+        if (r.crm_contacts) {
+          const c = r.crm_contacts
+          out.push({ type: 'contact', id: c.id, name: [c.name, c.last_name].filter(Boolean).join(' '), subtitle: c.email ?? c.cedula ?? 'Persona física' })
+        } else if (r.crm_companies) {
+          const co = r.crm_companies
+          out.push({ type: 'company', id: co.id, name: co.trade_name || co.name, subtitle: co.trade_name ? co.name : (co.cedula_juridica ?? 'Empresa') })
+        }
+      }
+      setOwners(out)
+      // Traer los contactos vinculados de las empresas (foto fresca)
+      const companyOwners = out.filter(o => o.type === 'company')
+      if (!companyOwners.length) return
+      const updates = await Promise.all(
+        companyOwners.map(async o => ({ id: o.id, linkedContacts: await fetchLinkedContacts(o.id) }))
+      )
+      if (cancelled) return
       setOwners(prev => prev.map(o => {
         const u = updates.find(x => x.id === o.id)
         return u ? { ...o, linkedContacts: u.linkedContacts } : o
       }))
-    })
-  }, [prop.features]) // eslint-disable-line react-hooks/exhaustive-deps
+    })()
+    return () => { cancelled = true }
+  }, [prop.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -1186,29 +1193,29 @@ function OwnerSection({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prop
       .map(r => r.crm_contacts).filter(Boolean) as LinkedContact[]
   }
 
-  async function saveOwners(updated: OwnerResult[]) {
-    const base = { ...(prop.features ?? {}) } as Record<string, string>
-    const { owner_id: _a, owner_type: _b, owner_name: _c, owner_subtitle: _d, ...rest } = base
-    const newFeatures = { ...rest, owners: JSON.stringify(updated) }
-    const { data, error } = await createClient().from('properties').update({ features: newFeatures }).eq('id', prop.id).select('*').single()
-    if (!error && data) onSaved(data as PropertyFull)
-  }
-
   async function addOwner(o: OwnerResult) {
     if (owners.some(x => x.id === o.id)) return
     // If company, fetch linked contacts automatically
     const enriched: OwnerResult = o.type === 'company'
       ? { ...o, linkedContacts: await fetchLinkedContacts(o.id) }
       : o
-    const updated = [...owners, enriched]
-    setOwners(updated); setDropOpen(false); setQuery(''); setResults([]); setNoResults(false)
-    await saveOwners(updated)
+    setOwners(prev => [...prev, enriched])
+    setDropOpen(false); setQuery(''); setResults([]); setNoResults(false)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (createClient() as any).from('property_owners').insert({
+      tenant_id:   prop.tenant_id,
+      property_id: prop.id,
+      contact_id:  o.type === 'contact' ? o.id : null,
+      company_id:  o.type === 'company' ? o.id : null,
+    })
   }
 
   async function removeOwner(id: string) {
-    const updated = owners.filter(o => o.id !== id)
-    setOwners(updated)
-    await saveOwners(updated)
+    const o = owners.find(x => x.id === id)
+    setOwners(prev => prev.filter(x => x.id !== id))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const q = (createClient() as any).from('property_owners').delete().eq('property_id', prop.id)
+    await (o?.type === 'company' ? q.eq('company_id', id) : q.eq('contact_id', id))
   }
 
   async function search(q: string) {

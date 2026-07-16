@@ -104,13 +104,15 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
         .select('*, crm_contact_types(contact_types(id,name,color)), contact_sources(name), crm_contact_companies(crm_companies(id,name,trade_name,cedula_juridica)), referred_by_user:users!referred_by_user_id(name), referred_by_contact:crm_contacts!referred_by_contact_id(name,last_name), referred_to_user:users!referred_to_user_id(name), referred_to_contact:crm_contacts!referred_to_contact_id(name,last_name)')
         .eq('id', view.id).single()
         .then(({ data }: { data: ContactFull }) => { setContactData(data); setLoading(false) })
-      // Propiedades donde el contacto es dueño/vendedor
+      // Propiedades donde el contacto es dueño/vendedor (join vía property_owners)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(sb as any).from('properties')
-        .select('id,title,crm_status,status,features')
-        .eq('active', true)
-        .ilike('features->>owners', `%"type":"contact","id":"${view.id}"%`)
-        .then(({ data }: { data: OwnedProperty[] | null }) => setProperties(data ?? []))
+      ;(sb as any).from('property_owners')
+        .select('properties(id,title,crm_status,status,active)')
+        .eq('contact_id', view.id)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .then(({ data }: { data: any[] | null }) => setProperties(
+          (data ?? []).map(r => r.properties).filter(p => p && p.active !== false) as OwnedProperty[]
+        ))
     } else {
       Promise.all([
         sb.from('crm_companies').select('id,name,trade_name,cedula_juridica').eq('id', view.id).single(),

@@ -443,7 +443,6 @@ export default function NuevaPropiedadPage() {
         ...(informeUrl    ? { informe_registral_url: informeUrl }          : {}),
         ...(planoDocUrl   ? { plano_catastrado_url: planoDocUrl }           : {}),
         ...(gmapsLink     ? { gmaps_link: gmapsLink }                       : {}),
-        ...(owners.length > 0 ? { owners: JSON.stringify(owners) } : {}),
       },
     }).select('id').single()
 
@@ -451,6 +450,20 @@ export default function NuevaPropiedadPage() {
       setSaveError(`Error: ${error.message}`)
       setSaving(false)
       return
+    }
+
+    // Dueños en tabla real (property_owners), no serializados en features
+    if (owners.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: ownErr } = await (createClient() as any).from('property_owners').insert(
+        owners.map(o => ({
+          tenant_id:   tenantId,
+          property_id: data.id,
+          contact_id:  o.type === 'contact' ? o.id : null,
+          company_id:  o.type === 'company' ? o.id : null,
+        }))
+      )
+      if (ownErr) { setSaveError(`Propiedad creada, pero falló vincular dueños: ${ownErr.message}`); setSaving(false); return }
     }
 
     router.push(`/admin/propiedades/${data.id}?tab=1`)

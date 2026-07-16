@@ -409,12 +409,12 @@ export default function ContactosClient() {
       .single()
     setVcardData(data as VCardContact ?? null)
     setVcardLoading(false)
-    // Propiedades donde este contacto figura como dueño (mismo formato jsonb
-    // que usa el tab Captación de propiedades para "Dueños").
-    const { data: props } = await sb.from('properties')
-      .select('id,title,crm_status,status,features').eq('tenant_id', tenantId).eq('active', true)
-      .ilike('features->>owners', `%"type":"contact","id":"${id}"%`)
-    setVcardProperties((props ?? []) as VCardProperty[])
+    // Propiedades donde este contacto figura como dueño (join vía property_owners)
+    const { data: po } = await sb.from('property_owners')
+      .select('properties(id,title,crm_status,status,active)')
+      .eq('contact_id', id)
+    setVcardProperties(((po ?? []) as { properties: VCardProperty & { active?: boolean } }[])
+      .map(r => r.properties).filter(p => p && p.active !== false) as VCardProperty[])
   }
 
   function closeVCard() {

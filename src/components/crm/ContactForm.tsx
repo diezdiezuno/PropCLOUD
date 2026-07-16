@@ -514,13 +514,14 @@ export default function ContactForm({
       if (c?.referred_by_user_id || c?.referred_by_contact_id) setReferredBy(await resolveRef(c.referred_by_user_id, c.referred_by_contact_id))
       if (c?.referred_to_user_id || c?.referred_to_contact_id) setReferredTo(await resolveRef(c.referred_to_user_id, c.referred_to_contact_id))
 
-      // Propiedades donde este contacto figura como dueño (features.owners es
-      // un JSON string con [{type,id,name,subtitle}], mismo formato que
-      // escribe el tab de captación de propiedades).
-      const { data: props } = await sb.from('properties')
-        .select('id,title,crm_status,status,features').eq('tenant_id', tenantId).eq('active', true)
-        .ilike('features->>owners', `%"type":"contact","id":"${editId}"%`)
-      setOwnedProperties(((props ?? []) as OwnedProperty[]))
+      // Propiedades donde este contacto figura como dueño (join real vía
+      // property_owners; antes era un ilike sobre JSON serializado).
+      const { data: po } = await sb.from('property_owners')
+        .select('properties(id,title,crm_status,status,active)')
+        .eq('contact_id', editId)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setOwnedProperties(((po ?? []) as any[]).map(r => r.properties)
+        .filter(p => p && p.active !== false) as OwnedProperty[])
     })()
     return () => { cancelled = true }
   }, [editId])
