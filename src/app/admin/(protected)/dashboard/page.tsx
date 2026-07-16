@@ -35,7 +35,7 @@ interface Profile {
   instagram: string | null; facebook: string | null; linkedin: string | null
   tiktok: string | null; photo_url: string | null
 }
-interface Saved { id: string; save_name: string | null; updated_at: string | null; created_at: string | null; kind: 'rotulos' | 'tarjetas' }
+interface Saved { id: string; save_name: string | null; updated_at: string | null; created_at: string | null; thumb_url: string | null; kind: 'rotulos' | 'tarjetas' }
 interface Prop { id: string; title: string | null; price: number | null; currency: string | null; crm_status: string | null; status: string | null; images: string[] | null; address: string | null; lat: number | null; lng: number | null }
 interface Client { id: string; name: string; last_name: string | null; email: string | null; phone: string | null; photo_url: string | null }
 
@@ -113,8 +113,8 @@ export default function PerfilPage() {
     setProfile(p)
 
     const [rot, tar] = await Promise.all([
-      sb.from('rotulos').select('id,save_name,updated_at,created_at').eq('user_id', p.id).order('updated_at', { ascending: false }),
-      sb.from('tarjetas').select('id,save_name,updated_at,created_at').eq('user_id', p.id).order('updated_at', { ascending: false }),
+      sb.from('rotulos').select('id,save_name,updated_at,created_at,thumb_url').eq('user_id', p.id).order('updated_at', { ascending: false }),
+      sb.from('tarjetas').select('id,save_name,updated_at,created_at,thumb_url').eq('user_id', p.id).order('updated_at', { ascending: false }),
     ])
     setMaterial([
       ...(rot.data ?? []).map(r => ({ ...r, kind: 'rotulos' as const })),
@@ -231,24 +231,34 @@ export default function PerfilPage() {
           {material.length === 0
             ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin material guardado aún — creá rótulos y tarjetas desde el menú PropTools.</p>
             : (
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 12 }}>
                 {material.map(m => (
-                  <a key={`${m.kind}-${m.id}`} href={`/admin/tools/${m.kind}?id=${m.id}`}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f7f8fa', borderRadius: 10, padding: '10px 16px', textDecoration: 'none', color: '#111', border: '1px solid transparent' }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#d5d9e0')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'transparent')}>
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: '#4b5563' }}>
-                      {m.kind === 'rotulos'
-                        ? <><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></>
-                        : <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></>}
-                    </svg>
-                    <span>
-                      <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>{m.save_name || (m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta')}</span>
-                      <span style={{ display: 'block', fontSize: 11, color: '#9aa1ad' }}>
-                        {m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta'} · {new Date(m.updated_at ?? m.created_at ?? '').toLocaleDateString('es-CR')}
-                      </span>
-                    </span>
-                  </a>
+                  <div key={`${m.kind}-${m.id}`}
+                    title={`Descargar PDF — ${m.save_name || (m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta')}`}
+                    onClick={() => window.open(`/tools/${m.kind}/?id=${m.id}&download=pdf`, '_blank')}
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={e => { const t = e.currentTarget.querySelector('div') as HTMLDivElement; if (t) t.style.borderColor = '#0d0f12' }}
+                    onMouseLeave={e => { const t = e.currentTarget.querySelector('div') as HTMLDivElement; if (t) t.style.borderColor = '#e2e5ea' }}>
+                    <div style={{ position: 'relative', aspectRatio: '3 / 4', borderRadius: 10, overflow: 'hidden', background: '#f0f1f4', border: '1px solid #e2e5ea', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color .15s' }}>
+                      {m.thumb_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={m.thumb_url} alt={m.save_name ?? ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : (
+                          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#b6bcc6' }}>
+                            {m.kind === 'rotulos'
+                              ? <><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></>
+                              : <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></>}
+                          </svg>
+                        )}
+                      <span style={{ position: 'absolute', right: 5, bottom: 5, fontSize: 9, fontWeight: 700, letterSpacing: '.04em', color: '#fff', background: 'rgba(13,15,18,.75)', borderRadius: 5, padding: '2px 5px' }}>PDF</span>
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#111', marginTop: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {m.save_name || (m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta')}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#9aa1ad' }}>
+                      {m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta'} · {new Date(m.updated_at ?? m.created_at ?? '').toLocaleDateString('es-CR')}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

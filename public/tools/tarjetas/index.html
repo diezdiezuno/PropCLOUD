@@ -853,6 +853,25 @@ async function loadSaved(){
   }catch(e){console.error('[loadSaved]',e);el('saved-list').innerHTML='<p class="saved-empty">Error al cargar</p>';}
 }
 
+// Thumbnail para el dashboard: escala el canvas del frente y lo sube a
+// Cloudinary. Si falla, devuelve null y se guarda igual (sin thumb).
+async function makeThumb(){
+  try{
+    const src = el('canvas-front');
+    if(!src || !src.width) return null;
+    const W = 480, H = Math.round(src.height * (W / src.width));
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    c.getContext('2d').drawImage(src, 0, 0, W, H);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    if(!blob) return null;
+    const fd = new FormData();
+    fd.append('file', blob); fd.append('upload_preset', 'firmas');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dlgrhr6lh/image/upload', { method:'POST', body: fd });
+    const j = await res.json();
+    return j.secure_url || null;
+  }catch(e){ console.error('thumb', e); return null; }
+}
+
 async function saveCard(){
   if(!currentProfile){toast('Sin sesi\u00f3n activa');return;}
   const saveName=v('f-savename');
@@ -866,6 +885,8 @@ async function saveCard(){
     email:v('f-email'),instagram:v('f-instagram'),
     updated_at:new Date().toISOString()
   };
+  const _thumb = await makeThumb();
+  if(_thumb) record.thumb_url = _thumb;
   try{
     const{data:ex}=await sb.from(CARD_COL).select('id').eq('user_id',currentProfile.id).eq('save_name',saveName).maybeSingle();
     if(ex){await sb.from(CARD_COL).update(record).eq('id',ex.id);toast('Tarjeta actualizada: '+saveName);}
