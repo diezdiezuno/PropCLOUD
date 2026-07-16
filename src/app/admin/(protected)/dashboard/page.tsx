@@ -217,9 +217,43 @@ export default function PerfilPage() {
         </div>
       </div>
 
-      {/* ── Próximos eventos ─────────────────────────────────── */}
-      <ProximosEventos userId={profile.id} cardStyle={card} titleStyle={sectionTitle}
-        onOpenContact={id => setClientView({ type: 'contact', id })} />
+      {/* ── Próximos eventos + Material de impresión ─────────── */}
+      <style>{`
+        .dash-row2 { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; margin-bottom: 20px }
+        @media (max-width: 900px) { .dash-row2 { grid-template-columns: minmax(0, 1fr) } }
+      `}</style>
+      <div className="dash-row2">
+        <ProximosEventos userId={profile.id} cardStyle={card} titleStyle={sectionTitle}
+          onOpenContact={id => setClientView({ type: 'contact', id })} />
+
+        <div style={card}>
+          <h2 style={sectionTitle}>Material de impresión</h2>
+          {material.length === 0
+            ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin material guardado aún — creá rótulos y tarjetas desde el menú PropTools.</p>
+            : (
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {material.map(m => (
+                  <a key={`${m.kind}-${m.id}`} href={`/admin/tools/${m.kind}?id=${m.id}`}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f7f8fa', borderRadius: 10, padding: '10px 16px', textDecoration: 'none', color: '#111', border: '1px solid transparent' }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#d5d9e0')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'transparent')}>
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: '#4b5563' }}>
+                      {m.kind === 'rotulos'
+                        ? <><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></>
+                        : <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></>}
+                    </svg>
+                    <span>
+                      <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>{m.save_name || (m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta')}</span>
+                      <span style={{ display: 'block', fontSize: 11, color: '#9aa1ad' }}>
+                        {m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta'} · {new Date(m.updated_at ?? m.created_at ?? '').toLocaleDateString('es-CR')}
+                      </span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
+        </div>
+      </div>
 
       {/* ── Mis Propiedades ──────────────────────────────────── */}
       <div style={{ ...card, marginBottom: 20 }}>
@@ -279,35 +313,6 @@ export default function PerfilPage() {
                     <span style={{ display: 'block', fontSize: 11, color: '#9aa1ad' }}>{c.email || c.phone || ''}</span>
                   </span>
                 </div>
-              ))}
-            </div>
-          )}
-      </div>
-
-      {/* ── Material de impresión ────────────────────────────── */}
-      <div style={card}>
-        <h2 style={sectionTitle}>Material de impresión</h2>
-        {material.length === 0
-          ? <p style={{ fontSize: 13, color: '#aaa', margin: 0 }}>Sin material guardado aún — creá rótulos y tarjetas desde el menú PropTools.</p>
-          : (
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {material.map(m => (
-                <a key={`${m.kind}-${m.id}`} href={`/admin/tools/${m.kind}?id=${m.id}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f7f8fa', borderRadius: 10, padding: '10px 16px', textDecoration: 'none', color: '#111', border: '1px solid transparent' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#d5d9e0')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'transparent')}>
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: '#4b5563' }}>
-                    {m.kind === 'rotulos'
-                      ? <><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></>
-                      : <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></>}
-                  </svg>
-                  <span>
-                    <span style={{ display: 'block', fontSize: 13, fontWeight: 600 }}>{m.save_name || (m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta')}</span>
-                    <span style={{ display: 'block', fontSize: 11, color: '#9aa1ad' }}>
-                      {m.kind === 'rotulos' ? 'Rótulo' : 'Tarjeta'} · {new Date(m.updated_at ?? m.created_at ?? '').toLocaleDateString('es-CR')}
-                    </span>
-                  </span>
-                </a>
               ))}
             </div>
           )}

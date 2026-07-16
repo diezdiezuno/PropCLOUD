@@ -148,6 +148,9 @@ export default function ProximosEventos({ userId, onOpenContact, cardStyle, titl
   const [loading, setLoading] = useState(true)
   const [days,    setDays]    = useState(30)
   const [filter,  setFilter]  = useState<Kind | null>(null)
+  const [showAll, setShowAll] = useState(false)
+
+  const CAP = 6   // la agenda no puede crecer sin tope: se muestran 6 y "ver todos"
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -173,7 +176,9 @@ export default function ProximosEventos({ userId, onOpenContact, cardStyle, titl
     cumple:   items.filter(i => i.kind === 'cumple').length,
     contrato: items.filter(i => i.kind === 'contrato').length,
   }
-  const shown = filter ? items.filter(i => i.kind === filter) : items
+  const filtered = filter ? items.filter(i => i.kind === filter) : items
+  const shown  = showAll ? filtered : filtered.slice(0, CAP)
+  const hidden = filtered.length - shown.length
 
   // Agrupar por día conservando el orden cronológico
   const today = new Date()
@@ -194,10 +199,10 @@ export default function ProximosEventos({ userId, onOpenContact, cardStyle, titl
   })
 
   return (
-    <div style={{ ...cardStyle, marginBottom: 20 }}>
+    <div style={cardStyle}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
         <h2 style={{ ...titleStyle, margin: 0 }}>Próximos eventos</h2>
-        <select value={days} onChange={e => setDays(Number(e.target.value))}
+        <select value={days} onChange={e => { setDays(Number(e.target.value)); setShowAll(false) }}
           style={{ height: 32, padding: '0 10px', border: '1px solid #e2e5ea', borderRadius: 8, fontSize: 13, background: '#fff', color: '#0d0f12', fontFamily: 'inherit', cursor: 'pointer' }}>
           <option value={7}>7 días</option>
           <option value={30}>30 días</option>
@@ -207,11 +212,11 @@ export default function ProximosEventos({ userId, onOpenContact, cardStyle, titl
 
       {/* Chips = contadores + filtro */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <button onClick={() => setFilter(null)} style={chip(filter === null, '#0d0f12', '#F4F5F7')}>
+        <button onClick={() => { setFilter(null); setShowAll(false) }} style={chip(filter === null, '#0d0f12', '#F4F5F7')}>
           Todos · {items.length}
         </button>
         {(Object.keys(KIND_META) as Kind[]).map(k => (
-          <button key={k} onClick={() => setFilter(filter === k ? null : k)} style={chip(filter === k, KIND_META[k].color, KIND_META[k].bg)}>
+          <button key={k} onClick={() => { setFilter(filter === k ? null : k); setShowAll(false) }} style={chip(filter === k, KIND_META[k].color, KIND_META[k].bg)}>
             <Icon name={KIND_META[k].icon} size={13} />
             {KIND_META[k].label} · {counts[k]}
           </button>
@@ -277,6 +282,15 @@ export default function ProximosEventos({ userId, onOpenContact, cardStyle, titl
             })}
           </div>
         ))
+      )}
+
+      {(hidden > 0 || showAll) && (
+        <div style={{ borderTop: '1px solid #eef0f2', marginTop: 10, paddingTop: 10, textAlign: 'center' }}>
+          <button onClick={() => setShowAll(!showAll)}
+            style={{ fontSize: 12, fontWeight: 600, color: '#5a6070', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+            {showAll ? 'Ver menos' : `Ver todos (${hidden} más)`}
+          </button>
+        </div>
       )}
 
       <div style={{ borderTop: '1px solid #eef0f2', marginTop: 12, paddingTop: 12, textAlign: 'center' }}>
