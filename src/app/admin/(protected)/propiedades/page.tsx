@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { getMembership } from '@/lib/membership'
 import PageHeader from '@/components/admin/PageHeader'
+import { Icon } from '@/lib/icons'
 
 const CRM_STATUS_LABELS: Record<string, string> = {
   draft:        'Borrador',
@@ -77,6 +78,11 @@ export default function PropiedadesPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [deleting,      setDeleting]      = useState<string | null>(null)
   const [showArchived,  setShowArchived]  = useState(false)
+  const [isAdmin,   setIsAdmin]   = useState(false)
+  const [myUserId,  setMyUserId]  = useState<string | null>(null)
+  const [agentMap,  setAgentMap]  = useState<Record<string, string>>({})
+  // El agente ve todas pero edita solo las suyas; el admin edita todas.
+  const canEdit = (p: PropRow) => isAdmin || (!!myUserId && p.agent_id === myUserId)
   function showToast(msg: string, type: 'success' | 'error' = 'success') {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000)
   }
@@ -93,9 +99,9 @@ export default function PropiedadesPage() {
     setPage(0)
   }
 
-  // Anchos: Propiedad, Ubicación, Precio, Estado, Fecha (redimensionables) + Acciones (fija)
+  // Anchos: Propiedad, Ubicación, Precio, Estado, Agente, Fecha (redimensionables) + Acciones (fija)
   const ACTIONS_W = 88
-  const DEFAULT_COLS = [340, 200, 140, 160, 110, ACTIONS_W]
+  const DEFAULT_COLS = [320, 180, 130, 150, 150, 100, ACTIONS_W]
   const [colWidths, setColWidths] = useState<number[]>(DEFAULT_COLS)
   const colWidthsRef = useRef(colWidths)
   const dragRef = useRef<{ idx: number; startX: number; startW: number } | null>(null)
@@ -138,6 +144,18 @@ export default function PropiedadesPage() {
       if (!m) return
       const adminRec = { tenant_id: m.tenantId }
       setTenantId(adminRec.tenant_id)
+      setIsAdmin(m.isAdmin)
+      // agent_id referencia users.id: resolver el mío + mapa de nombres
+      const sb = createClient()
+      const { data: { user } } = await sb.auth.getUser()
+      const [{ data: me }, { data: ags }] = await Promise.all([
+        user
+          ? sb.from('users').select('id').eq('auth_id', user.id).eq('tenant_id', m.tenantId).maybeSingle()
+          : Promise.resolve({ data: null }),
+        sb.from('users').select('id,name').eq('tenant_id', m.tenantId),
+      ])
+      setMyUserId((me as { id: string } | null)?.id ?? null)
+      setAgentMap(Object.fromEntries(((ags ?? []) as { id: string; name: string }[]).map(a => [a.id, a.name])))
       const ps = localStorage.getItem('propiedades_page_size')
       if (ps !== null && !isNaN(Number(ps))) setPageSize(Number(ps))
       try {
@@ -230,7 +248,7 @@ export default function PropiedadesPage() {
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: 380 }}>
-          <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: 14, pointerEvents: 'none' }}>🔍</span>
+          <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', display: 'flex', pointerEvents: 'none' }}><Icon name="search" size={15} /></span>
           <input type="text" placeholder="Buscar por título o ubicación…" value={search}
             onChange={e => handleSearch(e.target.value)} style={{ ...sInput, paddingLeft: 36 }} />
         </div>
@@ -247,7 +265,7 @@ export default function PropiedadesPage() {
 
       {props.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: 12, padding: '60px 24px', border: '1px solid #ebebeb', textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🏘️</div>
+          <div style={{ marginBottom: 12, color: '#c5cad3', display: 'flex', justifyContent: 'center' }}><Icon name="home" size={30} /></div>
           <p style={{ fontSize: 14, color: '#aaa', margin: '0 0 20px' }}>
             {search ? 'Sin resultados para esa búsqueda.' : 'Las propiedades cargadas manualmente aparecerán aquí.'}
           </p>
@@ -278,7 +296,7 @@ export default function PropiedadesPage() {
               </colgroup>
               <thead>
                 <tr style={{ background: '#f9fafb', color: '#5a6070', textAlign: 'left' }}>
-                  {([['Propiedad', 'title'], ['Ubicación', 'location'], ['Precio', 'price'], ['Estado CRM', 'status'], ['Fecha', 'date'], ['', null]] as [string, SortKey | null][]).map(([label, key], i) => (
+                  {([['Propiedad', 'title'], ['Ubicación', 'location'], ['Precio', 'price'], ['Estado CRM', 'status'], ['Agente', null], ['Fecha', 'date'], ['', null]] as [string, SortKey | null][]).map(([label, key], i) => (
                     <th key={i}
                       onClick={key ? () => toggleSort(key) : undefined}
                       style={{ padding: '9px 12px', fontWeight: 500, position: 'relative', cursor: key ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap', borderRight: i < colWidths.length - 1 ? '1px solid #e5e7eb' : undefined }}>
@@ -303,8 +321,8 @@ export default function PropiedadesPage() {
                     <tr key={p.id} className="pr-trow" style={{ borderTop: '1px solid #eef0f2' }}>
                       <td style={{ padding: '8px 12px' }}>
                         <div onClick={() => router.push(`/admin/propiedades/${p.id}`)} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', minWidth: 0 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: 8, background: '#f0ede8', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                            {thumb ? <img src={thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🏠'}
+                          <div style={{ width: 40, height: 40, borderRadius: 8, background: '#f0ede8', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b6a98f' }}>
+                            {thumb ? <img src={thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Icon name="image" size={18} />}
                           </div>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontWeight: 600, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -323,12 +341,17 @@ export default function PropiedadesPage() {
                           {CRM_STATUS_LABELS[statusKey] ?? statusKey}
                         </span>
                       </td>
+                      <td style={{ padding: '8px 12px', color: p.agent_id ? '#5a6070' : '#c5cad3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.agent_id ? (agentMap[p.agent_id] ?? '—') : 'Sin asignar'}
+                      </td>
                       <td style={{ padding: '8px 12px', color: '#9ca3af', whiteSpace: 'nowrap' }}>
                         {new Date(p.created_at).toLocaleDateString('es-CR', { day: 'numeric', month: 'short', year: '2-digit' })}
                       </td>
                       <td style={{ padding: '8px 12px' }}>
                         <div className="pr-actions" onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                          {showArchived ? (
+                          {!canEdit(p) ? (
+                            <span style={{ fontSize: 11, color: '#c5cad3' }}>—</span>
+                          ) : showArchived ? (
                             <button onClick={() => restoreProperty(p.id)} disabled={isDeleting}
                               style={{ fontSize: 12, fontWeight: 600, color: '#0d0f12', background: '#fff', border: '1px solid #e2e5ea', borderRadius: 7, padding: '5px 12px', cursor: isDeleting ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: isDeleting ? .6 : 1 }}>{isDeleting ? '…' : 'Restaurar'}</button>
                           ) : !isConfirming ? (
