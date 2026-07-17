@@ -7,6 +7,7 @@ import { getMembership } from '@/lib/membership'
 import { getCantons, getDistricts } from '@/data/cr-divisions'
 import type mapboxgl from 'mapbox-gl'
 import ContactVCardModal, { type VCardViewType } from '../ContactVCardModal'
+import { Icon } from '@/lib/icons'
 import NewOwnerModal, { type NewOwnerResult } from '../NewOwnerModal'
 
 /* ── Constants ───────────────────────────────────────────────── */
@@ -120,13 +121,17 @@ export default function PropiedadPage() {
   const [activeTab, setActiveTab] = useState(Number(searchParams.get('tab') ?? '1'))
   const [estudiosCount,  setEstudiosCount]  = useState(0)
   const [contratosCount, setContratosCount] = useState(0)
+  const [isAdmin,   setIsAdmin]   = useState(false)
+  const [myUserId,  setMyUserId]  = useState<string | null>(null)
 
   useEffect(() => {
     const sb = createClient()
     getMembership().then(async m => {
       if (!m) return
       const adminRec = { tenant_id: m.tenantId }
-      const [{ data: p }, { data: types }, { data: sts }, { data: ams }, { data: agentList }, { data: est }, { data: con }] = await Promise.all([
+      setIsAdmin(m.isAdmin)
+      const { data: { user } } = await sb.auth.getUser()
+      const [{ data: p }, { data: types }, { data: sts }, { data: ams }, { data: agentList }, { data: est }, { data: con }, { data: me }] = await Promise.all([
         sb.from('properties').select('*').eq('id', id).eq('tenant_id', adminRec.tenant_id).single(),
         sb.from('property_types').select('id,label,value,icon').eq('tenant_id', adminRec.tenant_id).order('sort_order'),
         sb.from('property_statuses').select('value,label,web_status').eq('tenant_id', adminRec.tenant_id).order('position'),
@@ -136,7 +141,11 @@ export default function PropiedadPage() {
         sb.from('crm_estudios').select('id').eq('property_id', id),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (sb as any).from('contracts').select('id').eq('property_id', id).eq('active', true),
+        user
+          ? sb.from('users').select('id').eq('auth_id', user.id).eq('tenant_id', adminRec.tenant_id).maybeSingle()
+          : Promise.resolve({ data: null }),
       ])
+      setMyUserId((me as { id: string } | null)?.id ?? null)
       if (p) { setProp(p as PropertyFull); setAgentId((p as PropertyFull).agent_id ?? '') }
       setEstudiosCount((est ?? []).length)
       setContratosCount((con ?? []).length)
@@ -183,6 +192,10 @@ export default function PropiedadPage() {
   if (loading) return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>
   if (!prop)   return <div style={{ padding: 40, color: '#e53e3e', fontSize: 14 }}>Propiedad no encontrada.</div>
 
+  // El agente edita solo las suyas; el admin todas. La RLS lo fuerza en la
+  // base; acá se refleja en la UI para no mostrar formularios que fallarían.
+  const canEdit = isAdmin || (!!myUserId && prop.agent_id === myUserId)
+
   // Qué etapa ya tiene datos. No bloquea nada: solo pinta el punto del tab.
   const progress: Record<number, boolean> = {
     1: Boolean(prop.type && prop.provincia),
@@ -204,23 +217,38 @@ export default function PropiedadPage() {
         </button>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
           <div style={{ borderLeft: '3px solid #111', paddingLeft: 14 }}>
-            <EditableTitle value={prop.title} onSave={saveTitle} />
+            {canEdit
+              ? <EditableTitle value={prop.title} onSave={saveTitle} />
+              : <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111', margin: '0 0 4px' }}>{prop.title || <span style={{ color: '#bbb', fontWeight: 400 }}>Sin título</span>}</h1>}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {prop.provincia && <span style={{ fontSize: 13, color: '#888' }}>📍 {[prop.canton, prop.provincia].filter(Boolean).join(', ')}</span>}
-              <StatusSelect value={prop.crm_status} statuses={statuses} onChange={saveStatus} />
+              {canEdit
+                ? <StatusSelect value={prop.crm_status} statuses={statuses} onChange={saveStatus} />
+                : (() => { const c = statusColor(prop.crm_status); return <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: c.bg, color: c.color }}>{statuses.find(s => s.value === prop.crm_status)?.label ?? prop.crm_status}</span> })()}
             </div>
           </div>
-          {agents.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em' }}>Agente</span>
+          {/* Agente: el admin reasigna; los demás lo ven de solo lectura */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.06em' }}>Agente</span>
+            {isAdmin && agents.length > 0 ? (
               <select value={agentId} onChange={e => saveAgent(e.target.value)}
                 style={{ height: 34, padding: '0 10px', border: '1px solid #e2e5ea', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', background: '#fff', cursor: 'pointer', maxWidth: 200 }}>
                 <option value="">Sin asignar</option>
                 {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
-            </div>
-          )}
+            ) : (
+              <span style={{ fontSize: 13, color: '#5a6070', height: 34, display: 'flex', alignItems: 'center' }}>
+                {agents.find(a => a.id === prop.agent_id)?.name ?? 'Sin asignar'}
+              </span>
+            )}
+          </div>
         </div>
+        {!canEdit && (
+          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 8, fontSize: 13, color: '#92610A' }}>
+            <Icon name="lightbulb" size={15} />
+            Solo lectura — no sos el agente asignado a esta propiedad. Un administrador o el agente asignado puede editarla.
+          </div>
+        )}
       </div>
 
       {/* Tab bar — el punto verde marca la etapa que ya tiene datos */}
@@ -247,14 +275,17 @@ export default function PropiedadPage() {
         ))}
       </div>
 
-      {/* Tab content */}
-      {activeTab === 1 && <Tab1Captacion prop={prop} propTypes={propTypes} onSaved={setProp} />}
-      {activeTab === 2 && <Tab2CaracteristicasAmenidades prop={prop} amenities={amenities} onSaved={setProp} />}
-      {activeTab === 3 && <Tab7Estudios  prop={prop} />}
-      {activeTab === 4 && <TabContrato   prop={prop} />}
-      {activeTab === 5 && <Tab5Descripcion prop={prop} onSaved={setProp} />}
-      {activeTab === 6 && <Tab6Media     prop={prop} onSaved={setProp} />}
-      {activeTab === 7 && <TabPortales />}
+      {/* Tab content — fieldset disabled desactiva todos los controles de
+          formulario de una si el usuario no puede editar. */}
+      <fieldset disabled={!canEdit} style={{ border: 'none', margin: 0, padding: 0, minInlineSize: 0 }}>
+        {activeTab === 1 && <Tab1Captacion prop={prop} propTypes={propTypes} onSaved={setProp} />}
+        {activeTab === 2 && <Tab2CaracteristicasAmenidades prop={prop} amenities={amenities} onSaved={setProp} />}
+        {activeTab === 3 && <Tab7Estudios  prop={prop} />}
+        {activeTab === 4 && <TabContrato   prop={prop} />}
+        {activeTab === 5 && <Tab5Descripcion prop={prop} onSaved={setProp} />}
+        {activeTab === 6 && <Tab6Media     prop={prop} onSaved={setProp} />}
+        {activeTab === 7 && <TabPortales />}
+      </fieldset>
     </div>
   )
 }
