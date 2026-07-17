@@ -72,6 +72,7 @@ export default function NuevaPropiedadPage() {
   /* Reference data */
   const [propTypes, setPropTypes] = useState<PropertyType[]>([])
   const [agents,    setAgents]    = useState<Agent[]>([])
+  const [isAdmin,   setIsAdmin]   = useState(false)
 
   /* ── SECTION 1: Datos básicos ── */
   const [propType,    setPropType]    = useState('')
@@ -146,13 +147,22 @@ export default function NuevaPropiedadPage() {
       setTenantId(adminRec.tenant_id)
       setTenantCountry(m.country)
 
-      const [{ data: types }, { data: agentList }] = await Promise.all([
+      setIsAdmin(m.isAdmin)
+      const { data: { user } } = await supabase.auth.getUser()
+      const [{ data: types }, { data: agentList }, { data: me }] = await Promise.all([
         supabase.from('property_types').select('id,label,value,icon').eq('tenant_id', adminRec.tenant_id).order('sort_order'),
         supabase.from('users').select('id,name').eq('tenant_id', adminRec.tenant_id).order('name'),
+        user
+          ? supabase.from('users').select('id').eq('auth_id', user.id).eq('tenant_id', adminRec.tenant_id).maybeSingle()
+          : Promise.resolve({ data: null }),
       ])
 
       setPropTypes((types ?? []) as PropertyType[])
       setAgents((agentList ?? []) as Agent[])
+      // El agente que sube la propiedad queda asignado (así puede editarla:
+      // la RLS solo deja editar admin o dueño). El admin elige.
+      const meId = (me as { id: string } | null)?.id
+      if (!m.isAdmin && meId) setAgentId(meId)
       if (types?.length) setPropType(types[0].value)
       setLoading(false)
     })
@@ -802,15 +812,17 @@ export default function NuevaPropiedadPage() {
             ))}
           </div>
 
-          {/* Agente asignado */}
-          {agents.length > 0 && (
-            <>
-              <FieldLabel>Agente asignado</FieldLabel>
-              <select value={agentId} onChange={e => setAgentId(e.target.value)} style={{ ...inputSt, maxWidth: 320 }}>
-                <option value="">Sin asignar</option>
-                {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </>
+          {/* Agente asignado — el admin elige; el agente queda asignado a sí mismo */}
+          <FieldLabel>Agente asignado</FieldLabel>
+          {isAdmin ? (
+            <select value={agentId} onChange={e => setAgentId(e.target.value)} style={{ ...inputSt, maxWidth: 320 }}>
+              <option value="">Sin asignar</option>
+              {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          ) : (
+            <div style={{ ...inputSt, maxWidth: 320, display: 'flex', alignItems: 'center', color: '#5a6070', background: '#f7f8fa' }}>
+              {agents.find(a => a.id === agentId)?.name ?? 'Vos'}
+            </div>
           )}
         </FormSection>
 
