@@ -62,7 +62,7 @@ interface PropertyFull {
   area_m2: number | null; lot_m2: number | null
   parking: number | null; floors: number | null; year_built: number | null
   amenities: string[] | null; price: number; currency: string
-  video_url: string | null; images: string[]
+  video_url: string | null; video_urls: string[] | null; tour_url: string | null; images: string[]
   title: string; description_es: string | null; description_en: string | null
   features: Record<string, string> | null
 }
@@ -190,7 +190,7 @@ export default function PropiedadPage() {
     3: estudiosCount > 0,
     4: contratosCount > 0,
     5: Boolean(prop.description_es),
-    6: (prop.images?.length ?? 0) > 0,
+    6: (prop.images?.length ?? 0) > 0 || (prop.video_urls?.length ?? 0) > 0 || Boolean(prop.tour_url),
     7: false,
   }
 
@@ -253,7 +253,7 @@ export default function PropiedadPage() {
       {activeTab === 3 && <Tab7Estudios  prop={prop} />}
       {activeTab === 4 && <TabContrato   prop={prop} />}
       {activeTab === 5 && <Tab5Descripcion prop={prop} onSaved={setProp} />}
-      {activeTab === 6 && <Tab6Fotos     prop={prop} onSaved={setProp} />}
+      {activeTab === 6 && <Tab6Media     prop={prop} onSaved={setProp} />}
       {activeTab === 7 && <TabPortales />}
     </div>
   )
@@ -779,7 +779,6 @@ function Tab2CaracteristicasAmenidades({ prop, amenities, onSaved }: {
 function Tab5Descripcion({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: PropertyFull) => void }) {
   const [descEs,  setDescEs]  = useState(prop.description_es ?? '')
   const [descEn,  setDescEn]  = useState(prop.description_en ?? '')
-  const [videoUrl, setVideoUrl] = useState(prop.video_url ?? '')
   const [saving,   setSaving]   = useState(false)
   const [saved,    setSaved]    = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -789,7 +788,6 @@ function Tab5Descripcion({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: P
     const { data, error } = await createClient().from('properties').update({
       description_es: descEs || null,
       description_en: descEn || null,
-      video_url:      videoUrl || null,
     }).eq('id', prop.id).select('*').single()
     if (error) { setSaveError(`Error: ${error.message}`); setSaving(false); return }
     onSaved(data as PropertyFull); setSaving(false); setSaved(true)
@@ -811,12 +809,6 @@ function Tab5Descripcion({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: P
             placeholder="Detailed property description in English…"
             style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6 }} />
         </div>
-        <div>
-          <FieldLabel>URL de video (YouTube / Vimeo)</FieldLabel>
-          <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
-            placeholder="https://youtube.com/watch?v=..."
-            style={inputSt} />
-        </div>
       </FormSection>
       <SaveBar saving={saving} saved={saved} error={saveError} />
     </form>
@@ -826,13 +818,39 @@ function Tab5Descripcion({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: P
 /* ══════════════════════════════════════════════════════════════
    TAB 6 — Fotos
 ══════════════════════════════════════════════════════════════ */
-function Tab6Fotos({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: PropertyFull) => void }) {
+// Media = fotos + videos + tour 360. Las fotos se auto-guardan al subir
+// (siempre fue así); videos y 360 son texto, así que van con Guardar
+// explícito para no pegarle a la base en cada tecla.
+function Tab6Media({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: PropertyFull) => void }) {
   const [images,    setImages]    = useState<string[]>(prop.images ?? [])
+  const [videos,    setVideos]    = useState<string[]>(prop.video_urls ?? [])
+  const [newVideo,  setNewVideo]  = useState('')
+  const [tourUrl,   setTourUrl]   = useState(prop.tour_url ?? '')
   const [uploading, setUploading] = useState(false)
   const [saving,    setSaving]    = useState(false)
   const [saved,     setSaved]     = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [mediaSaving, setMediaSaving] = useState(false)
+  const [mediaSaved,  setMediaSaved]  = useState(false)
+  const [mediaError,  setMediaError]  = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function addVideo() {
+    const v = newVideo.trim()
+    if (!v || videos.includes(v)) return
+    setVideos(prev => [...prev, v]); setNewVideo('')
+  }
+
+  async function saveMedia(e: React.FormEvent) {
+    e.preventDefault(); setMediaSaving(true); setMediaError(null); setMediaSaved(false)
+    const { data, error } = await createClient().from('properties').update({
+      video_urls: videos,
+      tour_url:   tourUrl.trim() || null,
+    }).eq('id', prop.id).select('*').single()
+    if (error) { setMediaError(`Error: ${error.message}`); setMediaSaving(false); return }
+    onSaved(data as PropertyFull); setMediaSaving(false); setMediaSaved(true)
+    setTimeout(() => setMediaSaved(false), 2500)
+  }
 
   async function handleFiles(files: FileList) {
     setUploading(true); setSaveError(null)
@@ -917,6 +935,55 @@ function Tab6Fotos({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Propert
         {saveError && <p style={{ fontSize: 12, color: '#e53e3e', margin: '12px 0 0' }}>{saveError}</p>}
         {saved && <p style={{ fontSize: 12, color: '#10B981', margin: '12px 0 0', fontWeight: 600 }}>✓ Portada actualizada</p>}
       </FormSection>
+
+      <form onSubmit={saveMedia} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <FormSection title={`Videos (${videos.length})`}>
+          <FieldLabel>Agregar video (YouTube / Vimeo)</FieldLabel>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={newVideo} onChange={e => setNewVideo(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addVideo() } }}
+              placeholder="https://youtube.com/watch?v=…"
+              style={{ ...inputSt, flex: 1 }} />
+            <button type="button" onClick={addVideo}
+              style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid #e0e0e0', background: '#fff', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+              + Agregar
+            </button>
+          </div>
+          {videos.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
+              {videos.map(v => (
+                <div key={v} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: '#F9FAFB', borderRadius: 10, border: '1px solid #e2e5ea' }}>
+                  <span style={{ fontSize: 15, flexShrink: 0 }}>🎬</span>
+                  <a href={v} target="_blank" rel="noopener noreferrer"
+                    style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#1B6EF3', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v}</a>
+                  <button type="button" onClick={() => setVideos(prev => prev.filter(x => x !== v))} title="Quitar"
+                    style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 15, padding: 0, lineHeight: 1, flexShrink: 0 }}>×</button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '16px 0', color: '#bbb', fontSize: 13 }}>Sin videos aún</div>
+          )}
+        </FormSection>
+
+        <FormSection title="Tour 360">
+          <FieldLabel>Link del tour (Matterport, Kuula, etc.)</FieldLabel>
+          <input value={tourUrl} onChange={e => setTourUrl(e.target.value)}
+            placeholder="https://my.matterport.com/show/?m=…"
+            style={inputSt} />
+          <p style={{ fontSize: 11, color: '#aaa', margin: '6px 0 0' }}>
+            Se guarda el link y lo embebemos; el hosting queda del lado del proveedor.
+          </p>
+          {tourUrl.trim() && (
+            <a href={tourUrl} target="_blank" rel="noopener noreferrer"
+              style={{ display: 'inline-block', marginTop: 10, fontSize: 12, fontWeight: 600, color: '#1B6EF3', textDecoration: 'none' }}>
+              Abrir tour ↗
+            </a>
+          )}
+        </FormSection>
+
+        <SaveBar saving={mediaSaving} saved={mediaSaved} error={mediaError} />
+      </form>
     </div>
   )
 }
