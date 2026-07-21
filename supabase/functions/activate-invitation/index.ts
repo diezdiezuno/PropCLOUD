@@ -26,6 +26,21 @@ const json = (body: unknown, status = 200) =>
     headers: { ...CORS, 'Content-Type': 'application/json' },
   })
 
+// El admin de auth no filtra por correo, hay que recorrer las paginas.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function findUserByEmail(sb: any, email: string) {
+  const target = email.toLowerCase()
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await sb.auth.admin.listUsers({ page, perPage: 1000 })
+    if (error) return null
+    const users = data?.users ?? []
+    const hit = users.find((u: { email?: string }) => u.email?.toLowerCase() === target)
+    if (hit) return hit
+    if (users.length < 1000) return null
+  }
+  return null
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -66,13 +81,38 @@ Deno.serve(async (req) => {
     let authId = created?.user?.id
 
     if (createErr) {
-      // Ya existía en auth. No se le cambia la contraseña: el token autoriza a
-      // crear la cuenta de ese correo, no a apropiarse de una que ya alguien usa.
       const already = createErr.message?.toLowerCase().includes('already')
       if (!already) return json({ error: createErr.message }, 400)
-      return json({
-        error: 'Este correo ya tiene una cuenta. Iniciá sesión con tu contraseña, o pedile al administrador que la restablezca.',
-      }, 409)
+
+      // Ya hay una cuenta con ese correo. Puede ser real, o el resto de un
+      // intento fallido: el registro anterior hacía signUp desde el navegador
+      // y, al exigir el proyecto confirmación por email, dejaba la cuenta sin
+      // confirmar y sin perfil. Esa cascara bloquea la invitación para siempre.
+      const existing = await findUserByEmail(sb, invite.email)
+      if (!existing) return json({ error: 'Este correo ya tiene una cuenta.' }, 409)
+
+      const { data: prof } = await sb
+        .from('users').select('id').eq('auth_id', existing.id).maybeSingle()
+      const { data: adm } = await sb
+        .from('tenant_admins').select('user_id').eq('user_id', existing.id).maybeSingle()
+
+      // Solo se reclama si nadie la uso nunca: sin confirmar, sin login y sin
+      // perfil. Con cualquiera de esas tres, la cuenta es de alguien y cambiarle
+      // la contrasena seria apropiarsela, no activarla.
+      const abandonada = !existing.email_confirmed_at && !existing.last_sign_in_at && !prof && !adm
+      if (!abandonada) {
+        return json({
+          error: 'Este correo ya tiene una cuenta. Iniciá sesión con tu contraseña, o pedile al administrador que la restablezca.',
+        }, 409)
+      }
+
+      const { error: updErr } = await sb.auth.admin.updateUserById(existing.id, {
+        password,
+        email_confirm: true,
+        user_metadata: { name },
+      })
+      if (updErr) return json({ error: updErr.message }, 400)
+      authId = existing.id
     }
 
     if (!authId) return json({ error: 'No se pudo crear la cuenta' }, 500)
