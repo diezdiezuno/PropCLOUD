@@ -25,7 +25,7 @@ export default async function ReclutamientoPage() {
   const template = settings.reclutamiento_template ?? 'default'
 
   if (template === 'sunrise') {
-    return <ReclutamientoClientSunrise />
+    return <ReclutamientoClientSunrise content={settings.reclutamiento_content} />
   }
 
   return (

@@ -44,6 +44,23 @@ export interface PageSettings {
   // componente y cualquier oficina que eligiera la plantilla publicaba el
   // texto de Sunrise con su propio nombre en el encabezado.
   nosotros_content?: NosotrosContent
+  contacto_content?: ContactoContent
+  reclutamiento_content?: ReclutamientoContent
+}
+
+export interface ContactoContent {
+  hero?: { title?: string; accent?: string; text?: string }
+  form?: { title?: string; text?: string }
+}
+
+export interface ReclutamientoContent {
+  hero?:     { title?: string; accent?: string; tail?: string; text?: string }
+  benefits?: { eyebrow?: string; title?: string; items?: { id: string; icon: string; title: string; desc: string }[] }
+  // Las zonas van agrupadas: cada oficina define las suyas y cómo se agrupan.
+  // Antes eran dos listas fijas ("este de San José" / "resto del GAM"), que es
+  // el mapa de una oficina concreta, no algo que sirva a cualquier tenant.
+  zones?:    { groups?: { label: string; items: string[] }[] }
+  success?:  { title?: string; text?: string }
 }
 
 export interface NosotrosContent {

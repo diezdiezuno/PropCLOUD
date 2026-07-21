@@ -3,45 +3,34 @@
 import { useState, useRef } from 'react'
 import { track } from '@/lib/gtag'
 import { createClient } from '@/lib/supabase-browser'
+import type { ReclutamientoContent } from '@/types'
 
-const BENEFITS = [
-  {
-    id: 'leader',
-    icon: '👑',
-    title: 'Apoyo del Team Leader',
-    desc: 'Acompañamiento directo del Team Leader en cada etapa: desde tu primera propiedad hasta cerrar ventas complejas. No estás solo.',
-  },
-  {
-    id: 'training',
-    icon: '🎓',
-    title: 'Entrenamiento completo',
-    desc: 'Desde cero hasta tu primera venta. Técnicas de negociación, manejo de clientes y todas las herramientas REMAX.',
-  },
-  {
-    id: 'income',
-    icon: '💰',
-    title: 'Ingresos sin techo',
-    desc: 'Comisiones sin límite. El mercado está activo todo el año. Vos decidís cuánto querés ganar.',
-  },
-  {
-    id: 'brand',
-    icon: '🌍',
-    title: 'Marca mundial REMAX',
-    desc: 'Credibilidad y captación de clientes desde el primer día con el respaldo de la red internacional REMAX.',
-  },
-]
+// Defaults genericos: el copy y las zonas de cada oficina viven en la base
+// (pages_config.settings.reclutamiento_content), no en el componente.
+const D = {
+  heroTitle:  'Tu carrera en',
+  heroAccent: 'bienes raíces',
+  heroTail:   'empieza aquí.',
+  heroText:   'Sumate a nuestro equipo y desarrollá tu carrera en bienes raíces con acompañamiento profesional.',
+  benefitsEyebrow: 'Por qué nosotros',
+  benefitsTitle:   'Todo el respaldo que necesitás para vender y crecer.',
+  benefits: [] as { id: string; icon: string; title: string; desc: string }[],
+  zoneGroups: [] as { label: string; items: string[] }[],
+  successTitle: '¡Aplicación recibida!',
+  successText:  'Gracias por tu interés. Te contactaremos en las próximas 24 horas.',
+}
 
-const ZONES_EAST = [
-  'Montes de Oca / San Pedro', 'Goicoechea / Guadalupe', 'Moravia', 'Tibás',
-  'Curridabat', 'Tres Ríos / La Unión', 'Desamparados', 'Cartago centro',
-  'El Guarco / Tejar', 'Paraíso / Oreamuno', 'San Diego / San Juan', 'Otra zona del este',
-]
-const ZONES_GAM = [
-  'San José centro', 'Escazú / Santa Ana', 'La Uruca / Pavas',
-  'Heredia', 'Alajuela', 'Otra zona',
-]
-
-export default function ReclutamientoClient() {
+export default function ReclutamientoClient({ content = {} }: { content?: ReclutamientoContent }) {
+  const heroTitle  = content.hero?.title  || D.heroTitle
+  const heroAccent = content.hero?.accent || D.heroAccent
+  const heroTail   = content.hero?.tail   || D.heroTail
+  const heroText   = content.hero?.text   || D.heroText
+  const benefitsEyebrow = content.benefits?.eyebrow || D.benefitsEyebrow
+  const benefitsTitle   = content.benefits?.title   || D.benefitsTitle
+  const BENEFITS = content.benefits?.items?.length ? content.benefits.items : D.benefits
+  const zoneGroups = content.zones?.groups?.length ? content.zones.groups : D.zoneGroups
+  const successTitle = content.success?.title || D.successTitle
+  const successText  = content.success?.text  || D.successText
   const [nombre,     setNombre]     = useState('')
   const [apellido,   setApellido]   = useState('')
   const [telefono,   setTelefono]   = useState('')
@@ -118,21 +107,21 @@ export default function ReclutamientoClient() {
           fontWeight: 900, lineHeight: .93,
           letterSpacing: '-.03em', marginBottom: 28,
         }}>
-          Tu carrera en{' '}
+          {heroTitle}{' '}
           <span style={{
             background: 'linear-gradient(90deg,var(--primary,#6b2fa0),#D44E2A,#E8920A)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
-          }}>bienes raíces</span><br />
-          empieza aquí.
+          }}>{heroAccent}</span><br />
+          {heroTail}
         </h1>
 
         <p style={{
           fontSize: 'clamp(16px,1.8vw,20px)', fontWeight: 300,
           color: '#888480', maxWidth: 720, lineHeight: 1.65, marginBottom: 44,
         }}>
-          Únete a <strong style={{ fontWeight: 500, color: '#111' }}>SUNRISE | REMAX Central</strong> — el equipo especializado en el este de San José, en la oficina más grande y con más experiencia del GAM.
+          {heroText}
         </p>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 64 }}>
@@ -174,7 +163,7 @@ export default function ReclutamientoClient() {
         borderTop: '1px solid #e8e4df',
       }}>
         <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 14, textAlign: 'center', width: '100%' }}>
-          Por qué SUNRISE | REMAX Central
+          {benefitsEyebrow}
         </p>
         <h2 style={{
           fontFamily: 'var(--font-heading,serif)',
@@ -182,7 +171,7 @@ export default function ReclutamientoClient() {
           lineHeight: 1.1, letterSpacing: '-.02em',
           marginBottom: 52, textAlign: 'center', width: '100%',
         }}>
-          Todo el respaldo que necesitás para vender y crecer.
+          {benefitsTitle}
         </h2>
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(2,1fr)',
@@ -355,10 +344,10 @@ export default function ReclutamientoClient() {
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
             }}>🌅</div>
             <h3 style={{ fontFamily: 'var(--font-heading,serif)', fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', margin: 0 }}>
-              ¡Aplicación recibida!
+              {successTitle}
             </h3>
             <p style={{ fontSize: 15, color: '#888480', maxWidth: 380, lineHeight: 1.65, margin: 0 }}>
-              Gracias por tu interés en SUNRISE. Te contactaremos en las próximas 24 horas.
+              {successText}
             </p>
           </div>
         ) : (
@@ -383,12 +372,11 @@ export default function ReclutamientoClient() {
                   <label style={labelSt}>Zona donde vivís *</label>
                   <select value={zona} onChange={e => setZona(e.target.value)} style={inpSt}>
                     <option value="" disabled>Seleccioná tu zona</option>
-                    <optgroup label="Este de San José (zona principal)">
-                      {ZONES_EAST.map(z => <option key={z} value={z}>{z}</option>)}
-                    </optgroup>
-                    <optgroup label="Otras zonas del GAM">
-                      {ZONES_GAM.map(z => <option key={z} value={z}>{z}</option>)}
-                    </optgroup>
+                    {zoneGroups.map(g => (
+                      <optgroup key={g.label} label={g.label}>
+                        {g.items.map(z => <option key={z} value={z}>{z}</option>)}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
                 <FInp

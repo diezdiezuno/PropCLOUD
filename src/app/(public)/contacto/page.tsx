@@ -34,7 +34,7 @@ export default async function ContactoPage() {
   }
 
   if (pageCfg?.settings?.contacto_template === 'sunrise') {
-    return <ContactoClientSunrise {...contactProps} />
+    return <ContactoClientSunrise content={pageCfg.settings.contacto_content} {...contactProps} />
   }
 
   return <ContactoClient {...contactProps} />

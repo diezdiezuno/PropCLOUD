@@ -2,8 +2,20 @@
 
 import { useState } from 'react'
 import { track } from '@/lib/gtag'
+import type { ContactoContent } from '@/types'
+
+// Defaults genericos: el copy de cada oficina vive en la base
+// (pages_config.settings.contacto_content), no en el componente.
+const D = {
+  heroTitle:  'Hablemos.',
+  heroAccent: 'Estamos aquí.',
+  heroText:   'Ya sea para comprar, vender, alquilar o simplemente conocer el mercado — un agente te atiende personalmente.',
+  formTitle:  'Mandanos tu consulta y te respondemos hoy.',
+  formText:   'Completá el formulario y un asesor se pondrá en contacto con vos a la brevedad.',
+}
 
 interface Props {
+  content?: ContactoContent
   whatsapp: string | null
   email: string | null
   address: string | null
@@ -24,7 +36,12 @@ const SOCIAL = [
   { key: 'twitter',   label: 'X',         color: '#000000', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.261 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg> },
 ] as const
 
-export default function ContactoClientSunrise({ whatsapp, email, address, instagram, facebook, linkedin, youtube, tiktok, twitter }: Props) {
+export default function ContactoClientSunrise({ content = {}, whatsapp, email, address, instagram, facebook, linkedin, youtube, tiktok, twitter }: Props) {
+  const heroTitle  = content.hero?.title  || D.heroTitle
+  const heroAccent = content.hero?.accent || D.heroAccent
+  const heroText   = content.hero?.text   || D.heroText
+  const formTitle  = content.form?.title  || D.formTitle
+  const formText   = content.form?.text   || D.formText
   const [name,      setName]      = useState('')
   const [formEmail, setFormEmail] = useState('')
   const [phone,     setPhone]     = useState('')
@@ -64,20 +81,19 @@ export default function ContactoClientSunrise({ whatsapp, email, address, instag
             fontWeight: 900, lineHeight: .93,
             letterSpacing: '-.03em', marginBottom: 28,
           }}>
-            Hablemos.{' '}
+            {heroTitle}{' '}
             <span style={{
               background: 'linear-gradient(90deg,var(--primary,#6b2fa0),#D44E2A,#E8920A)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-            }}>Estamos aquí.</span>
+            }}>{heroAccent}</span>
           </h1>
           <p style={{
             fontSize: 'clamp(16px,1.8vw,20px)', fontWeight: 300,
             color: '#888480', lineHeight: 1.65, maxWidth: 580,
           }}>
-            Ya sea para comprar, vender, alquilar o simplemente conocer el mercado —
-            un agente de Sunrise te atiende personalmente.
+            {heroText}
           </p>
         </div>
       </section>
@@ -132,10 +148,10 @@ export default function ContactoClientSunrise({ whatsapp, email, address, instag
               lineHeight: 1.15, letterSpacing: '-.02em',
               color: '#111', margin: '0 0 20px',
             }}>
-              Mandanos tu consulta y te respondemos hoy.
+              {formTitle}
             </h2>
             <p style={{ fontSize: 14, color: '#888', lineHeight: 1.7, margin: '0 0 36px' }}>
-              Completá el formulario y un asesor de Sunrise se pondrá en contacto con vos a la brevedad.
+              {formText}
             </p>
 
             {/* Social */}
