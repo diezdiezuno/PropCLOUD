@@ -1628,8 +1628,16 @@ $('btn-send').addEventListener('click', async () => {
 
     if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
 
-    toast('✓ Invitación enviada correctamente', 'success');
-    showAlert(`Invitación enviada a <strong>${email}</strong>. El agente recibirá un link para crear su cuenta.`, 'success');
+    // La función responde ok:true aunque el email falle (falta RESEND_API_KEY,
+    // dominio sin verificar). En ese caso trae warning + link, y hay que
+    // mostrarlo: si no, decimos "enviada" y el agente nunca recibe nada.
+    if (json.warning) {
+      toast('⚠ Invitación creada, email no enviado');
+      showAlert(`Invitación creada para ${email}, pero el email no salió (${json.warning}). Pasale este link de registro: ${json.link || '—'}`, 'warning');
+    } else {
+      toast('✓ Invitación enviada correctamente', 'success');
+      showAlert(`Invitación enviada a ${email}. El agente recibirá un link para crear su cuenta.`, 'success');
+    }
 
     // Clear form
     ['inv-email','inv-name','inv-message'].forEach(id => $(id).value = '');
