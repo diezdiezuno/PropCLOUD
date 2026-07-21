@@ -66,6 +66,8 @@
       margin-bottom: 32px;
     }
 
+    .logo-img { height: 34px; width: auto; display: block; }
+
     .logo-bar {
       width: 6px;
       height: 36px;
@@ -297,7 +299,7 @@
 <div class="card">
 
   <!-- Logo -->
-  <div class="login-logo"><div class="logo-bar"></div><div class="logo-wordmark"><span class="logo-prop">Prop</span><span class="logo-tools">TOOLS</span></div></div>
+  <div class="login-logo"><img src="/noduus_logo.png" alt="Noduus" class="logo-img"></div>
 
   <!-- STATE: loading (validating token) -->
   <div class="state active" id="state-loading">
@@ -521,56 +523,22 @@ async function register() {
   btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="spin"><circle cx="8" cy="8" r="6" stroke="white" stroke-width="1.5" stroke-dasharray="4 3"/></svg> Activando cuenta…`;
 
   try {
-    let authUser = null;
-
-    // 1. Intentar crear cuenta en Supabase Auth
-    const { data: authData, error: signUpErr } = await sb.auth.signUp({
-      email,
-      password,
-      options: { data: { name } }
+    // La cuenta la crea una edge function con service role y email ya
+    // confirmado. Hacerlo desde el navegador con signUp dejaba la cuenta sin
+    // confirmar —el proyecto exige confirmacion— y el login siguiente fallaba
+    // con "Email not confirmed".
+    const params = new URLSearchParams(location.search);
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/activate-invitation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: params.get('token'), name, password })
     });
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || `Error ${res.status}`);
 
-    // Si el email ya existe en auth (usuario huérfano sin perfil)
-    // Supabase con "confirm email" desactivado retorna el user igual,
-    // pero a veces retorna identities:[] indicando que ya existía.
-    const alreadyExisted = authData?.user?.identities?.length === 0;
-
-    if (signUpErr && !signUpErr.message.includes('already registered')) {
-      throw signUpErr;
-    }
-
-    authUser = authData?.user || null;
-
-    // 2. Iniciar sesión (funciona tanto si es cuenta nueva como existente)
-    const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password });
-    if (signInErr) {
-      // Si falla el login es porque la contraseña no coincide con el auth huérfano
-      if (signInErr.message.includes('Invalid login')) {
-        throw new Error('Este email ya tiene una cuenta con otra contraseña. Contactá al administrador para que elimine la cuenta anterior.');
-      }
-      throw signInErr;
-    }
-
-    authUser = signInData.user || authUser;
-    if (!authUser) throw new Error('No se pudo crear la cuenta. Intentá de nuevo.');
-
-    // 3. Crear perfil en tabla users (con sesión activa → RLS pasa)
-    //    Si ya existe (huérfano que sí tenía perfil), el upsert lo actualiza
-    const { error: profileErr } = await sb.from('users').upsert({
-      auth_id:   authUser.id,
-      name,
-      email,
-      role:      'agent',
-      job_title: _invite.job_title || null,
-      tenant_id: _invite.tenant_id,
-    }, { onConflict: 'auth_id' });
-
-    if (profileErr) {
-      console.error('profile upsert error:', profileErr.message);
-    }
-
-    // 4. Eliminar la invitación (ya fue usada)
-    await sb.from('invitations').delete().eq('id', _invite.id);
+    // Ya existe y esta confirmada: el login entra directo.
+    const { error: signInErr } = await sb.auth.signInWithPassword({ email, password });
+    if (signInErr) throw signInErr;
 
     // 5. Mostrar éxito y redirigir
     show('state-success');

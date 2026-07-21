@@ -91,6 +91,13 @@ input[type=range]::-moz-range-thumb {
   width: 16px; height: 16px; border-radius: 50%;
   background: #1a1a1a; border: 2px solid #fff; cursor: pointer; pointer-events: all; border: none;
 }
+/* La regla de arriba deja la pista transparente y sin eventos a proposito:
+   el filtro de precio superpone dos ranges y dibuja su pista con un wrapper.
+   Un slider suelto necesita la suya, o solo se ve el punto flotando. */
+input[type=range].range-solo {
+  background: #e8e8e8; height: 4px; border-radius: 4px;
+  pointer-events: auto; cursor: pointer;
+}
 
 /* ── Nav dropdown animation ── */
 @keyframes dropdownFade {

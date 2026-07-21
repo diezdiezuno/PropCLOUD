@@ -307,7 +307,7 @@ export default function GeneralPage() {
                   Tamaño del logo — {Math.round(logoScale * 100)}%
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <input type="range" min={50} max={250} step={5}
+                  <input type="range" className="range-solo" min={50} max={250} step={5}
                     value={Math.round(logoScale * 100)}
                     onChange={e => setLogoScale(Number(e.target.value) / 100)}
                     style={{ flex: 1, accentColor: 'var(--color-primary, #111)' }} />
