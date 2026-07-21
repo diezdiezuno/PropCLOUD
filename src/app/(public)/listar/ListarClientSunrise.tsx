@@ -215,10 +215,16 @@ export default function ListarClientSunrise() {
         const { error: uploadError } = await supabase.storage
           .from('planos-uploads')
           .upload(path, planoPdf, { upsert: false })
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage.from('planos-uploads').getPublicUrl(path)
-          planoUrl = urlData.publicUrl
+        // Si esto se traga el error, el formulario se manda sin el plano: el
+        // visitante ve "enviado" y del otro lado el correo llega sin el
+        // archivo, sin que nadie se entere de que falto algo.
+        if (uploadError) {
+          setError('No pudimos subir el plano. Verificá que sea un PDF de menos de 10 MB, o quitalo y enviá el formulario sin él.')
+          setSending(false)
+          return
         }
+        const { data: urlData } = supabase.storage.from('planos-uploads').getPublicUrl(path)
+        planoUrl = urlData.publicUrl
       }
 
       // Build metadata
