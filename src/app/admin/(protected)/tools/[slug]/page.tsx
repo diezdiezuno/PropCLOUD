@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/admin/PageHeader'
 
-// Herramientas PropTools embebidas dentro del shell de PropCLOUD.
+// Herramientas PropTools embebidas dentro del shell de Noduus.
 // La sesión se comparte vía cookie (public/tools/cookie-storage.js).
 // El título estilo CRM lo pone esta página; la herramienta oculta el suyo
 // en modo embebido (ver public/tools/components.js).

@@ -1,4 +1,4 @@
-# PropCLOUD
+# Noduus
 
 Plataforma inmobiliaria multi-tenant: sitio web público + panel admin con CRM +
 herramientas para agentes (PropTools), sobre una sola base de datos y un solo login.
@@ -30,4 +30,4 @@ Mapbox · Resend · Cloudinary. Deploy en Vercel (`main` → auto-deploy).
 - `src/app/api/` — endpoints (leads, reclutamiento, propiedades, superadmin)
 - `public/tools/` — herramientas PropTools (estáticas, embebidas por iframe)
 - `supabase/` — esquema y migraciones SQL
-- `scripts/` — migración de datos PropTools → PropCLOUD
+- `scripts/` — migración de datos PropTools → Noduus

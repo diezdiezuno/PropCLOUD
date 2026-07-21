@@ -55,7 +55,7 @@ function LoginForm() {
         boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
       }}>
         <div style={{ fontSize: 22, fontWeight: 700, color: '#111', borderLeft: '3px solid #111', paddingLeft: 12, marginBottom: 6 }}>
-          PropCLOUD Admin
+          Noduus Admin
         </div>
 
         {/* Mode tabs */}

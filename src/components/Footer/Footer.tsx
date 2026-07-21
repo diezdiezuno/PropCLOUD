@@ -170,8 +170,8 @@ export default function Footer({ tenant, config }: Props) {
           © {year} {tenant.name}. {t.allRights}
         </p>
         <p style={{ fontSize: 11, color: '#ccc', margin: 0, display: 'flex', gap: 12, alignItems: 'center' }}>
-          <span>Powered by <a href="https://propcloud.app" target="_blank" rel="noopener noreferrer"
-            style={{ color: 'var(--primary,#6b2fa0)', fontWeight: 600, textDecoration: 'none' }}>PropCLOUD</a></span>
+          <span>Powered by <a href="https://noduus.com" target="_blank" rel="noopener noreferrer"
+            style={{ color: 'var(--primary,#6b2fa0)', fontWeight: 600, textDecoration: 'none' }}>Noduus</a></span>
           <span style={{ color: '#ddd' }}>·</span>
           <span style={{ fontFamily: 'monospace', letterSpacing: '-0.02em', color: '#bbb' }}>dB^r&gt;</span>
         </p>

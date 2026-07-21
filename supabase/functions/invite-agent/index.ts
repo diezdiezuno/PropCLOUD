@@ -1,13 +1,13 @@
 // ──────────────────────────────────────────────────────────────────────────────
 // Edge Function: invite-agent
 // Despliegue:  supabase functions deploy invite-agent --no-verify-jwt
-// Secrets:     RESEND_API_KEY, RESEND_FROM_EMAIL (opcional, default noreply@propcloud.app)
+// Secrets:     RESEND_API_KEY, RESEND_FROM_EMAIL (opcional, default noreply@noduus.com)
 //              SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (ya provistos)
 //
 // Recibe:  { email, name?, job_title?, message?, tenant_id, tenant_name?, invited_by? }
 // Requiere: Authorization Bearer con el JWT del admin
 // Valida:  caller es admin (users.role='admin') del mismo tenant
-// Acción:  crea la invitación (token), envía email PropCLOUD con link de registro
+// Acción:  crea la invitación (token), envía email Noduus con link de registro
 //
 // Requiere el SQL companion: supabase/functions/invite-agent/invited_by-text.sql
 // ──────────────────────────────────────────────────────────────────────────────
@@ -86,14 +86,14 @@ Deno.serve(async (req) => {
         link: `${origin}/tools/registro/?token=${invite.token}` })
     }
 
-    const origin = req.headers.get('origin') || Deno.env.get('APP_URL') || 'https://propcloud.app'
+    const origin = req.headers.get('origin') || Deno.env.get('APP_URL') || 'https://noduus.com'
     const link   = `${origin}/tools/registro/?token=${invite.token}`
     const office = esc(tenant_name || 'tu oficina')
     const who    = esc(name || 'Agente')
     const extra  = message
       ? `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#374151;">${esc(message)}</p>`
       : ''
-    const from   = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@propcloud.app'
+    const from   = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@noduus.com'
 
     const html = emailHtml({ who, office, extra, link })
 
@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
   }
 })
 
-// ── Email PropCLOUD (negro limpio, sin branding PropTools) ────────────────────
+// ── Email Noduus (negro limpio, sin branding PropTools) ────────────────────
 function emailHtml({ who, office, extra, link }: { who: string; office: string; extra: string; link: string }) {
   return `<!doctype html>
 <html><body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
@@ -128,14 +128,14 @@ function emailHtml({ who, office, extra, link }: { who: string; office: string; 
     <tr><td align="center">
       <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e2e5ea;">
         <tr><td style="background:#111;padding:28px 32px;">
-          <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#fff;margin-bottom:12px;">PropCLOUD</div>
+          <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#fff;margin-bottom:12px;">Noduus</div>
           <div style="color:#fff;font-size:17px;font-weight:700;">${who}, te invitamos a unirte al equipo</div>
         </td></tr>
         <tr><td style="padding:28px 32px;">
           <p style="margin:0 0 16px;font-size:15px;color:#111;">Hola <strong>${who}</strong>,</p>
           ${extra}
           <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#374151;">
-            Has sido invitado/a a unirte a <strong>${office}</strong> en PropCLOUD, la plataforma para profesionales inmobiliarios.
+            Has sido invitado/a a unirte a <strong>${office}</strong> en Noduus, la plataforma para profesionales inmobiliarios.
           </p>
           <a href="${link}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 28px;border-radius:10px;">Crear mi cuenta →</a>
           <div style="height:1px;background:#eceef1;margin:24px 0;"></div>
@@ -145,7 +145,7 @@ function emailHtml({ who, office, extra, link }: { who: string; office: string; 
           </p>
         </td></tr>
         <tr><td style="background:#f4f5f7;border-top:1px solid #e2e5ea;padding:14px 32px;">
-          <span style="font-size:12px;font-weight:800;color:#111;">PropCLOUD</span>
+          <span style="font-size:12px;font-weight:800;color:#111;">Noduus</span>
           <span style="font-size:11px;color:#9aa1ad;float:right;">${office}</span>
         </td></tr>
       </table>

@@ -1,8 +1,8 @@
 /**
- * PropTools ↔ PropCLOUD — sesión compartida.
+ * PropTools ↔ Noduus — sesión compartida.
  * Adapter de storage para supabase-js que lee/escribe la MISMA cookie
- * que usa @supabase/ssr en el admin de PropCLOUD (prefijo "base64-",
- * chunking .0/.1/...). Así el login de PropCLOUD sirve para las
+ * que usa @supabase/ssr en el admin de Noduus (prefijo "base64-",
+ * chunking .0/.1/...). Así el login de Noduus sirve para las
  * herramientas y viceversa: una sola sesión.
  */
 (function () {

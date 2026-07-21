@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* ══════════════════════════════════════════════════════════════
-   Migración de datos: PropTools (base vieja) → PropCLOUD.
+   Migración de datos: PropTools (base vieja) → Noduus.
 
-   Copia usuarios (recreándolos en el auth de PropCLOUD), firmas,
+   Copia usuarios (recreándolos en el auth de Noduus), firmas,
    plantillas, tarjetas, rótulos, avalúos, calendarios, eventos,
    equipos y reservas, remapeando tenant y auth ids.
 
@@ -11,7 +11,7 @@
      OLD_SERVICE_KEY=eyJ... \
      NEW_URL=https://neuzltjlezogxmhbceco.supabase.co \
      NEW_SERVICE_KEY=eyJ... \
-     TARGET_TENANT_ID=<uuid del tenant en PropCLOUD> \
+     TARGET_TENANT_ID=<uuid del tenant en Noduus> \
      node scripts/migrate-proptools-data.mjs
 
    Opcional: DRY_RUN=1 (muestra qué haría sin escribir nada)

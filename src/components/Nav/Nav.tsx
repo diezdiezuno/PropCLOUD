@@ -255,7 +255,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
             {tenant?.logo_url ? (
               <img src={tenant.logo_url} alt={tenant?.name} style={{ height: 32, objectFit: 'contain' }} />
             ) : (
-              <span style={{ fontWeight: 800, fontSize: 16, color: '#111', letterSpacing: '-.02em' }}>{tenant?.name ?? 'PropCLOUD'}</span>
+              <span style={{ fontWeight: 800, fontSize: 16, color: '#111', letterSpacing: '-.02em' }}>{tenant?.name ?? 'Noduus'}</span>
             )}
           </Link>
 
@@ -329,7 +329,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
             {tenant?.logo_url ? (
               <img src={tenant.logo_url} alt={tenant.name} style={{ height: 30, objectFit: 'contain' }} />
             ) : (
-              <span style={{ fontWeight: 800, fontSize: 16, color: '#111', letterSpacing: '-.02em' }}>{tenant?.name ?? 'PropCLOUD'}</span>
+              <span style={{ fontWeight: 800, fontSize: 16, color: '#111', letterSpacing: '-.02em' }}>{tenant?.name ?? 'Noduus'}</span>
             )}
           </Link>
 
@@ -490,7 +490,7 @@ export default function Nav({ tenant, zones, pagesConfig }: NavProps) {
         {tenant?.logo_url ? (
           <img src={tenant.logo_url} alt={tenant.name} style={{ height: 34, objectFit: 'contain' }} />
         ) : (
-          <span style={{ fontWeight: 800, fontSize: 16, color: '#111', letterSpacing: '-.02em' }}>{tenant?.name ?? 'PropCLOUD'}</span>
+          <span style={{ fontWeight: 800, fontSize: 16, color: '#111', letterSpacing: '-.02em' }}>{tenant?.name ?? 'Noduus'}</span>
         )}
       </Link>
 

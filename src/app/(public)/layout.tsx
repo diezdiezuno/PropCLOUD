@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const domain = headersList.get('x-tenant-domain') ?? 'localhost'
   try {
     const tenant = await getTenantByDomain(domain)
-    if (!tenant?.name) return { title: 'PropCLOUD' }
+    if (!tenant?.name) return { title: 'Noduus' }
     const config = await getTenantConfig(tenant.id).catch(() => null)
     const cfg = config as unknown as { og_image?: string | null; google_sc_verification?: string | null } & typeof config
     const siteUrl = `https://${tenant.domain}`
@@ -40,7 +40,7 @@ export async function generateMetadata(): Promise<Metadata> {
       }),
     }
   } catch {}
-  return { title: 'PropCLOUD' }
+  return { title: 'Noduus' }
 }
 
 function googleFontsUrl(heading: string, body: string): string {

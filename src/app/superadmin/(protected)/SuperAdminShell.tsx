@@ -24,7 +24,7 @@ export default function SuperAdminShell({ userEmail, children }: Props) {
       {/* Sidebar */}
       <aside style={{ width: 200, background: '#141414', borderRight: '1px solid #222', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 300 }}>
         <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid #222' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.15em', textTransform: 'uppercase', marginBottom: 4 }}>PropCLOUD</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#555', letterSpacing: '.15em', textTransform: 'uppercase', marginBottom: 4 }}>Noduus</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Super Admin</div>
         </div>
         <nav style={{ flex: 1, padding: '10px 0' }}>

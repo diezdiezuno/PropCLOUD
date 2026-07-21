@@ -8,7 +8,7 @@ export default async function HomePage() {
   const domain = headersList.get('x-tenant-domain') ?? 'localhost'
   const tenant = await getTenantByDomain(domain).catch(() => null)
 
-  // No tenant → show PropCLOUD marketing landing page
+  // No tenant → show Noduus marketing landing page
   if (!tenant) return <LandingPage />
 
   const config = await getTenantConfig(tenant.id).catch(() => null)

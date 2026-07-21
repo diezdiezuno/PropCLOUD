@@ -2,7 +2,7 @@
 -- Corregir 2 hallazgos de la revisión:
 --   • cualquier anónimo podía leer TODAS las invitaciones (email + token)
 --   • cualquier autenticado podía borrar invitaciones de otro tenant
--- Correr una vez en el SQL editor de PropCLOUD.
+-- Correr una vez en el SQL editor de Noduus.
 
 -- ── 1. Quitar el select abierto a anon ─────────────────────────
 drop policy if exists "token lookup" on invitations;

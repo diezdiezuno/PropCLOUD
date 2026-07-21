@@ -347,8 +347,8 @@ function renderFooter() {
  * @returns {Promise<{ profile: object, apps: Array } | null>}
  */
 async function initComponents({ active = '', version = '' } = {}) {
-  // Modo embebido: dentro del admin de PropCLOUD (iframe) no pintamos
-  // header/sidebar propios — el shell lo pone PropCLOUD.
+  // Modo embebido: dentro del admin de Noduus (iframe) no pintamos
+  // header/sidebar propios — el shell lo pone Noduus.
   const EMBEDDED = window.self !== window.top || new URLSearchParams(location.search).has('embed');
   if (!EMBEDDED) injectComponentStyles();
 
@@ -357,7 +357,7 @@ async function initComponents({ active = '', version = '' } = {}) {
     return null;
   }
 
-  // 1. Sesión (compartida con PropCLOUD vía cookie-storage)
+  // 1. Sesión (compartida con Noduus vía cookie-storage)
   let session = (await sb.auth.getSession()).data.session;
   if (!session) {
     session = await new Promise(resolve => {
@@ -368,13 +368,13 @@ async function initComponents({ active = '', version = '' } = {}) {
     });
   }
   if (!session) {
-    // login único: el de PropCLOUD
+    // login único: el de Noduus
     const target = '/admin/login';
     if (EMBEDDED) { window.top.location.href = target; } else { window.location.href = target; }
     return null;
   }
 
-  // 2. Perfil (users). Si no existe (p. ej. un admin de PropCLOUD que nunca
+  // 2. Perfil (users). Si no existe (p. ej. un admin de Noduus que nunca
   //    usó las herramientas), se auto-provisiona desde tenant_admins.
   let { data: profile } = await sb
     .from('users')
@@ -421,7 +421,7 @@ async function initComponents({ active = '', version = '' } = {}) {
   const enabled = profile.tenants?.proptools_apps || [];
   let resolvedApps = APPS_CATALOG.filter(a => a.requires_role === 'admin' || enabled.includes(a.slug));
 
-  // 4 + 5. Render (solo standalone — embebido usa el shell de PropCLOUD)
+  // 4 + 5. Render (solo standalone — embebido usa el shell de Noduus)
   if (!EMBEDDED) {
     renderHeader({
       tenantLogo: profile.tenants?.logo_url || '',
@@ -433,7 +433,7 @@ async function initComponents({ active = '', version = '' } = {}) {
     renderSidebar({ apps: resolvedApps, active, role: profile.role });
     renderFooter();
   } else {
-    // Embebido en PropCLOUD: sin chrome propio (header/sidebar/footer) ni
+    // Embebido en Noduus: sin chrome propio (header/sidebar/footer) ni
     // título de página (lo pone el shell), fondo transparente para que se
     // integre con el fondo #f5f5f7 del admin, y layouts sin la fila del header.
     document.body.classList.add('pt-embedded');

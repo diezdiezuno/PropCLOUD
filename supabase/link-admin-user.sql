@@ -1,4 +1,4 @@
--- Vincular el admin de PropCLOUD con su usuario migrado de PropTools.
+-- Vincular el admin de Noduus con su usuario migrado de PropTools.
 -- Reemplazá los dos emails y corré todo en el SQL editor.
 --
 -- ADMIN_EMAIL    = diezdiezuno.dev@gmail.com
@@ -7,7 +7,7 @@
 
 do $$
 declare
-  admin_auth   uuid;  -- auth id del login de PropCLOUD
+  admin_auth   uuid;  -- auth id del login de Noduus
   old_auth     uuid;  -- auth id que la migración le puso al usuario migrado
   migrated_uid uuid;  -- users.id migrado (dueño de rótulos/tarjetas/firmas)
 begin

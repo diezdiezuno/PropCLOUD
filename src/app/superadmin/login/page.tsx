@@ -29,7 +29,7 @@ function LoginForm() {
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#1a1a1a', borderRadius: 16, padding: 40, width: 380, border: '1px solid #2a2a2a' }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#666', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 4 }}>PropCLOUD</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#666', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 4 }}>Noduus</div>
         <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 28 }}>Super Admin</div>
 
         {searchParams.get('error') && (

@@ -10,15 +10,15 @@ function publicClient() {
   )
 }
 
-/** The root domain of the platform (e.g. propcloud.app).
- *  Set APP_DOMAIN in env vars. Defaults to propcloud.app. */
-const APP_DOMAIN = process.env.APP_DOMAIN ?? 'propcloud.app'
+/** The root domain of the platform (e.g. noduus.com).
+ *  Set APP_DOMAIN in env vars. Defaults to noduus.com. */
+const APP_DOMAIN = process.env.APP_DOMAIN ?? 'noduus.com'
 
 /** Resolve a request host to a tenant.
  *
  *  Rules (in order):
- *  1. propcloud.app / www.propcloud.app  → null  (landing page)
- *  2. {slug}.propcloud.app              → lookup by slug
+ *  1. noduus.com / www.noduus.com  → null  (landing page)
+ *  2. {slug}.noduus.com              → lookup by slug
  *  3. any other domain                  → lookup by domain (custom domain)
  *  4. localhost / *.localhost (dev)     → fallback to first tenant
  */

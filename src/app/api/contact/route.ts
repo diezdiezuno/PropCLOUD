@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     // Send email notification
     if (resend && notifEmails.length > 0) {
-      const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@propcloud.app'
+      const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@noduus.com'
       const isProperty = source === 'propiedad' && property_title
       const isListar   = source === 'listar'
 

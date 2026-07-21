@@ -1,9 +1,9 @@
 -- ══════════════════════════════════════════════════════════════
--- PropTools → PropCLOUD: migración completa de esquema.
+-- PropTools → Noduus: migración completa de esquema.
 -- Herramientas: firmas, tarjetas, rótulos, valoraciones,
 --               calendario, equipos (+ perfil, registro, admin).
--- Usuarios de PropTools = agentes de PropCLOUD (tabla users).
--- Ejecutar en la base de PropCLOUD.
+-- Usuarios de PropTools = agentes de Noduus (tabla users).
+-- Ejecutar en la base de Noduus.
 -- ══════════════════════════════════════════════════════════════
 
 -- ── Usuarios (agentes) — modelo PropTools tal cual ─────────────

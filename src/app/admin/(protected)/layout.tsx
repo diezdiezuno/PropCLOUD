@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 export async function generateMetadata(): Promise<Metadata> {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { title: 'PropCLOUD Admin' }
+  if (!user) return { title: 'Noduus Admin' }
   const { data: adminRecord } = await supabase
     .from('tenant_admins')
     .select('tenants(name)')
@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tenantName = (adminRecord as any)?.tenants?.name
   return {
-    title: tenantName ? `PropCLOUD Admin — ${tenantName}` : 'PropCLOUD Admin',
+    title: tenantName ? `Noduus Admin — ${tenantName}` : 'Noduus Admin',
     robots: { index: false, follow: false, noarchive: true, nosnippet: true },
   }
 }

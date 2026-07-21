@@ -7,7 +7,7 @@ export default function LandingPage() {
         <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em' }}>
           Prop<span style={{ color: '#6b2fa0' }}>CLOUD</span>
         </div>
-        <a href="mailto:hola@propcloud.app" style={{ fontSize: 13, color: '#888', textDecoration: 'none', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 16px' }}>
+        <a href="mailto:hola@noduus.com" style={{ fontSize: 13, color: '#888', textDecoration: 'none', border: '1px solid #2a2a2a', borderRadius: 8, padding: '8px 16px' }}>
           Contacto
         </a>
       </nav>
@@ -22,9 +22,9 @@ export default function LandingPage() {
           <span style={{ color: '#6b2fa0' }}>lista en minutos</span>
         </h1>
         <p style={{ fontSize: 18, color: '#666', maxWidth: 520, margin: '0 auto 40px', lineHeight: 1.7 }}>
-          PropCLOUD es la plataforma que le da a cada inmobiliaria su propio sitio web con mapa interactivo, listado de propiedades y panel de administración.
+          Noduus es la plataforma que le da a cada inmobiliaria su propio sitio web con mapa interactivo, listado de propiedades y panel de administración.
         </p>
-        <a href="mailto:hola@propcloud.app" style={{ display: 'inline-block', background: '#6b2fa0', color: '#fff', textDecoration: 'none', borderRadius: 12, padding: '14px 32px', fontSize: 15, fontWeight: 600 }}>
+        <a href="mailto:hola@noduus.com" style={{ display: 'inline-block', background: '#6b2fa0', color: '#fff', textDecoration: 'none', borderRadius: 12, padding: '14px 32px', fontSize: 15, fontWeight: 600 }}>
           Solicitar demo
         </a>
       </section>
@@ -50,7 +50,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer style={{ borderTop: '1px solid #1a1a1a', padding: '32px 24px', textAlign: 'center' }}>
         <div style={{ fontSize: 12, color: '#444' }}>
-          © {new Date().getFullYear()} PropCLOUD · <a href="mailto:hola@propcloud.app" style={{ color: '#555', textDecoration: 'none' }}>hola@propcloud.app</a>
+          © {new Date().getFullYear()} Noduus · <a href="mailto:hola@noduus.com" style={{ color: '#555', textDecoration: 'none' }}>hola@noduus.com</a>
         </div>
       </footer>
 

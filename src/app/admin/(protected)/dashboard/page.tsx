@@ -99,7 +99,7 @@ export default function PerfilPage() {
     if (!user) return
     let { data: p } = await sb.from('users').select('*').eq('auth_id', user.id).single()
     if (!p) {
-      // admin de PropCLOUD sin fila en users → auto-provisionar (igual que PropTools)
+      // admin de Noduus sin fila en users → auto-provisionar (igual que PropTools)
       const { data: adm } = await sb.from('tenant_admins').select('tenant_id, role').eq('user_id', user.id).single()
       if (adm) {
         await sb.from('users').upsert({

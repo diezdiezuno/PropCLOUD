@@ -1046,18 +1046,18 @@
                 <div class="ep-dot" style="background:#FF5F56;"></div>
                 <div class="ep-dot" style="background:#FFBD2E;"></div>
                 <div class="ep-dot" style="background:#27C93F;"></div>
-                <span style="font-size:11px;color:var(--ink-light);margin-left:8px;font-family:'DM Mono',monospace;">Invitación · PropCLOUD</span>
+                <span style="font-size:11px;color:var(--ink-light);margin-left:8px;font-family:'DM Mono',monospace;">Invitación · Noduus</span>
               </div>
               <div class="ep-body">
                 <div class="email-frame">
                   <div style="background:#111;padding:24px 28px 20px;">
-                    <div style="font-size:20px;font-weight:800;letter-spacing:-0.5px;color:#fff;margin-bottom:16px;">PropCLOUD</div>
+                    <div style="font-size:20px;font-weight:800;letter-spacing:-0.5px;color:#fff;margin-bottom:16px;">Noduus</div>
                     <div class="ef-headline" id="prev-headline" style="color:#fff;font-size:16px;font-weight:700;white-space:nowrap;">Te invitamos a unirte al equipo</div>
                   </div>
                   <div class="ef-body">
                     <div class="ef-greeting">Hola <strong id="prev-name">Agente</strong>,</div>
                     <div class="ef-message" id="prev-message">
-                      Has sido invitado/a a unirte a <strong>REMAX Central</strong> en PropCLOUD, la plataforma para profesionales inmobiliarios.
+                      Has sido invitado/a a unirte a <strong>REMAX Central</strong> en Noduus, la plataforma para profesionales inmobiliarios.
                     </div>
                     <a class="ef-cta" href="#" style="background:#111;">Crear mi cuenta →</a>
                     <div class="ef-divider"></div>
@@ -1067,7 +1067,7 @@
                     </div>
                   </div>
                   <div style="background:#F4F5F7;border-top:1px solid #E2E5EA;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;">
-                    <span style="font-size:11px;font-weight:800;color:#111;">PropCLOUD</span>
+                    <span style="font-size:11px;font-weight:800;color:#111;">Noduus</span>
                     <span style="font-size:10px;color:#0D0F12;" id="prev-footer-tenant">REMAX Central</span>
                   </div>
                 </div>
@@ -1568,9 +1568,9 @@ function updatePreview() {
   const tenant = currentProfile?.tenants?.name || 'REMAX Central';
   if ($('prev-footer-tenant')) $('prev-footer-tenant').textContent = tenant;
   if (msg) {
-    $('prev-message').innerHTML = `${esc(msg)}<br/><br/>Has sido invitado/a a unirte a <strong>${esc(tenant)}</strong> en PropCLOUD, la plataforma para profesionales inmobiliarios.`;
+    $('prev-message').innerHTML = `${esc(msg)}<br/><br/>Has sido invitado/a a unirte a <strong>${esc(tenant)}</strong> en Noduus, la plataforma para profesionales inmobiliarios.`;
   } else {
-    $('prev-message').innerHTML = `Has sido invitado/a a unirte a <strong>${esc(tenant)}</strong> en PropCLOUD, la plataforma para profesionales inmobiliarios.`;
+    $('prev-message').innerHTML = `Has sido invitado/a a unirte a <strong>${esc(tenant)}</strong> en Noduus, la plataforma para profesionales inmobiliarios.`;
   }
 }
 
@@ -2595,7 +2595,7 @@ async function boot() {
   await Promise.all([loadUsers(), loadInvites()]);
 
   // Deep-link ?tab=agentes|equipos|calendario|materiales (desde el menú de
-  // PropCLOUD). Con tab fijo, la barra de tabs interna se oculta.
+  // Noduus). Con tab fijo, la barra de tabs interna se oculta.
   const _tab = new URLSearchParams(location.search).get('tab');
   if (_tab && ['agentes','equipos','calendario','materiales'].includes(_tab)) {
     switchAdminTab(_tab);

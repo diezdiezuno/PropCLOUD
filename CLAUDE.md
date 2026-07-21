@@ -1,4 +1,4 @@
-# PropCLOUD — Documentación del sistema
+# Noduus — Documentación del sistema
 
 Plataforma inmobiliaria multi-tenant: sitio web público + panel admin con CRM +
 herramientas para agentes (PropTools), todo sobre una sola base de datos y un
@@ -9,7 +9,7 @@ solo login.
 - **DB / Auth / Storage**: Supabase (postgres + RLS). Proyecto ref `neuzltjlezogxmhbceco`
 - **Sesión**: `@supabase/ssr` (cookies, prefijo `base64-`, chunking `.0/.1`)
 - **Email**: Resend · **Mapas**: Mapbox GL JS · **Fotos**: Cloudinary (cloud `dlgrhr6lh`, preset `firmas`)
-- **Deploy**: Vercel — repo `diezdiezuno/PropCLOUD`, branch `main` → auto-deploy
+- **Deploy**: Vercel — repo `diezdiezuno/Noduus`, branch `main` → auto-deploy
 - **Tenant activo**: Sunrise / RE/MAX Central — slug `sunrise`, dominio `sunrisecr.com`
 
 ## Arquitectura multi-tenant + roles
@@ -19,7 +19,7 @@ solo login.
 - **Tres niveles de usuario**:
   - **Superadmin** (`superadmin/`) — gestiona tenants (crear, dominios, admins). Ver `src/lib/superadmin.ts`, verificación server-side.
   - **Admin de tenant** (`tenant_admins`) — ve todo el panel: sitio web, CRM completo, PropTools + administración, métricas, reclutamiento.
-  - **Agente** (`users`, modelo PropTools) — ve solo CRM (sin Configuración) + herramientas PropTools. Los agentes de PropTools **son** los agentes de PropCLOUD.
+  - **Agente** (`users`, modelo PropTools) — ve solo CRM (sin Configuración) + herramientas PropTools. Los agentes de PropTools **son** los agentes de Noduus.
 - El rol se resuelve en `admin/(protected)/layout.tsx` (admin vía `tenant_admins`, si no, agente vía `users`) y se pasa a `AdminShell`. `src/lib/membership.ts` (`getMembership()`) hace lo mismo del lado cliente.
 - **Aislamiento**: toda tabla lleva `tenant_id` y su RLS usa `is_tenant_member(tenant_id)`. El guard de rol en `AdminShell` es solo UI; la seguridad real es RLS.
 
@@ -58,7 +58,7 @@ Página nativa (no iframe). Es lo primero que se ve tras login (`/admin/login`, 
 ## PropTools — herramientas embebidas
 Herramientas estáticas (HTML/JS sin framework) en `public/tools/`, servidas vía rewrites de `next.config.ts` y embebidas por iframe en `admin/tools/[slug]`.
 - **Un solo login**: `public/tools/cookie-storage.js` es un adapter que lee/escribe la misma cookie de `@supabase/ssr` que el admin → sesión compartida.
-- **`public/tools/components.js`**: header/sidebar/footer compartidos + `initComponents()`. En modo `EMBEDDED` (iframe o `?embed`) oculta su propio chrome y usa el shell de PropCLOUD; el título estilo CRM lo pone `tools/[slug]/page.tsx`.
+- **`public/tools/components.js`**: header/sidebar/footer compartidos + `initComponents()`. En modo `EMBEDDED` (iframe o `?embed`) oculta su propio chrome y usa el shell de Noduus; el título estilo CRM lo pone `tools/[slug]/page.tsx`.
 - Catálogo: `firmas, tarjetas, rotulos, valoraciones, calendario, equipos` + `admin` (solo rol admin). El tenant ve solo las de `tenants.proptools_apps` (mecanismo de pago/plan).
 - Valoraciones consulta el tipo de cambio vía Edge Function `tipo-cambio`.
 - Registro por invitación: `public/tools/registro/` valida el token vía RPC `get_invitation` (ver Seguridad).
@@ -86,7 +86,7 @@ Junctions: `crm_contact_types` (un contacto → varios tipos), `crm_contact_comp
 ## Migraciones SQL (`supabase/`)
 Orden base: `schema.sql` → `admin-migration` → `admin-features-migration` → `analytics-migration` → `seo-migration` → `recruit-migration` → `translations-migration` → `zones-pages-migration` → `superadmin-migration` → `crm-contact-types-migration` → `detail-layout-migration` → `proptools-migration` → `proptools-full-migration`.
 Parches: `patch-tarjetas-rotulos-cols` (columnas planas de tarjetas/rótulos), `security-patch-invitations` (ver Seguridad), `link-admin-user` (vincular admin ↔ usuario migrado).
-Migración de datos PropTools→PropCLOUD: `scripts/migrate-proptools-data.mjs` (recrea usuarios en auth nuevo, remapea tenant/auth ids, omite huérfanos).
+Migración de datos PropTools→Noduus: `scripts/migrate-proptools-data.mjs` (recrea usuarios en auth nuevo, remapea tenant/auth ids, omite huérfanos).
 
 ## Seguridad (revisión aplicada)
 - **Invitaciones**: la lectura anónima abierta se reemplazó por RPC `get_invitation(token)` (security definer) que devuelve solo la fila del token exacto. Borrado restringido a `is_tenant_member`. → correr `security-patch-invitations.sql`.
@@ -117,11 +117,11 @@ RESEND_API_KEY
 RESEND_FROM_EMAIL
 VERCEL_API_TOKEN
 VERCEL_PROJECT_ID
-APP_DOMAIN=propcloud.app
+APP_DOMAIN=noduus.com
 ```
 
 ## Deuda / pendientes
 - `my_tenant_id()` no soporta multi-tenant por usuario (documentado en la migración).
 - `/api/contact`: rate-limit en memoria — pasar a Upstash/Redis si escala a varias instancias.
-- Edge Functions `delete-user`, `reset-user-password`, `tipo-cambio` deben estar desplegadas en el proyecto PropCLOUD.
+- Edge Functions `delete-user`, `reset-user-password`, `tipo-cambio` deben estar desplegadas en el proyecto Noduus.
 - Decommission/redirect de `proptools.app`.
