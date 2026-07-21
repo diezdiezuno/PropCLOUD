@@ -25,7 +25,7 @@ export default async function NosotrosPage() {
   const html = settings?.content_html ?? config?.about_html ?? ''
 
   if (settings.nosotros_template === 'sunrise') {
-    return <NosotrosClientSunrise />
+    return <NosotrosClientSunrise content={settings.nosotros_content} />
   }
 
   // Only 404 if the page is explicitly hidden — don't 404 just for missing content

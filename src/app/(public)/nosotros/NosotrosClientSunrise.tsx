@@ -1,20 +1,45 @@
 'use client'
 
-const PILLARS = [
-  { icon: '🏆', label: 'Profesionalismo' },
-  { icon: '🤖', label: 'Tecnología' },
-  { icon: '✅', label: 'Precalificación' },
-  { icon: '📣', label: 'Mercadeo moderno' },
-  { icon: '🤝', label: 'Experiencia humana' },
-]
+import type { NosotrosContent } from '@/types'
 
-const STATS = [
-  { num: '+30',  label: 'Agentes activos' },
-  { num: '#1',   label: 'Team en el este de San José' },
-  { num: '100%', label: 'Respaldo RE/MAX' },
-]
+// Valores por defecto deliberadamente genéricos: sirven de andamio para una
+// oficina que todavía no cargó su texto. El copy de cada oficina vive en la
+// base (pages_config.settings.nosotros_content), no acá.
+const D = {
+  heroTitle:  'Bienes raíces',
+  heroAccent: 'de personas.',
+  heroText:   'Acompañamos a nuestros clientes en cada etapa del proceso de compra, venta o alquiler, con conocimiento real del mercado y atención cercana.',
+  stats: [] as { num: string; label: string }[],
+  workEyebrow: 'Cómo trabajamos',
+  workTitle:   'Proceso, claridad y acompañamiento.',
+  workParagraphs: [
+    'Combinamos experiencia inmobiliaria, mercadeo digital y fotografía profesional para posicionar cada propiedad de forma efectiva.',
+  ],
+  purposeEyebrow: 'Propósito',
+  purposeTitle:   'Lo que nos mueve.',
+  mission: 'Brindar un servicio inmobiliario profesional, estratégico y humano en cada etapa del proceso.',
+  vision:  'Ser una inmobiliaria reconocida por su profesionalismo, innovación y excelencia en el servicio.',
+  pillarsEyebrow: 'Nuestros pilares',
+  pillarsTitle:   'Lo que nos define.',
+  pillars: [] as { icon: string; label: string }[],
+}
 
-export default function NosotrosClientSunrise() {
+export default function NosotrosClientSunrise({ content = {} }: { content?: NosotrosContent }) {
+  const heroTitle  = content.hero?.title  || D.heroTitle
+  const heroAccent = content.hero?.accent || D.heroAccent
+  const heroText   = content.hero?.text   || D.heroText
+  const stats      = content.stats?.length ? content.stats : D.stats
+  const workEyebrow = content.work?.eyebrow || D.workEyebrow
+  const workTitle   = content.work?.title   || D.workTitle
+  const workParagraphs = content.work?.paragraphs?.length ? content.work.paragraphs : D.workParagraphs
+  const purposeEyebrow = content.purpose?.eyebrow || D.purposeEyebrow
+  const purposeTitle   = content.purpose?.title   || D.purposeTitle
+  const mission = content.purpose?.mission || D.mission
+  const vision  = content.purpose?.vision  || D.vision
+  const pillarsEyebrow = content.pillars?.eyebrow || D.pillarsEyebrow
+  const pillarsTitle   = content.pillars?.title   || D.pillarsTitle
+  const pillars = content.pillars?.items?.length ? content.pillars.items : D.pillars
+
   return (
     <div style={{ paddingTop: 'var(--nav-h,68px)', fontFamily: 'var(--font-body,system-ui,sans-serif)' }}>
 
@@ -30,28 +55,26 @@ export default function NosotrosClientSunrise() {
             fontWeight: 900, lineHeight: .93,
             letterSpacing: '-.03em', marginBottom: 36,
           }}>
-            Bienes raíces{' '}
+            {heroTitle}{' '}
             <span style={{
               background: 'linear-gradient(90deg,var(--primary,#6b2fa0),#D44E2A,#E8920A)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-            }}>de personas.</span>
+            }}>{heroAccent}</span>
           </h1>
 
           <p style={{
             fontSize: 'clamp(16px,1.8vw,20px)', fontWeight: 300,
             color: '#888480', lineHeight: 1.7, marginBottom: 0, maxWidth: 780,
           }}>
-            En Sunrise creemos que los bienes raíces se tratan de personas, estrategia y resultados.
-            Somos un team de RE/MAX Central especializado en la zona este de San José, enfocado en
-            brindar una experiencia profesional, cercana y respaldada por conocimiento real del mercado.
+            {heroText}
           </p>
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'flex', gap: 64, flexWrap: 'wrap', marginTop: 56, paddingTop: 44, borderTop: '1px solid #e8e4df' }}>
-          {STATS.map(({ num, label }) => (
+        {stats.length > 0 && <div style={{ display: 'flex', gap: 64, flexWrap: 'wrap', marginTop: 56, paddingTop: 44, borderTop: '1px solid #e8e4df' }}>
+          {stats.map(({ num, label }) => (
             <div key={label}>
               <div style={{
                 fontFamily: 'var(--font-heading,serif)',
@@ -63,7 +86,7 @@ export default function NosotrosClientSunrise() {
               </div>
             </div>
           ))}
-        </div>
+        </div>}
       </section>
 
       {/* ── DESCRIPCIÓN ──────────────────────────────────────── */}
@@ -75,7 +98,7 @@ export default function NosotrosClientSunrise() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(32px,5vw,80px)', alignItems: 'start' }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 16, marginTop: 0 }}>
-              Cómo trabajamos
+              {workEyebrow}
             </p>
             <h2 style={{
               fontFamily: 'var(--font-heading,serif)',
@@ -83,24 +106,13 @@ export default function NosotrosClientSunrise() {
               lineHeight: 1.15, letterSpacing: '-.02em', color: '#111',
               margin: '0 0 24px',
             }}>
-              Tecnología, proceso y acompañamiento real.
+              {workTitle}
             </h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <p style={{ fontSize: 15, color: '#555', lineHeight: 1.75, margin: 0 }}>
-              Combinamos experiencia inmobiliaria, mercadeo digital, fotografía profesional y herramientas
-              de inteligencia artificial para posicionar propiedades de forma efectiva y acompañar a
-              nuestros clientes en cada paso del proceso.
-            </p>
-            <p style={{ fontSize: 15, color: '#555', lineHeight: 1.75, margin: 0 }}>
-              Trabajamos con procesos claros y organizados, precalificando cada etapa de la operación,
-              tanto para vendedores como compradores, asegurando negociaciones más serias, eficientes
-              y seguras para todas las partes.
-            </p>
-            <p style={{ fontSize: 15, color: '#555', lineHeight: 1.75, margin: 0 }}>
-              Ya sea para comprar, vender o alquilar, en Sunrise trabajamos con compromiso, transparencia
-              y atención personalizada para lograr resultados reales.
-            </p>
+            {workParagraphs.map((t, i) => (
+              <p key={i} style={{ fontSize: 15, color: '#555', lineHeight: 1.75, margin: 0 }}>{t}</p>
+            ))}
           </div>
         </div>
       </section>
@@ -112,7 +124,7 @@ export default function NosotrosClientSunrise() {
         borderTop: '1px solid #e8e4df',
       }}>
         <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 14, textAlign: 'center', marginTop: 0 }}>
-          Propósito
+          {purposeEyebrow}
         </p>
         <h2 style={{
           fontFamily: 'var(--font-heading,serif)',
@@ -120,7 +132,7 @@ export default function NosotrosClientSunrise() {
           lineHeight: 1.1, letterSpacing: '-.02em',
           marginBottom: 48, textAlign: 'center', marginTop: 0,
         }}>
-          Lo que nos mueve.
+          {purposeTitle}
         </h2>
 
         <div style={{
@@ -137,11 +149,7 @@ export default function NosotrosClientSunrise() {
               marginBottom: 24,
             }}>Misión</div>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,.75)', lineHeight: 1.75, margin: 0 }}>
-              Brindar un servicio inmobiliario profesional, estratégico y humano, acompañando a nuestros
-              clientes en cada etapa del proceso de compra, venta o alquiler. En Sunrise trabajamos con
-              transparencia, innovación y conocimiento del mercado, utilizando herramientas digitales,
-              inteligencia artificial y procesos de precalificación para generar negociaciones seguras,
-              eficientes y orientadas a resultados.
+              {mission}
             </p>
           </div>
 
@@ -154,23 +162,20 @@ export default function NosotrosClientSunrise() {
               marginBottom: 24,
             }}>Visión</div>
             <p style={{ fontSize: 15, color: '#555', lineHeight: 1.75, margin: 0 }}>
-              Ser el team inmobiliario líder de la zona este de San José, reconocido por su
-              profesionalismo, innovación y excelencia en el servicio, transformando la experiencia
-              inmobiliaria mediante tecnología, mercadeo de alto nivel y un acompañamiento cercano
-              que genere confianza y crecimiento para nuestros clientes y asesores.
+              {vision}
             </p>
           </div>
         </div>
       </section>
 
       {/* ── PILARES ──────────────────────────────────────────── */}
-      <section style={{
+      {pillars.length > 0 && <section style={{
         padding: 'clamp(44px,5vw,68px) clamp(24px,3vw,48px) clamp(64px,6vw,88px)',
         maxWidth: 1440, margin: '0 auto',
         borderTop: '1px solid #e8e4df',
       }}>
         <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 14, textAlign: 'center', marginTop: 0 }}>
-          Nuestros pilares
+          {pillarsEyebrow}
         </p>
         <h2 style={{
           fontFamily: 'var(--font-heading,serif)',
@@ -178,11 +183,11 @@ export default function NosotrosClientSunrise() {
           lineHeight: 1.1, letterSpacing: '-.02em',
           marginBottom: 48, textAlign: 'center', marginTop: 0,
         }}>
-          Lo que nos define.
+          {pillarsTitle}
         </h2>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {PILLARS.map(({ icon, label }) => (
+          {pillars.map(({ icon, label }) => (
             <div key={label} style={{
               display: 'flex', alignItems: 'center', gap: 10,
               background: '#fff', border: '1.5px solid #e8e4df',
@@ -196,7 +201,7 @@ export default function NosotrosClientSunrise() {
             </div>
           ))}
         </div>
-      </section>
+      </section>}
 
     </div>
   )

@@ -39,6 +39,19 @@ export interface PageSettings {
   listar_template?: 'default' | 'sunrise'
   nosotros_template?: 'default' | 'sunrise'
   contacto_template?: 'default' | 'sunrise'
+  // Contenido de la plantilla 'sunrise' de Nosotros. El diseño es compartido;
+  // el texto vive acá, por tenant. Sin esto el copy quedaba escrito en el
+  // componente y cualquier oficina que eligiera la plantilla publicaba el
+  // texto de Sunrise con su propio nombre en el encabezado.
+  nosotros_content?: NosotrosContent
+}
+
+export interface NosotrosContent {
+  hero?:    { title?: string; accent?: string; text?: string }
+  stats?:   { num: string; label: string }[]
+  work?:    { eyebrow?: string; title?: string; paragraphs?: string[] }
+  purpose?: { eyebrow?: string; title?: string; mission?: string; vision?: string }
+  pillars?: { eyebrow?: string; title?: string; items?: { icon: string; label: string }[] }
 }
 
 export interface PageConfig {
