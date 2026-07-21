@@ -197,13 +197,17 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`
 
-      await resend.emails.send({
+      // El SDK no lanza: devuelve { error } y hay que mirarlo a mano, o un
+      // rechazo (dominio sin verificar, API key inválida) pasa desapercibido.
+      // No abortamos: el lead ya está guardado y el visitante no puede hacer nada.
+      const { error: mailError } = await resend.emails.send({
         from: fromEmail,
         to: notifEmails,
         replyTo: email ?? undefined,
         subject,
         html,
       })
+      if (mailError) console.error('[contact] Resend error:', JSON.stringify(mailError))
     }
 
     return NextResponse.json({ ok: true })

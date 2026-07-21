@@ -124,13 +124,15 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`
 
-      await resend.emails.send({
+      // Ver nota en api/contact: el SDK no lanza, devuelve { error }.
+      const { error: mailError } = await resend.emails.send({
         from: fromEmail,
         to: notifEmails,
         replyTo: email,
         subject: `Nueva aplicación — ${nombre} ${apellido} (${perfilLabel[perfil] ?? perfil})`,
         html,
       })
+      if (mailError) console.error('[recruit] Resend error:', JSON.stringify(mailError))
     }
 
     return NextResponse.json({ ok: true })
