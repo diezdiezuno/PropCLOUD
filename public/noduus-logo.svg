@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48" role="img" aria-label="Noduus">
-  <rect y="8" width="32" height="32" rx="8" fill="#111"/>
-  <path d="M10 30V18m0 0c0-.3 5-.3 7 1.8S22 25 22 30"
-        fill="none" stroke="#fff" stroke-width="3"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="42" y="32" font-family="Helvetica, Arial, sans-serif"
-        font-size="24" font-weight="700" letter-spacing="-0.5" fill="#111">noduus</text>
-</svg>

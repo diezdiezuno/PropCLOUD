@@ -193,11 +193,14 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
               impresión, donde manda su marca y no la de la plataforma. */}
           {open ? (
             <div style={{ overflow: 'hidden' }}>
-              <img src="/noduus-logo.svg" alt="Noduus" style={{ height: 22, marginBottom: 8, display: 'block' }} />
+              <img src="/noduus_logo.png" alt="Noduus" style={{ height: 22, width: 'auto', marginBottom: 8, display: 'block' }} />
               <div style={{ fontSize: 13, fontWeight: 700, color: '#111', lineHeight: 1.2, whiteSpace: 'nowrap' }}>{tenant.name}</div>
             </div>
           ) : (
-            <img src="/noduus-icon.svg" alt="Noduus" title={tenant.name} style={{ width: 28, height: 28, display: 'block' }} />
+            // El isotipo es apaisado (459×256): se fija el alto y el ancho sale
+            // solo, si no queda aplastado. A 24px de alto mide 43, y entra
+            // holgado en los 72 del sidebar comprimido.
+            <img src="/noduus_icon.png" alt="Noduus" title={tenant.name} style={{ height: 24, width: 'auto', display: 'block' }} />
           )}
         </div>
 
