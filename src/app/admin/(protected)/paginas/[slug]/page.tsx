@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
-import type { PageConfig, PageSettings } from '@/types'
+import type { PageConfig, PageSettings, NosotrosContent, ContactoContent, ReclutamientoContent } from '@/types'
 import PageHeader from '@/components/admin/PageHeader'
 
 const PREDEFINED_SLUGS = ['nosotros', 'agentes', 'contacto', 'listar', 'reclutamiento']
@@ -35,7 +35,6 @@ export default function PageEditorPage() {
   const [saving, setSaving] = useState(false)
   const [savedMsg, setSavedMsg] = useState(false)
   const [tenantId, setTenantId] = useState('')
-  const [tenantSlug, setTenantSlug] = useState('')
   const [allPages, setAllPages] = useState<PageConfig[]>([])
   const [page, setPage] = useState<PageConfig | null>(null)
 
@@ -48,6 +47,11 @@ export default function PageEditorPage() {
   const [reclutamientoPositions, setReclutamientoPositions] = useState<string[]>([])
   const [reclutamientoIntro, setReclutamientoIntro] = useState('')
   const [newPosition, setNewPosition] = useState('')
+  // Contenido de las plantillas de autor. Vive por tenant en pages_config,
+  // asi que cada oficina edita el suyo sin tocar el componente.
+  const [nosotrosContent, setNosotrosContent] = useState<NosotrosContent>({})
+  const [contactoContent, setContactoContent] = useState<ContactoContent>({})
+  const [reclutamientoContent, setReclutamientoContent] = useState<ReclutamientoContent>({})
   const [notificationEmails, setNotificationEmails] = useState('')
   const [reclutamientoTemplate, setReclutamientoTemplate] = useState<'default' | 'sunrise'>('default')
   const [listarTemplate, setListarTemplate] = useState<'default' | 'sunrise'>('default')
@@ -63,9 +67,9 @@ export default function PageEditorPage() {
       if (!adminRec) return
       setTenantId(adminRec.tenant_id)
 
-      const { data: tenantRow } = await supabase
-        .from('tenants').select('slug').eq('id', adminRec.tenant_id).single()
-      setTenantSlug(tenantRow?.slug ?? '')
+      // Antes se leía el slug del tenant para mostrar el selector de diseño
+      // solo a Sunrise. Las plantillas ya no traen contenido de nadie, así que
+      // cualquier oficina puede elegirlas y cargar el suyo.
 
       const { data: cfg } = await supabase
         .from('tenant_config')
@@ -93,6 +97,9 @@ export default function PageEditorPage() {
       setListarTemplate(s.listar_template ?? 'default')
       setNosotrosTemplate(s.nosotros_template ?? 'default')
       setContactoTemplate(s.contacto_template ?? 'default')
+      setNosotrosContent(s.nosotros_content ?? {})
+      setContactoContent(s.contacto_content ?? {})
+      setReclutamientoContent(s.reclutamiento_content ?? {})
 
       setLoading(false)
     })
@@ -115,20 +122,31 @@ export default function PageEditorPage() {
     setReclutamientoPositions(prev => prev.filter(p => p !== pos))
   }
 
+  // Mezclan una rama del contenido sin pisar el resto.
+  const setN = (patch: Partial<NosotrosContent>) => setNosotrosContent(c => ({ ...c, ...patch }))
+  const setC = (patch: Partial<ContactoContent>) => setContactoContent(c => ({ ...c, ...patch }))
+  const setR = (patch: Partial<ReclutamientoContent>) => setReclutamientoContent(c => ({ ...c, ...patch }))
+
   async function save(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
 
     const settings: PageSettings = {}
+    // El contenido se guarda aunque la plantilla no esté activa: si solo se
+    // guardara con 'sunrise' seleccionada, cambiar a "Estándar" y guardar
+    // borraría todo el texto cargado, sin aviso y sin forma de recuperarlo.
+    const keep = (o: object) => Object.keys(o).length > 0
     if (slug !== 'contacto') {
       if (seoDescription.trim()) settings.seo_description = seoDescription.trim()
     }
     if (slug === 'contacto') {
       settings.contacto_template = contactoTemplate
+      if (keep(contactoContent)) settings.contacto_content = contactoContent
     }
     if (slug === 'nosotros' || page?.custom) {
       settings.nosotros_template = nosotrosTemplate
       settings.content_html = contentHtml
+      if (keep(nosotrosContent)) settings.nosotros_content = nosotrosContent
     }
     if (slug === 'listar') {
       settings.listar_template = listarTemplate
@@ -139,6 +157,7 @@ export default function PageEditorPage() {
     if (slug === 'reclutamiento') {
       settings.reclutamiento_template = reclutamientoTemplate
       settings.reclutamiento_positions = reclutamientoPositions
+      if (keep(reclutamientoContent)) settings.reclutamiento_content = reclutamientoContent
       settings.reclutamiento_intro = reclutamientoIntro
       if (submissionWhatsapp.trim()) settings.submission_whatsapp = submissionWhatsapp.trim()
       if (notificationEmails.trim()) settings.notification_emails = notificationEmails.trim()
@@ -184,7 +203,7 @@ export default function PageEditorPage() {
         {/* ── CONTACTO ── */}
         {slug === 'contacto' && (
           <>
-            {tenantSlug === 'sunrise' && (
+            {(
               <Section title="Diseño de la página">
                 <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
                   Seleccioná el diseño que se usará para esta página.
@@ -211,6 +230,26 @@ export default function PageEditorPage() {
                 </div>
               </Section>
             )}
+            {contactoTemplate === 'sunrise' && (
+              <Section title="Textos de la página">
+                <Inp label="Título" value={contactoContent.hero?.title ?? ''}
+                  onChange={v => setC({ hero: { ...contactoContent.hero, title: v } })}
+                  placeholder="Hablemos." />
+                <div style={{ height: 14 }} />
+                <Inp label="Palabras destacadas" value={contactoContent.hero?.accent ?? ''}
+                  onChange={v => setC({ hero: { ...contactoContent.hero, accent: v } })}
+                  placeholder="Estamos aquí."
+                  hint="Se muestran con el degradado de color, al final del título." />
+                <div style={{ height: 14 }} />
+                <Txt label="Texto de presentación" rows={3} value={contactoContent.hero?.text ?? ''}
+                  onChange={v => setC({ hero: { ...contactoContent.hero, text: v } })} />
+                <Inp label="Título del formulario" value={contactoContent.form?.title ?? ''}
+                  onChange={v => setC({ form: { ...contactoContent.form, title: v } })} />
+                <div style={{ height: 14 }} />
+                <Txt label="Texto del formulario" rows={2} value={contactoContent.form?.text ?? ''}
+                  onChange={v => setC({ form: { ...contactoContent.form, text: v } })} />
+              </Section>
+            )}
             <Section title="Información de contacto">
               <p style={{ fontSize: 13, color: '#888', margin: 0 }}>
                 Los datos (WhatsApp, email, dirección, redes) se configuran en <a href="/admin/general" style={{ color: 'var(--primary,#6b2fa0)' }}>General</a> y se muestran automáticamente en esta página.
@@ -233,7 +272,7 @@ export default function PageEditorPage() {
         {/* ── NOSOTROS ── */}
         {slug === 'nosotros' && (
           <>
-            {tenantSlug === 'sunrise' && (
+            {(
               <Section title="Diseño de la página">
                 <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
                   Seleccioná el diseño que se usará para esta página.
@@ -265,13 +304,78 @@ export default function PageEditorPage() {
                 <HtmlEditor value={contentHtml} onChange={setContentHtml} />
               </Section>
             )}
+            {nosotrosTemplate === 'sunrise' && (
+              <>
+                <Section title="Encabezado">
+                  <Inp label="Título" value={nosotrosContent.hero?.title ?? ''}
+                    onChange={v => setN({ hero: { ...nosotrosContent.hero, title: v } })}
+                    placeholder="Bienes raíces" />
+                  <div style={{ height: 14 }} />
+                  <Inp label="Palabras destacadas" value={nosotrosContent.hero?.accent ?? ''}
+                    onChange={v => setN({ hero: { ...nosotrosContent.hero, accent: v } })}
+                    placeholder="de personas."
+                    hint="Se muestran con el degradado de color, al final del título." />
+                  <div style={{ height: 14 }} />
+                  <Txt label="Texto de presentación" value={nosotrosContent.hero?.text ?? ''} rows={4}
+                    onChange={v => setN({ hero: { ...nosotrosContent.hero, text: v } })} />
+                  <ObjList label="Cifras" items={nosotrosContent.stats ?? []}
+                    onChange={v => setN({ stats: v })}
+                    fields={[{ key: 'num', label: 'Cifra (ej: +30)' }, { key: 'label', label: 'Descripción' }]}
+                    blank={{ num: '', label: '' }} />
+                  <p style={{ fontSize: 12, color: '#aaa', margin: 0 }}>Si no cargás ninguna cifra, la franja no se muestra.</p>
+                </Section>
+
+                <Section title="Cómo trabajamos">
+                  <Inp label="Antetítulo" value={nosotrosContent.work?.eyebrow ?? ''}
+                    onChange={v => setN({ work: { ...nosotrosContent.work, eyebrow: v } })}
+                    placeholder="Cómo trabajamos" />
+                  <div style={{ height: 14 }} />
+                  <Inp label="Título" value={nosotrosContent.work?.title ?? ''}
+                    onChange={v => setN({ work: { ...nosotrosContent.work, title: v } })} />
+                  <div style={{ height: 14 }} />
+                  <StringList label="Párrafos" multiline items={nosotrosContent.work?.paragraphs ?? []}
+                    onChange={v => setN({ work: { ...nosotrosContent.work, paragraphs: v } })} />
+                </Section>
+
+                <Section title="Misión y visión">
+                  <Inp label="Antetítulo" value={nosotrosContent.purpose?.eyebrow ?? ''}
+                    onChange={v => setN({ purpose: { ...nosotrosContent.purpose, eyebrow: v } })}
+                    placeholder="Propósito" />
+                  <div style={{ height: 14 }} />
+                  <Inp label="Título" value={nosotrosContent.purpose?.title ?? ''}
+                    onChange={v => setN({ purpose: { ...nosotrosContent.purpose, title: v } })}
+                    placeholder="Lo que nos mueve." />
+                  <div style={{ height: 14 }} />
+                  <Txt label="Misión" rows={5} value={nosotrosContent.purpose?.mission ?? ''}
+                    onChange={v => setN({ purpose: { ...nosotrosContent.purpose, mission: v } })} />
+                  <Txt label="Visión" rows={5} value={nosotrosContent.purpose?.vision ?? ''}
+                    onChange={v => setN({ purpose: { ...nosotrosContent.purpose, vision: v } })} />
+                </Section>
+
+                <Section title="Pilares">
+                  <Inp label="Antetítulo" value={nosotrosContent.pillars?.eyebrow ?? ''}
+                    onChange={v => setN({ pillars: { ...nosotrosContent.pillars, eyebrow: v } })}
+                    placeholder="Nuestros pilares" />
+                  <div style={{ height: 14 }} />
+                  <Inp label="Título" value={nosotrosContent.pillars?.title ?? ''}
+                    onChange={v => setN({ pillars: { ...nosotrosContent.pillars, title: v } })}
+                    placeholder="Lo que nos define." />
+                  <div style={{ height: 14 }} />
+                  <ObjList label="Pilares" items={nosotrosContent.pillars?.items ?? []}
+                    onChange={v => setN({ pillars: { ...nosotrosContent.pillars, items: v } })}
+                    fields={[{ key: 'icon', label: 'Emoji' }, { key: 'label', label: 'Nombre' }]}
+                    blank={{ icon: '', label: '' }} />
+                  <p style={{ fontSize: 12, color: '#aaa', margin: 0 }}>Si no cargás ninguno, la sección no se muestra.</p>
+                </Section>
+              </>
+            )}
           </>
         )}
 
         {/* ── LISTAR ── */}
         {slug === 'listar' && (
           <>
-            {tenantSlug === 'sunrise' && (
+            {(
               <Section title="Diseño de la página">
                 <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
                   Seleccioná el diseño que se usará para esta página.
@@ -338,7 +442,7 @@ export default function PageEditorPage() {
         {/* ── RECLUTAMIENTO ── */}
         {slug === 'reclutamiento' && (
           <>
-            {tenantSlug === 'sunrise' && <Section title="Diseño de la página">
+            {<Section title="Diseño de la página">
               <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
                 Seleccioná el diseño que se usará para esta página.
               </p>
@@ -412,6 +516,87 @@ export default function PageEditorPage() {
                 hint="Uno o más emails separados por coma. Recibirán un aviso por cada aplicación recibida."
               />
             </Section>
+            {reclutamientoTemplate === 'sunrise' && (
+              <>
+                <Section title="Encabezado">
+                  <Inp label="Título" value={reclutamientoContent.hero?.title ?? ''}
+                    onChange={v => setR({ hero: { ...reclutamientoContent.hero, title: v } })}
+                    placeholder="Tu carrera en" />
+                  <div style={{ height: 14 }} />
+                  <Inp label="Palabras destacadas" value={reclutamientoContent.hero?.accent ?? ''}
+                    onChange={v => setR({ hero: { ...reclutamientoContent.hero, accent: v } })}
+                    placeholder="bienes raíces"
+                    hint="Se muestran con el degradado de color, en medio del título." />
+                  <div style={{ height: 14 }} />
+                  <Inp label="Cierre del título" value={reclutamientoContent.hero?.tail ?? ''}
+                    onChange={v => setR({ hero: { ...reclutamientoContent.hero, tail: v } })}
+                    placeholder="empieza aquí."
+                    hint="Va en la línea de abajo, después de las palabras destacadas." />
+                  <div style={{ height: 14 }} />
+                  <Txt label="Texto de presentación" rows={3} value={reclutamientoContent.hero?.text ?? ''}
+                    onChange={v => setR({ hero: { ...reclutamientoContent.hero, text: v } })} />
+                </Section>
+
+                <Section title="Beneficios">
+                  <Inp label="Antetítulo" value={reclutamientoContent.benefits?.eyebrow ?? ''}
+                    onChange={v => setR({ benefits: { ...reclutamientoContent.benefits, eyebrow: v } })}
+                    placeholder="Por qué nosotros" />
+                  <div style={{ height: 14 }} />
+                  <Inp label="Título" value={reclutamientoContent.benefits?.title ?? ''}
+                    onChange={v => setR({ benefits: { ...reclutamientoContent.benefits, title: v } })} />
+                  <div style={{ height: 14 }} />
+                  <ObjList label="Beneficios" items={reclutamientoContent.benefits?.items ?? []}
+                    onChange={v => setR({ benefits: { ...reclutamientoContent.benefits, items: v } })}
+                    fields={[
+                      { key: 'icon',  label: 'Emoji' },
+                      { key: 'title', label: 'Título' },
+                      { key: 'desc',  label: 'Descripción', wide: true },
+                      { key: 'id',    label: 'Identificador interno (sin espacios)' },
+                    ]}
+                    blank={{ id: '', icon: '', title: '', desc: '' }} />
+                </Section>
+
+                <Section title="Zonas del formulario">
+                  <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
+                    Las zonas que puede elegir quien aplica. Se agrupan por título — por ejemplo una zona principal y otra con el resto.
+                    El campo es obligatorio: si no cargás ninguna, se muestran las provincias.
+                  </p>
+                  {(reclutamientoContent.zones?.groups ?? []).map((g, gi) => {
+                    const groups = reclutamientoContent.zones?.groups ?? []
+                    const upd = (ng: typeof groups) => setR({ zones: { groups: ng } })
+                    return (
+                      <div key={gi} style={{ border: '1px solid #ebebeb', borderRadius: 10, padding: 14, marginBottom: 10 }}>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', marginBottom: 10 }}>
+                          <div style={{ flex: 1 }}>
+                            <Inp label={`Grupo ${gi + 1}`} value={g.label}
+                              onChange={v => upd(groups.map((x, j) => j === gi ? { ...x, label: v } : x))}
+                              placeholder="Ej: Este de San José (zona principal)" />
+                          </div>
+                          <button type="button" onClick={() => upd(groups.filter((_, j) => j !== gi))} style={rmBtn} title="Quitar grupo">×</button>
+                        </div>
+                        <StringList label="Zonas" items={g.items ?? []}
+                          onChange={v => upd(groups.map((x, j) => j === gi ? { ...x, items: v } : x))}
+                          placeholder="Nombre de la zona" />
+                      </div>
+                    )
+                  })}
+                  <button type="button" style={addBtn}
+                    onClick={() => setR({ zones: { groups: [...(reclutamientoContent.zones?.groups ?? []), { label: '', items: [] }] } })}>
+                    + Agregar grupo
+                  </button>
+                </Section>
+
+                <Section title="Mensaje de confirmación">
+                  <Inp label="Título" value={reclutamientoContent.success?.title ?? ''}
+                    onChange={v => setR({ success: { ...reclutamientoContent.success, title: v } })}
+                    placeholder="¡Aplicación recibida!" />
+                  <div style={{ height: 14 }} />
+                  <Txt label="Texto" rows={2} value={reclutamientoContent.success?.text ?? ''}
+                    onChange={v => setR({ success: { ...reclutamientoContent.success, text: v } })}
+                    hint="Se muestra después de enviar el formulario." />
+                </Section>
+              </>
+            )}
           </>
         )}
 
@@ -436,7 +621,7 @@ export default function PageEditorPage() {
         )}
 
         {/* Save bar */}
-        {slug !== 'agentes' && (slug !== 'contacto' || tenantSlug === 'sunrise') && (
+        {slug !== 'agentes' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingTop: 4 }}>
             <button type="submit" disabled={saving}
               style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 24px', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: 'inherit' }}>
@@ -451,6 +636,68 @@ export default function PageEditorPage() {
 }
 
 /* ── Sub-components ─────────────────────────────────────── */
+
+/** Textarea con el mismo estilo que Inp. */
+function Txt({ label, value, onChange, rows = 3, placeholder, hint }: { label: string; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string; hint?: string }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 6 }}>{label}</label>
+      <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} placeholder={placeholder}
+        style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6 }} />
+      {hint && <p style={{ fontSize: 12, color: '#aaa', margin: '6px 0 0' }}>{hint}</p>}
+    </div>
+  )
+}
+
+/** Lista editable de textos sueltos (parrafos, zonas). */
+function StringList({ label, items, onChange, placeholder, multiline }: { label: string; items: string[]; onChange: (v: string[]) => void; placeholder?: string; multiline?: boolean }) {
+  const set = (i: number, v: string) => onChange(items.map((x, j) => j === i ? v : x))
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 6 }}>{label}</label>
+      {items.map((it, i) => (
+        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'flex-start' }}>
+          {multiline
+            ? <textarea value={it} onChange={e => set(i, e.target.value)} rows={3} placeholder={placeholder} style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6 }} />
+            : <input value={it} onChange={e => set(i, e.target.value)} placeholder={placeholder} style={inputSt} />}
+          <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} style={rmBtn} title="Quitar">×</button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...items, ''])} style={addBtn}>+ Agregar</button>
+    </div>
+  )
+}
+
+/** Lista editable de objetos, con los campos que se le indiquen. */
+function ObjList<T extends Record<string, string>>({ label, items, onChange, fields, blank }: { label: string; items: T[]; onChange: (v: T[]) => void; fields: { key: keyof T & string; label: string; wide?: boolean }[]; blank: T }) {
+  const set = (i: number, k: string, v: string) => onChange(items.map((x, j) => j === i ? { ...x, [k]: v } : x))
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 6 }}>{label}</label>
+      {items.map((it, i) => (
+        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, display: 'grid', gap: 6 }}>
+            {fields.map(f => f.wide
+              ? <textarea key={f.key} value={it[f.key] ?? ''} onChange={e => set(i, f.key, e.target.value)} rows={2} placeholder={f.label} style={{ ...inputSt, resize: 'vertical', lineHeight: 1.6 }} />
+              : <input key={f.key} value={it[f.key] ?? ''} onChange={e => set(i, f.key, e.target.value)} placeholder={f.label} style={inputSt} />)}
+          </div>
+          <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} style={rmBtn} title="Quitar">×</button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...items, { ...blank }])} style={addBtn}>+ Agregar</button>
+    </div>
+  )
+}
+
+const rmBtn: React.CSSProperties = {
+  width: 30, height: 34, flexShrink: 0, borderRadius: 8, border: '1px solid #fee2e2',
+  background: '#fff', color: '#e53e3e', cursor: 'pointer', fontSize: 16, lineHeight: 1,
+}
+const addBtn: React.CSSProperties = {
+  border: '1.5px dashed #d0d0d0', background: 'transparent', color: '#888',
+  borderRadius: 8, padding: '7px 14px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
+}
+
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
