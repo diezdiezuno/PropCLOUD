@@ -109,7 +109,14 @@ Migración de datos Noduus→Noduus: `scripts/migrate-proptools-data.mjs` (recre
 - Ningún `service_role` en el código (todo `process.env`); `.env*` en `.gitignore`. Las anon keys embebidas en los HTML de tools son públicas por diseño.
 
 ## Storage buckets
-`cv-uploads` (CVs), `agent-photos`, `property-docs` (PDF), `planos-uploads` (anon upload del form listar), `property-photos`, `contact-photos`, `tenant-assets`.
+Públicos (los sirve el sitio): `tenant-assets`, `agent-photos`, `property-photos`, `contact-photos`.
+Privados: `contact-docs`, `property-docs`.
+Con subida anónima desde formularios públicos: `cv-uploads`, `planos-uploads` (públicos — su URL viaja dentro de un correo).
+
+`property-docs` y `property-photos` van por ruta `<tenantId>/…` y su policy sale
+de ahí (`property-storage.sql`). Ojo: `property-docs` no tenía policy de
+escritura, así que adjuntar informes registrales nunca funcionó, y
+`property-photos` ni existía. Los dos casos fallaban callados.
 
 `contact-docs` es el único privado: cédulas de contactos (`<contactoId>/…`) y
 personerías o poderes de empresas (`empresas/<empresaId>/…`), en `doc_urls` de
