@@ -121,7 +121,42 @@ APP_DOMAIN=noduus.com
 ```
 
 ## Deuda / pendientes
+
+### Contenido por cargar
+- Casilla `hola@noduus.com` — la landing la referencia en 3 lugares y no existe.
+- Favicon: sigue el de Next (`src/app/favicon.ico`). Derivarlo de `public/noduus_icon.png`.
+- Textos de REMAX Central en Nosotros, Contacto y Reclutamiento: hoy muestran los
+  valores por defecto genéricos. Se editan en `/admin/paginas`.
+- Identidad de Sunrise en `tenant_config`: `whatsapp`, `address`, redes y `hero_*`.
+
+### Flujos sin probar de punta a punta
+- Formulario de contacto. Ahora deja rastro en `email_log`, así que un fallo se ve ahí.
+- Listar propiedad con PDF adjunto. La policy de storage está puesta y probada
+  con una subida anónima, pero nunca se hizo un envío real.
+
+### Decisiones abiertas
+- Sunrise muestra las 322 propiedades de la oficina, iguales a REMAX Central.
+  Filtrar por equipo exige sumar un filtro por agente al proveedor `remax_cca`,
+  que hoy solo acepta `officeId`.
+- El correo de listar manda un enlace al plano, no el PDF adjunto. Resend soporta
+  adjuntos; conviene igual dejar el enlace de respaldo, porque un adjunto de
+  10 MB rebota en algunos servidores.
+
+### Técnico
+- Los correos de auth no quedan en `email_log`: los manda Supabase y su único
+  rastro es el panel de Resend. Generarlos con `auth.admin.generateLink()` y
+  mandarlos por `send-email` unifica el registro y además da marca por oficina,
+  que las plantillas del panel no permiten (son por proyecto).
+- **Barrido de fallos silenciosos.** Aparecieron cinco en una sola sesión: el
+  SDK de Resend devolviendo `{ error }` sin que nadie lo mirara, la invitación
+  que decía "enviada" sin enviarse, el lookup de tenant que caía al primero de
+  la lista, la subida del plano que se descartaba, y un selector de diseño
+  escondido tras una variable que nunca se seteaba. Vale un `grep` de
+  `if (!error)`, `catch {}` y valores de retorno ignorados.
+- Notificaciones: `send-email` es la base. Agregarle `channels` y el enrutado a
+  WhatsApp. No armar cola hasta que haya envíos lentos o que necesiten reintento.
 - `my_tenant_id()` no soporta multi-tenant por usuario (documentado en la migración).
 - `/api/contact`: rate-limit en memoria — pasar a Upstash/Redis si escala a varias instancias.
-- Edge Functions desplegadas: `invite-agent`, `delete-user`, `reset-user-password`. `tipo-cambio` se menciona pero no la llama nadie.
-- Decommission/redirect de `proptools.app`.
+- Edge Functions desplegadas: `invite-agent`, `delete-user`, `reset-user-password`,
+  `activate-invitation`, `send-email`. `tipo-cambio` se menciona pero no la llama nadie.
+- Decommission/redirect de `proptools.app` (sin verificar si el dominio es propio).
