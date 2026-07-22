@@ -180,9 +180,9 @@ Al cerrar uno, borrarlo de acá; esta lista es el estado, no el historial.
 - **`invite-agent` autoriza por `users.role`.** Ese campo ya es confiable —lo blinda
   un trigger— pero apuntarlo a `tenant_admins` deja una sola fuente de verdad.
 - **Contenido por cargar** (es tuyo, no mío): casilla `hola@noduus.com` —la landing
-  la referencia en 3 lugares—, favicon propio (sigue el de Next), textos de REMAX
-  Central en Nosotros/Contacto/Reclutamiento, e identidad de Sunrise en
-  `tenant_config` (`whatsapp`, `address`, redes, `hero_*`).
+  la referencia en 3 lugares—, textos de REMAX Central en
+  Nosotros/Contacto/Reclutamiento, e identidad de Sunrise en `tenant_config`
+  (`whatsapp`, `address`, redes, `hero_*`).
 
 ### P3
 - Los eventos de `tenant_admins` salen sin nombre en la auditoría: esa tabla solo
