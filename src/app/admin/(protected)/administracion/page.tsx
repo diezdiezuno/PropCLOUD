@@ -75,6 +75,9 @@ export default function AdministracionPage() {
         <Card href="/admin/bitacora" icon="🗂️" title="Bitácora">
           <p style={desc}>Qué fichas creó cada agente que ya salió de la oficina.</p>
         </Card>
+        <Card href="/admin/auditoria" icon="🔍" title="Auditoría">
+          <p style={desc}>Cada cambio en el CRM, los permisos y el sitio: quién y cuándo.</p>
+        </Card>
       </div>
     </>
   )
