@@ -150,45 +150,62 @@ VERCEL_PROJECT_ID
 APP_DOMAIN=noduus.com
 ```
 
-## Deuda / pendientes
+## Pendientes (por prioridad)
 
-### Contenido por cargar
-- Casilla `hola@noduus.com` — la landing la referencia en 3 lugares y no existe.
-- Favicon: sigue el de Next (`src/app/favicon.ico`). Derivarlo de `public/noduus_icon.png`.
-- Textos de REMAX Central en Nosotros, Contacto y Reclutamiento: hoy muestran los
-  valores por defecto genéricos. Se editan en `/admin/paginas`.
-- Identidad de Sunrise en `tenant_config`: `whatsapp`, `address`, redes y `hero_*`.
-- Fichas de CRM sin dueño (11 de 19 contactos, 1 de 4 empresas): con la RLS
-  puesta solo las toca el admin. Se asignan desde la ficha, campo "Asignada a".
+**P1 — dejarlo así tiene costo.** **P2 — hay que hacerlo, no urge.** **P3 — cuando moleste.**
+Al cerrar uno, borrarlo de acá; esta lista es el estado, no el historial.
 
-### Flujos sin probar de punta a punta
-- Formulario de contacto. Ahora deja rastro en `email_log`, así que un fallo se ve ahí.
-- Listar propiedad con PDF adjunto. La policy de storage está puesta y probada
-  con una subida anónima, pero nunca se hizo un envío real.
+### P1
+- **`cv-uploads` a privado.** Son currículums de gente ajena a la empresa —nombre,
+  teléfono, historial laboral— en una URL pública y permanente, y es el único dato
+  acá que no es propio. Va junto con `planos-uploads`: los dos son formularios
+  anónimos cuya URL viaja dentro de un correo, así que hay que guardar la ruta en
+  vez de la URL y firmar al componer el email. Toca los dos formularios públicos,
+  `/api/recruit`, `/api/contact` y la pantalla de reclutamiento. Los enlaces de
+  correos ya enviados dejan de abrir; el admin sigue bien.
+- **Fichas de CRM sin dueño**: con la RLS puesta solo las toca el admin. Se asignan
+  desde la ficha, campo "Asignada a".
+- **Barrido de fallos silenciosos.** Van nueve encontrados de a uno, siempre igual:
+  un `error` que nadie mira y una pantalla que dice que salió bien. Falta el barrido
+  sistemático — `grep` de `if (!error)`, `catch {}`, `.update()` sin `.select()` y
+  valores de retorno ignorados. Es el patrón que más veces mordió este proyecto.
+
+### P2
+- **Flujos sin probar de punta a punta**: formulario de contacto (deja rastro en
+  `email_log`, ahí se ve si falla) y listar propiedad con PDF adjunto.
+- **Correos de auth fuera de `email_log`**: los manda Supabase y su único rastro es
+  el panel de Resend. Generarlos con `auth.admin.generateLink()` y mandarlos por
+  `send-email` unifica el registro y da marca por oficina, que las plantillas del
+  panel no permiten (son por proyecto).
+- **`invite-agent` autoriza por `users.role`.** Ese campo ya es confiable —lo blinda
+  un trigger— pero apuntarlo a `tenant_admins` deja una sola fuente de verdad.
+- **Contenido por cargar** (es tuyo, no mío): casilla `hola@noduus.com` —la landing
+  la referencia en 3 lugares—, favicon propio (sigue el de Next), textos de REMAX
+  Central en Nosotros/Contacto/Reclutamiento, e identidad de Sunrise en
+  `tenant_config` (`whatsapp`, `address`, redes, `hero_*`).
+
+### P3
+- Los eventos de `tenant_admins` salen sin nombre en la auditoría: esa tabla solo
+  tiene ids. Resolverlo en la pantalla si molesta.
+- Notificaciones: `send-email` es la base; agregarle `channels` y enrutado a
+  WhatsApp. Sin cola hasta que haya envíos lentos o con reintento.
+- `my_tenant_id()` no soporta multi-tenant por usuario.
+- `/api/contact`: rate-limit en memoria — a Upstash/Redis si escala a varias instancias.
+- `tipo-cambio` se menciona pero no la llama nadie.
+- Decommission/redirect de `proptools.app` (sin verificar si el dominio es propio).
 
 ### Decisiones abiertas
-- Sunrise muestra las 322 propiedades de la oficina, iguales a REMAX Central.
+- **Auditar lecturas.** Hoy se registran cambios, no consultas: ningún trigger ve un
+  `select`. Saber quién miró la ficha de quién exige instrumentar pantalla por
+  pantalla y genera mucho más volumen que las escrituras.
+- **Sunrise muestra las 322 propiedades de la oficina**, iguales a REMAX Central.
   Filtrar por equipo exige sumar un filtro por agente al proveedor `remax_cca`,
   que hoy solo acepta `officeId`.
-- El correo de listar manda un enlace al plano, no el PDF adjunto. Resend soporta
-  adjuntos; conviene igual dejar el enlace de respaldo, porque un adjunto de
-  10 MB rebota en algunos servidores.
+- **El correo de listar manda un enlace al plano, no el PDF.** Resend soporta
+  adjuntos; conviene igual dejar el enlace de respaldo, porque un adjunto de 10 MB
+  rebota en algunos servidores.
 
-### Técnico
-- Los correos de auth no quedan en `email_log`: los manda Supabase y su único
-  rastro es el panel de Resend. Generarlos con `auth.admin.generateLink()` y
-  mandarlos por `send-email` unifica el registro y además da marca por oficina,
-  que las plantillas del panel no permiten (son por proyecto).
-- **Barrido de fallos silenciosos.** Aparecieron cinco en una sola sesión: el
-  SDK de Resend devolviendo `{ error }` sin que nadie lo mirara, la invitación
-  que decía "enviada" sin enviarse, el lookup de tenant que caía al primero de
-  la lista, la subida del plano que se descartaba, y un selector de diseño
-  escondido tras una variable que nunca se seteaba. Vale un `grep` de
-  `if (!error)`, `catch {}` y valores de retorno ignorados.
-- Notificaciones: `send-email` es la base. Agregarle `channels` y el enrutado a
-  WhatsApp. No armar cola hasta que haya envíos lentos o que necesiten reintento.
-- `my_tenant_id()` no soporta multi-tenant por usuario (documentado en la migración).
-- `/api/contact`: rate-limit en memoria — pasar a Upstash/Redis si escala a varias instancias.
-- Edge Functions desplegadas: `invite-agent`, `delete-user`, `reset-user-password`,
-  `activate-invitation`, `send-email`. `tipo-cambio` se menciona pero no la llama nadie.
-- Decommission/redirect de `proptools.app` (sin verificar si el dominio es propio).
+### Decidido (para no volver a discutirlo)
+- Los documentos del CRM los ve **toda la oficina**; solo el dueño los modifica.
+- `contact-photos` queda **público**: hacerlo privado obliga a firmar una URL por
+  foto en cada render de cada listado, y es una foto de cliente.
