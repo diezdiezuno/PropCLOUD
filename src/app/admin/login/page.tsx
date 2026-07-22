@@ -35,17 +35,18 @@ function LoginForm() {
         router.refresh()
       }
     } else if (mode === 'recovery') {
-      // El enlace del correo pasa por /auth/callback, que canjea el codigo y
-      // deja la sesion puesta; ?next lleva a la pantalla de definir la clave.
+      // Se manda solo el origen + /auth/confirm, sin query: la plantilla del
+      // correo arma el resto sobre {{ .RedirectTo }}, y para eso necesita que
+      // no traiga ya un "?" propio.
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/admin/reset-password`,
+        redirectTo: `${window.location.origin}/auth/confirm`,
       })
       if (error) setError(error.message)
       else setSent(true)
     } else {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
       })
       if (error) setError(error.message)
       else setSent(true)

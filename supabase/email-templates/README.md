@@ -27,6 +27,24 @@ Las dos limitaciones desaparecen el día que se generen los enlaces con
 `auth.admin.generateLink()` y se manden desde `send-email`. Estas plantillas
 son la solución mientras tanto.
 
+## El enlace apunta al dominio del tenant
+
+El botón no usa `{{ .ConfirmationURL }}`, que apunta al endpoint de
+`supabase.co` y recién de ahí rebota al sitio. En su lugar se arma sobre
+`{{ .RedirectTo }}` —el origen que pidió el enlace, o sea el dominio de la
+oficina— y la ruta `/auth/confirm` lo valida con `verifyOtp`:
+
+```
+{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery&next=/admin/reset-password
+```
+
+Por eso el cliente manda `redirectTo: ${origin}/auth/confirm` **sin query**: la
+plantilla le agrega el `?`, y si ya viniera uno el enlace saldría roto.
+
+Efecto lateral bienvenido: esto no es PKCE, así que no hay verificador atado al
+navegador. El enlace funciona aunque se abra en el teléfono habiéndolo pedido
+en la computadora.
+
 ## Variables disponibles
 
 - `{{ .ConfirmationURL }}` — el enlace de la acción

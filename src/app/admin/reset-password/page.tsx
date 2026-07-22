@@ -53,12 +53,11 @@ export default function ResetPasswordPage() {
           <p style={{ fontSize: 13, color: '#888', margin: 0 }}>Verificando el enlace…</p>
 
         ) : !hasSession ? (
-          // Sin sesión el enlace vencio, ya se uso, o se abrio en otro navegador
-          // (PKCE guarda el verificador en una cookie del navegador que lo pidio).
+          // Sin sesión el enlace vencio o ya se uso. Antes tambien fallaba al
+          // abrirlo en otro navegador; con verifyOtp eso dejo de pasar.
           <>
             <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, marginTop: 0 }}>
-              Este enlace no es válido o ya venció. Puede pasar si lo abriste en otro navegador
-              o si ya lo usaste antes.
+              Este enlace no es válido, ya venció o ya fue usado.
             </p>
             <a href="/admin/login" style={{ display: 'block', textAlign: 'center', background: '#111', color: '#fff', borderRadius: 10, padding: '12px', fontSize: 14, fontWeight: 600, textDecoration: 'none', marginTop: 18 }}>
               Pedir uno nuevo
