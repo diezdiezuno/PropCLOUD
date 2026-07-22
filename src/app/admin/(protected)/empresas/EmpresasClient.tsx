@@ -87,6 +87,11 @@ export default function EmpresasClient() {
   const [tenantCountry, setTenantCountry] = useState('CR')
   const [userId,      setUserId]      = useState('')
   const [isAdmin,     setIsAdmin]     = useState(false)
+  // Reasignación: solo la ve el admin. El valor es auth_id porque es lo que
+  // guarda created_by, no el users.id.
+  const [agents,      setAgents]      = useState<{ auth_id: string; name: string }[]>([])
+  const [ownerId,     setOwnerId]     = useState('')
+  const [readOnly,    setReadOnly]    = useState(false)
   const [companies,   setCompanies]   = useState<Company[]>([])
   const [contactMap,  setContactMap]  = useState<Record<string, number>>({})
   const [pageLoading, setPageLoading] = useState(true)
@@ -221,6 +226,9 @@ export default function EmpresasClient() {
       setTenantCountry(m.country)
       setUserId(m.userId)
       setIsAdmin(m.isAdmin)
+      createClient().from('users').select('auth_id,name')
+        .eq('tenant_id', m.tenantId).not('auth_id', 'is', null).order('name')
+        .then(({ data }) => setAgents((data ?? []) as { auth_id: string; name: string }[]))
       await Promise.all([
         loadCompanies(m.tenantId, ''),
         loadContactCounts(m.tenantId),
@@ -288,6 +296,8 @@ export default function EmpresasClient() {
       ? { name: company.name, trade_name: company.trade_name ?? '', cedula_juridica: company.cedula_juridica ?? '' }
       : { ...EMPTY_FORM }
     )
+    setOwnerId(company ? (company.created_by ?? '') : userId)
+    setReadOnly(!!company && !isAdmin && !(company.created_by && company.created_by === userId))
     if (company?.id && tenantId) {
       loadLinkedContacts(company.id, tenantId)
     }
@@ -424,13 +434,15 @@ export default function EmpresasClient() {
     }
 
     if (editingId) {
-      const { error } = await sb.from('crm_companies').update(payload).eq('id', editingId)
+      const { error } = await sb.from('crm_companies')
+        .update(isAdmin ? { ...payload, created_by: ownerId || null } : payload)
+        .eq('id', editingId)
       setSaving(false)
       if (error) { showToast('Error: ' + error.message, 'error'); return }
       showToast('Empresa actualizada ✓', 'success')
       // Update local list
       setCompanies(prev => prev.map(co =>
-        co.id === editingId ? { ...co, ...payload } : co
+        co.id === editingId ? { ...co, ...payload, ...(isAdmin ? { created_by: ownerId || null } : {}) } : co
       ))
       setDrawerOpen(false)
       await loadCompanies(tenantId, search, showArchived)
@@ -438,7 +450,7 @@ export default function EmpresasClient() {
       // Create
       const { data: newCo, error } = await sb
         .from('crm_companies')
-        .insert({ ...payload, tenant_id: tenantId, created_by: userId })
+        .insert({ ...payload, tenant_id: tenantId, created_by: isAdmin ? (ownerId || userId) : userId })
         .select('id').single()
       setSaving(false)
       if (error) { showToast('Error: ' + error.message, 'error'); return }
@@ -447,7 +459,7 @@ export default function EmpresasClient() {
       // Stay in drawer, switch to edit mode for linking
       setEditingId(newId)
       setCompanies(prev =>
-        [...prev, { id: newId, created_by: userId, name: payload.name, trade_name: payload.trade_name ?? null, cedula_juridica: payload.cedula_juridica }]
+        [...prev, { id: newId, created_by: isAdmin ? (ownerId || userId) : userId, name: payload.name, trade_name: payload.trade_name ?? null, cedula_juridica: payload.cedula_juridica }]
           .sort((a, b) => a.name.localeCompare(b.name))
       )
       showToast('Empresa creada ✓ — ahora podés vincular contactos', 'success')
@@ -704,6 +716,25 @@ export default function EmpresasClient() {
           {/* Body */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
 
+            {/* ── ASIGNACIÓN ─────────────────────────────── */}
+            {/* Solo el admin reasigna. El agente ve a quién pertenece pero no
+                puede cambiarlo: la policy de crm_companies lo rechazaría igual. */}
+            <div style={{ marginBottom: 28 }}>
+              <div style={sSecLbl}>Asignada a</div>
+              {isAdmin ? (
+                <select value={ownerId} onChange={e => setOwnerId(e.target.value)}
+                  style={{ width: '100%', border: '1px solid #e2e5ea', borderRadius: 8, padding: '9px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fff' }}>
+                  <option value="">Sin asignar</option>
+                  {agents.map(a => <option key={a.auth_id} value={a.auth_id}>{a.name}</option>)}
+                </select>
+              ) : (
+                <div style={{ fontSize: 14, color: '#5a6070', background: '#f7f8fa', border: '1px solid #e2e5ea', borderRadius: 8, padding: '9px 12px' }}>
+                  {agents.find(a => a.auth_id === ownerId)?.name
+                    ?? (ownerId === userId ? 'Vos' : ownerId ? '—' : 'Sin asignar')}
+                </div>
+              )}
+            </div>
+
             {/* ── IDENTIFICACIÓN ─────────────────────────── */}
             <div style={{ marginBottom: 28 }}>
               <div style={sSecLbl}>Identificación</div>
@@ -937,7 +968,13 @@ export default function EmpresasClient() {
               style={{ height: 38, padding: '0 20px', border: '1px solid #e2e5ea', borderRadius: 8, fontSize: 14, fontWeight: 600, background: '#fff', color: '#5a6070', cursor: 'pointer', fontFamily: 'inherit' }}>
               {editingId ? 'Cerrar' : 'Cancelar'}
             </button>
-            <button onClick={save} disabled={saving}
+            {readOnly && (
+              <span style={{ fontSize: 12, color: '#5a6070' }}>
+                Solo lectura — esta empresa es de otro agente.
+              </span>
+            )}
+            <button onClick={save} disabled={saving || readOnly}
+              hidden={readOnly}
               style={{ height: 38, padding: '0 24px', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, background: 'var(--color-primary, #111)', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: saving ? .6 : 1 }}>
               {saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear empresa'}
             </button>
