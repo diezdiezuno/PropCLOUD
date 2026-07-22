@@ -82,6 +82,16 @@ Junctions: `crm_contact_types` (un contacto → varios tipos), `crm_contact_comp
 ### Helpers RLS (security definer, `search_path=public`)
 - `is_tenant_member(tid)` — admin en `tenant_admins` **o** agente en `users`.
 - `my_tenant_id()` — tenant del usuario actual (default en tablas de tools). *Nota: `limit 1`, no soporta multi-tenant por usuario — deuda documentada.*
+- `is_tenant_admin(tid)` — solo `tenant_admins`. Ojo: `users.role = 'admin'` es otra cosa y la UI mira esa; para la base no manda.
+- `soy_agente_del_contacto(cid)` / `puedo_editar_contacto(cid)` — dueño de contacto (`crm-rls.sql`, `crm-links-rls.sql`).
+
+**CRM — quién edita qué.** El agente ve la cartera entera de la oficina pero solo
+escribe lo suyo; el borrado físico es del admin. El dueño se guarda en
+`created_by` (auth.uid), no en `agent_id` como en `properties`. Las tablas puente
+(`crm_contact_agents`, `_companies`, `_types`) heredan el permiso del contacto
+padre: sin eso, un agente se insertaba como agente de un contacto ajeno y se
+ganaba la edición. Al tocar una policy hay que mover las dos: la UI espeja estas
+reglas en `canEdit`, y si se desalinean el botón aparece y la base rechaza.
 
 ## Migraciones SQL (`supabase/`)
 Orden base: `schema.sql` → `admin-migration` → `admin-features-migration` → `analytics-migration` → `seo-migration` → `recruit-migration` → `translations-migration` → `zones-pages-migration` → `superadmin-migration` → `crm-contact-types-migration` → `detail-layout-migration` → `proptools-migration` → `proptools-full-migration`.
