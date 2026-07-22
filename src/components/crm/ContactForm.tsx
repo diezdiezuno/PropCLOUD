@@ -456,7 +456,10 @@ export default function ContactForm({
   useEffect(() => {
     if (editId || isAdmin || !userId) return
     let cancelled = false
-    createClient().from('users').select('id,name').eq('id', userId).single().then(({ data }) => {
+    // `userId` es el auth.uid(), no el users.id. Buscar por `id` no encontraba
+    // nada nunca —ningún users.id coincide con un auth_id— así que el agente
+    // que daba de alta un contacto jamás quedaba asignado a él, en silencio.
+    createClient().from('users').select('id,name').eq('auth_id', userId).maybeSingle().then(({ data }) => {
       if (!cancelled && data) setLinkedAgents(prev => prev.some(a => a.id === data.id) ? prev : [...prev, data as AgentUser])
     })
     return () => { cancelled = true }

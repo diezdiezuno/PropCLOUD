@@ -9,8 +9,11 @@ import PageHeader from '@/components/admin/PageHeader'
 import { Icon } from '@/lib/icons'
 
 // ── Types ─────────────────────────────────────────────────────
+// Espeja la policy de crm_companies: admin, o el dueño sobre lo suyo. Las
+// empresas viejas sin dueño quedan solo para el admin.
 interface Company {
   id: string
+  created_by: string | null
   name: string
   trade_name: string | null
   cedula_juridica: string | null
@@ -83,6 +86,7 @@ export default function EmpresasClient() {
   const [tenantId,    setTenantId]    = useState('')
   const [tenantCountry, setTenantCountry] = useState('CR')
   const [userId,      setUserId]      = useState('')
+  const [isAdmin,     setIsAdmin]     = useState(false)
   const [companies,   setCompanies]   = useState<Company[]>([])
   const [contactMap,  setContactMap]  = useState<Record<string, number>>({})
   const [pageLoading, setPageLoading] = useState(true)
@@ -172,7 +176,7 @@ export default function EmpresasClient() {
     const sb = createClient() as any
     let query = sb
       .from('crm_companies')
-      .select('id,name,trade_name,cedula_juridica')
+      .select('id,created_by,name,trade_name,cedula_juridica')
       .eq('tenant_id', tid)
       .eq('active', !archived)
       .order('name')
@@ -216,6 +220,7 @@ export default function EmpresasClient() {
       setTenantId(m.tenantId)
       setTenantCountry(m.country)
       setUserId(m.userId)
+      setIsAdmin(m.isAdmin)
       await Promise.all([
         loadCompanies(m.tenantId, ''),
         loadContactCounts(m.tenantId),
@@ -242,7 +247,7 @@ export default function EmpresasClient() {
       router.replace('/admin/empresas')
     } else {
       // Company not in current list — fetch it directly
-      createClient().from('crm_companies').select('id,name,trade_name,cedula_juridica')
+      createClient().from('crm_companies').select('id,created_by,name,trade_name,cedula_juridica')
         .eq('id', idParam).single()
         .then(({ data }) => {
           if (data) { openDrawer(data as Company); router.replace('/admin/empresas') }
@@ -442,7 +447,7 @@ export default function EmpresasClient() {
       // Stay in drawer, switch to edit mode for linking
       setEditingId(newId)
       setCompanies(prev =>
-        [...prev, { id: newId, name: payload.name, trade_name: payload.trade_name ?? null, cedula_juridica: payload.cedula_juridica }]
+        [...prev, { id: newId, created_by: userId, name: payload.name, trade_name: payload.trade_name ?? null, cedula_juridica: payload.cedula_juridica }]
           .sort((a, b) => a.name.localeCompare(b.name))
       )
       showToast('Empresa creada ✓ — ahora podés vincular contactos', 'success')
@@ -630,7 +635,7 @@ export default function EmpresasClient() {
                       </td>
                       <td style={{ padding: '8px 12px' }}>
                         <div className="em-actions" onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                          {showArchived ? (
+                          {!(isAdmin || (!!co.created_by && co.created_by === userId)) ? null : showArchived ? (
                             <button onClick={() => restoreCompany(co.id)} disabled={isDeleting}
                               style={{ fontSize: 12, fontWeight: 600, color: '#0d0f12', background: '#fff', border: '1px solid #e2e5ea', borderRadius: 7, padding: '5px 12px', cursor: isDeleting ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: isDeleting ? .6 : 1 }}>{isDeleting ? '…' : 'Restaurar'}</button>
                           ) : !isConfirming ? (

@@ -33,6 +33,7 @@ function contactTypeList(rows: ContactTypeRow[] | null | undefined) {
 
 interface Contact {
   id: string
+  created_by: string | null
   cedula: string | null
   cedula_tipo: string
   name: string
@@ -528,6 +529,11 @@ export default function ContactosClient() {
     )
   }
 
+  // Espeja la policy de crm_contacts: admin, o el dueño sobre lo suyo. Las
+  // fichas viejas sin dueño quedan solo para el admin. Si esto se desalinea
+  // de la RLS, el botón aparece y la base rechaza sin decir por qué.
+  const canEdit = (c: Contact) => isAdmin || (!!c.created_by && c.created_by === userId)
+
   // Acciones reutilizables — hover por CSS (clases cl-btn-*), sin estado por fila
   function ContactActions({ c }: { c: Contact }) {
     const isConfirming = confirmDelete === c.id
@@ -536,17 +542,17 @@ export default function ContactosClient() {
       return (
         <div className="cl-actions" onClick={e => e.stopPropagation()}
           style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-          <button onClick={() => restoreContact(c.id)} disabled={isDeleting}
+          {!canEdit(c) ? null : <button onClick={() => restoreContact(c.id)} disabled={isDeleting}
             style={{ fontSize: 12, fontWeight: 600, color: '#0d0f12', background: '#fff', border: '1px solid #e2e5ea', borderRadius: 7, padding: '5px 12px', cursor: isDeleting ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: isDeleting ? .6 : 1 }}>
             {isDeleting ? '…' : 'Restaurar'}
-          </button>
+          </button>}
         </div>
       )
     }
     return (
       <div className="cl-actions" onClick={e => e.stopPropagation()}
         style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-        {!isConfirming ? (
+        {!canEdit(c) ? null : !isConfirming ? (
           <>
             <button className="cl-btn cl-btn-edit" title="Editar" onClick={() => openDrawer(c.id)}><EditIcon /></button>
             <button className="cl-btn cl-btn-del" title="Archivar" onClick={() => setConfirmDelete(c.id)}><TrashIcon /></button>
