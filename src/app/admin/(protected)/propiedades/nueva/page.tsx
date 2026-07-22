@@ -419,7 +419,8 @@ export default function NuevaPropiedadPage() {
       const ext = file.name.split('.').pop()
       const path = `${tenantId}/${Date.now()}-${label}.${ext}`
       const { error } = await supabase.storage.from('property-docs').upload(path, file, { upsert: false })
-      if (error) return null
+      // Sin este aviso la propiedad se creaba sin el documento y en silencio.
+      if (error) { setSaveError(`No se pudo subir ${label}: ${error.message}`); return null }
       return supabase.storage.from('property-docs').getPublicUrl(path).data.publicUrl
     }
 

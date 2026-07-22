@@ -507,7 +507,10 @@ function Tab1Captacion({ prop, propTypes, onSaved }: {
       const ext  = file.name.split('.').pop()
       const path = `${prop.tenant_id}/${prop.id}-${label}.${ext}`
       const { error } = await sb.storage.from('property-docs').upload(path, file, { upsert: true })
-      if (error) return null
+      // Devolver null callado dejaba la propiedad guardada sin el documento y
+      // sin decir nada. Así falló siempre: el bucket no tenía policy de
+      // escritura y el bucket quedó vacío sin que nadie se enterara.
+      if (error) { setSaveError(`No se pudo subir ${label}: ${error.message}`); return null }
       return sb.storage.from('property-docs').getPublicUrl(path).data.publicUrl
     }
     const [informeUrl, planoDocUrl] = await Promise.all([
@@ -1514,6 +1517,19 @@ function NumberField({ label, value, onChange, placeholder, icon }: { label: str
     </div>
   )
 }
+// `property-docs` es privado, así que la URL guardada —que quedó con forma
+// pública— ya no sirve para abrir nada. Se le saca la ruta y se firma al
+// momento. Guardar la ruta en vez de la URL sería más limpio, pero obligaría a
+// migrar lo ya guardado para ganar lo mismo.
+async function abrirDocPrivado(url: string) {
+  const marca = '/property-docs/'
+  const i = url.indexOf(marca)
+  if (i === -1) { window.open(url, '_blank'); return }
+  const ruta = decodeURIComponent(url.slice(i + marca.length))
+  const { data } = await createClient().storage.from('property-docs').createSignedUrl(ruta, 3600)
+  window.open(data?.signedUrl ?? url, '_blank')
+}
+
 function FileUploadField({ label, file, onSelect, onClear, inputRef, accept, existingUrl }: {
   label: string; file: File | null; onSelect: (f: File) => void; onClear: () => void
   inputRef: React.RefObject<HTMLInputElement | null>; accept: string; existingUrl?: string
@@ -1535,6 +1551,8 @@ function FileUploadField({ label, file, onSelect, onClear, inputRef, accept, exi
               : <div style={{ fontSize: 13, color: '#aaa' }}>Clic para adjuntar</div>
           }
         </div>
+        {existingUrl && !file && <button type="button" onClick={e => { e.stopPropagation(); abrirDocPrivado(existingUrl) }}
+          style={{ fontSize: 11, color: '#6b2fa0', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0, textDecoration: 'underline' }}>Abrir</button>}
         {(file || existingUrl) && <button type="button" onClick={e => { e.stopPropagation(); onClear() }}
           style={{ fontSize: 11, color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>Quitar</button>}
       </div>
