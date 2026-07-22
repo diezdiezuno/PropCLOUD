@@ -128,6 +128,8 @@ APP_DOMAIN=noduus.com
 - Textos de REMAX Central en Nosotros, Contacto y Reclutamiento: hoy muestran los
   valores por defecto genéricos. Se editan en `/admin/paginas`.
 - Identidad de Sunrise en `tenant_config`: `whatsapp`, `address`, redes y `hero_*`.
+- Fichas de CRM sin dueño (11 de 19 contactos, 1 de 4 empresas): con la RLS
+  puesta solo las toca el admin. Se asignan desde la ficha, campo "Asignada a".
 
 ### Flujos sin probar de punta a punta
 - Formulario de contacto. Ahora deja rastro en `email_log`, así que un fallo se ve ahí.
