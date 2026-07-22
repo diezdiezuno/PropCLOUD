@@ -30,6 +30,7 @@ function refName(u?: { name: string } | null, c?: { name: string; last_name: str
 }
 interface CompanyFull {
   id: string; name: string; trade_name: string | null; cedula_juridica: string | null
+  email: string | null; phone: string | null; notes: string | null
 }
 interface LinkedContact {
   id: string; name: string; last_name: string | null; cedula: string | null; photo_url: string | null
@@ -88,7 +89,15 @@ const XIcon  = () => <svg width="15" height="15" viewBox="0 0 24 24"><rect width
 const WaGlyph = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.5A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-2.9-.4-4.2-1.1l-.3-.18-2.85.89.9-2.78-.2-.32A8.2 8.2 0 1 1 12 20.2Zm4.6-6.13c-.25-.13-1.48-.73-1.71-.82-.23-.08-.4-.12-.56.13-.17.25-.64.81-.79.98-.14.16-.29.18-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.66-1.25-1.48-1.4-1.73-.14-.25-.01-.39.11-.51.11-.11.25-.29.37-.44.13-.15.17-.25.25-.42.08-.16.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.42l-.48-.01c-.16 0-.42.06-.64.31-.22.25-.85.83-.85 2.03 0 1.2.87 2.36.99 2.52.12.16 1.71 2.61 4.14 3.66.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.48-.6 1.69-1.19.21-.58.21-1.08.14-1.19-.06-.11-.22-.17-.47-.29Z"/></svg>
 
 /* ── Main component ───────────────────────────────────────────── */
-export default function ContactVCardModal({ view, onClose }: { view: VCardViewType; onClose: () => void }) {
+// `onEdit` solo se pasa desde donde se puede editar; sin él no hay botón. Así
+// el permiso se decide en la pantalla que conoce al dueño, y esta ficha —que
+// también se abre desde propiedades y desde contactos— no tiene que saberlo.
+export default function ContactVCardModal({ view, onClose, onEdit, showCrmLink = true }: {
+  view: VCardViewType
+  onClose: () => void
+  onEdit?: () => void
+  showCrmLink?: boolean   // false cuando ya se está en el CRM: el enlace daría vueltas
+}) {
   const [contactData,  setContactData]  = useState<ContactFull | null>(null)
   const [companyData,  setCompanyData]  = useState<CompanyFull | null>(null)
   const [compContacts, setCompContacts] = useState<LinkedContact[]>([])
@@ -115,7 +124,7 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
         ))
     } else {
       Promise.all([
-        sb.from('crm_companies').select('id,name,trade_name,cedula_juridica').eq('id', view.id).single(),
+        sb.from('crm_companies').select('id,name,trade_name,cedula_juridica,email,phone,notes').eq('id', view.id).single(),
         sb.from('crm_contact_companies').select('crm_contacts(id,name,last_name,cedula,photo_url)').eq('company_id', view.id),
       ]).then(([{ data: co }, { data: links }]) => {
         setCompanyData(co as CompanyFull)
@@ -386,6 +395,29 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
                 <div style={{ marginTop: 8 }}>
                   <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 12px', borderRadius: 20, background: '#F59E0B22', color: '#D97706' }}>Jurídico</span>
                 </div>
+
+                {/* Mismos botones que la ficha de contacto. Las empresas no
+                    guardan país del teléfono: se asume el del tenant. */}
+                {(companyData.phone || companyData.email) && (
+                  <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 18 }}>
+                    {companyData.phone && (
+                      <button onClick={() => openWhatsapp(companyData.phone, null)} title="WhatsApp"
+                        style={actionBtnStyle('#25D366')}>
+                        <WaGlyph />
+                      </button>
+                    )}
+                    {companyData.phone && (
+                      <a href={`tel:${companyData.phone}`} title="Llamar" style={actionBtnStyle('#0EA5E9')}>
+                        <Icon name="phone" size={20} color="#fff" />
+                      </a>
+                    )}
+                    {companyData.email && (
+                      <a href={`mailto:${companyData.email}`} title="Email" style={actionBtnStyle('#EA4335')}>
+                        <Icon name="mail" size={20} color="#fff" />
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div style={{ height: 1, background: '#E2E5EA', margin: '20px 0 16px' }} />
@@ -393,7 +425,23 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
                 {companyData.cedula_juridica && (
                   <VCardRow icon="idCard" color="#5a6070" label="Cédula jurídica">{companyData.cedula_juridica}</VCardRow>
                 )}
+                {companyData.phone && (
+                  <VCardRow icon="phone" color="#0EA5E9" label="Teléfono">{companyData.phone}</VCardRow>
+                )}
+                {companyData.email && (
+                  <VCardRow icon="mail" color="#EA4335" label="Email">
+                    <a href={`mailto:${companyData.email}`} style={{ color: '#0d0f12', textDecoration: 'none' }}>{companyData.email}</a>
+                  </VCardRow>
+                )}
               </div>
+
+              {companyData.notes && (
+                <>
+                  <div style={{ height: 1, background: '#E2E5EA', margin: '16px 0' }} />
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 8 }}>Notas</div>
+                  <div style={{ fontSize: 13.5, color: '#0d0f12', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{companyData.notes}</div>
+                </>
+              )}
 
               {compContacts.length > 0 && (
                 <>
@@ -422,8 +470,17 @@ export default function ContactVCardModal({ view, onClose }: { view: VCardViewTy
               )}
 
               <div style={{ textAlign: 'center', marginTop: 20 }}>
-                <a href={`/admin/empresas?id=${view.id}`} target="_blank"
-                  style={{ fontSize: 13, fontWeight: 600, color: '#5a6070', textDecoration: 'none' }}>Abrir en CRM ↗</a>
+                {onEdit ? (
+                  <button onClick={onEdit}
+                    style={{ height: 40, padding: '0 28px', background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 20, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Editar
+                  </button>
+                ) : showCrmLink ? (
+                  <a href={`/admin/empresas?id=${view.id}`} target="_blank"
+                    style={{ fontSize: 13, fontWeight: 600, color: '#5a6070', textDecoration: 'none' }}>Abrir en CRM ↗</a>
+                ) : (
+                  <span style={{ fontSize: 12, color: '#9ca3af' }}>Solo el agente que la creó puede editarla</span>
+                )}
               </div>
             </div>
           ) : null}

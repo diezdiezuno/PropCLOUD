@@ -7,6 +7,7 @@ import { getMembership } from '@/lib/membership'
 import { countryHas } from '@/lib/country'
 import PageHeader from '@/components/admin/PageHeader'
 import { Icon } from '@/lib/icons'
+import ContactVCardModal from '@/app/admin/(protected)/propiedades/ContactVCardModal'
 
 // ── Types ─────────────────────────────────────────────────────
 // Espeja la policy de crm_companies: admin, o el dueño sobre lo suyo. Las
@@ -92,6 +93,7 @@ export default function EmpresasClient() {
   const [agents,      setAgents]      = useState<{ auth_id: string; name: string }[]>([])
   const [ownerId,     setOwnerId]     = useState('')
   const [readOnly,    setReadOnly]    = useState(false)
+  const [vcardId,     setVcardId]     = useState<string | null>(null)
   const [companies,   setCompanies]   = useState<Company[]>([])
   const [contactMap,  setContactMap]  = useState<Record<string, number>>({})
   const [pageLoading, setPageLoading] = useState(true)
@@ -282,6 +284,11 @@ export default function EmpresasClient() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [showResults])
+
+  // Espeja la policy de crm_companies: admin, o quien la creó. Las fichas
+  // viejas sin dueño quedan solo para el admin. Si esto se desalinea de la RLS,
+  // el botón aparece y la base rechaza sin decir por qué.
+  const canEdit = (co: Company) => isAdmin || (!!co.created_by && co.created_by === userId)
 
   // ── Drawer ────────────────────────────────────────────────
   function openDrawer(company: Company | null) {
@@ -635,7 +642,7 @@ export default function EmpresasClient() {
                   return (
                     <tr key={co.id} className="em-trow" style={{ borderTop: '1px solid #eef0f2' }}>
                       <td style={{ padding: '8px 12px' }}>
-                        <div onClick={() => openDrawer(co)} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', minWidth: 0 }}>
+                        <div onClick={() => setVcardId(co.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', minWidth: 0 }}>
                           <div style={{ width: 30, height: 30, borderRadius: 8, background: ac + '20', border: `2px solid ${ac}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: ac, flexShrink: 0, letterSpacing: '-0.5px' }}>{companyInitials(display)}</div>
                           <span style={{ fontWeight: 600, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{display}</span>
                         </div>
@@ -647,7 +654,7 @@ export default function EmpresasClient() {
                       </td>
                       <td style={{ padding: '8px 12px' }}>
                         <div className="em-actions" onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                          {!(isAdmin || (!!co.created_by && co.created_by === userId)) ? null : showArchived ? (
+                          {!canEdit(co) ? null : showArchived ? (
                             <button onClick={() => restoreCompany(co.id)} disabled={isDeleting}
                               style={{ fontSize: 12, fontWeight: 600, color: '#0d0f12', background: '#fff', border: '1px solid #e2e5ea', borderRadius: 7, padding: '5px 12px', cursor: isDeleting ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: isDeleting ? .6 : 1 }}>{isDeleting ? '…' : 'Restaurar'}</button>
                           ) : !isConfirming ? (
@@ -981,6 +988,24 @@ export default function EmpresasClient() {
           </div>
         </div>
       </div>
+
+      {/* ── Ficha (vcard) ──────────────────────────────────────
+          Es la misma que abre contactos y propiedades. El botón de editar solo
+          existe si se le pasa `onEdit`, así que las empresas ajenas se abren
+          igual pero sin puerta al formulario. */}
+      {vcardId && (() => {
+        const co = companies.find(c => c.id === vcardId)
+        return (
+          <ContactVCardModal
+            view={{ type: 'company', id: vcardId }}
+            onClose={() => setVcardId(null)}
+            showCrmLink={false}
+            onEdit={co && canEdit(co)
+              ? () => { setVcardId(null); setTimeout(() => openDrawer(co), 200) }
+              : undefined}
+          />
+        )
+      })()}
 
       {/* ── Toast ──────────────────────────────────────────── */}
       {toast && (
