@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import type { PageConfig, PageSettings, NosotrosContent, ContactoContent, ReclutamientoContent } from '@/types'
 import PageHeader from '@/components/admin/PageHeader'
+import NosotrosTemplate from '@/app/(public)/nosotros/NosotrosTemplate'
+import { EditableProvider, escribirRuta } from '@/components/public/EdicionEnVivo'
 
 const PREDEFINED_SLUGS = ['nosotros', 'agentes', 'contacto', 'listar', 'reclutamiento']
 
@@ -134,6 +136,10 @@ export default function PageEditorPage() {
 
   // Mezclan una rama del contenido sin pisar el resto.
   const setN = (patch: Partial<NosotrosContent>) => setNosotrosContent(c => ({ ...c, ...patch }))
+  // La vista previa editable manda rutas con puntos ('hero.title'); se escriben
+  // en el mismo estado que usan los controles de listas.
+  const setNRuta = (ruta: string, valor: string) =>
+    setNosotrosContent(c => escribirRuta(c as Record<string, unknown>, ruta, valor) as NosotrosContent)
   const setC = (patch: Partial<ContactoContent>) => setContactoContent(c => ({ ...c, ...patch }))
   const setR = (patch: Partial<ReclutamientoContent>) => setReclutamientoContent(c => ({ ...c, ...patch }))
 
@@ -316,66 +322,48 @@ export default function PageEditorPage() {
             )}
             {nosotrosTemplate === 'estandar' && (
               <>
-                <Section title="Encabezado">
-                  <Inp label="Título" value={nosotrosContent.hero?.title ?? ''}
-                    onChange={v => setN({ hero: { ...nosotrosContent.hero, title: v } })}
-                    placeholder="Bienes raíces" />
-                  <div style={{ height: 14 }} />
-                  <Inp label="Palabras destacadas" value={nosotrosContent.hero?.accent ?? ''}
-                    onChange={v => setN({ hero: { ...nosotrosContent.hero, accent: v } })}
-                    placeholder="de personas."
-                    hint="Se muestran con el degradado de color, al final del título." />
-                  <div style={{ height: 14 }} />
-                  <Txt label="Texto de presentación" value={nosotrosContent.hero?.text ?? ''} rows={4}
-                    onChange={v => setN({ hero: { ...nosotrosContent.hero, text: v } })} />
+                <Section title="Contenido de la página">
+                  <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
+                    Hacé clic sobre cualquier texto para editarlo. Se ve tal cual queda en el sitio.
+                    Las cifras y los pilares —que son listas— se manejan abajo.
+                  </p>
+                  {/* La plantilla real, en modo edición. Escribe en el mismo estado
+                      que las listas de abajo, así que guarda todo junto el botón
+                      del pie. `--nav-h: 0` saca el hueco de la barra pública, que
+                      acá no existe. */}
+                  <div style={{ border: '1px solid #e0e0e0', borderRadius: 12, overflowX: 'auto', '--nav-h': '0px' } as React.CSSProperties}>
+                    <EditableProvider editando onChange={setNRuta}>
+                      <NosotrosTemplate content={nosotrosContent} />
+                    </EditableProvider>
+                  </div>
+                </Section>
+
+                <Section title="Cifras">
+                  <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
+                    Franja de números del encabezado. Si no cargás ninguna, no se muestra.
+                  </p>
                   <ObjList label="Cifras" items={nosotrosContent.stats ?? []}
                     onChange={v => setN({ stats: v })}
                     fields={[{ key: 'num', label: 'Cifra (ej: +30)' }, { key: 'label', label: 'Descripción' }]}
                     blank={{ num: '', label: '' }} />
-                  <p style={{ fontSize: 12, color: '#aaa', margin: 0 }}>Si no cargás ninguna cifra, la franja no se muestra.</p>
                 </Section>
 
-                <Section title="Cómo trabajamos">
-                  <Inp label="Antetítulo" value={nosotrosContent.work?.eyebrow ?? ''}
-                    onChange={v => setN({ work: { ...nosotrosContent.work, eyebrow: v } })}
-                    placeholder="Cómo trabajamos" />
-                  <div style={{ height: 14 }} />
-                  <Inp label="Título" value={nosotrosContent.work?.title ?? ''}
-                    onChange={v => setN({ work: { ...nosotrosContent.work, title: v } })} />
-                  <div style={{ height: 14 }} />
+                <Section title="Párrafos de «Cómo trabajamos»">
+                  <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
+                    Agregá, quitá o reordená párrafos. El texto de cada uno se edita arriba, en la vista previa.
+                  </p>
                   <StringList label="Párrafos" multiline items={nosotrosContent.work?.paragraphs ?? []}
                     onChange={v => setN({ work: { ...nosotrosContent.work, paragraphs: v } })} />
                 </Section>
 
-                <Section title="Misión y visión">
-                  <Inp label="Antetítulo" value={nosotrosContent.purpose?.eyebrow ?? ''}
-                    onChange={v => setN({ purpose: { ...nosotrosContent.purpose, eyebrow: v } })}
-                    placeholder="Propósito" />
-                  <div style={{ height: 14 }} />
-                  <Inp label="Título" value={nosotrosContent.purpose?.title ?? ''}
-                    onChange={v => setN({ purpose: { ...nosotrosContent.purpose, title: v } })}
-                    placeholder="Lo que nos mueve." />
-                  <div style={{ height: 14 }} />
-                  <Txt label="Misión" rows={5} value={nosotrosContent.purpose?.mission ?? ''}
-                    onChange={v => setN({ purpose: { ...nosotrosContent.purpose, mission: v } })} />
-                  <Txt label="Visión" rows={5} value={nosotrosContent.purpose?.vision ?? ''}
-                    onChange={v => setN({ purpose: { ...nosotrosContent.purpose, vision: v } })} />
-                </Section>
-
                 <Section title="Pilares">
-                  <Inp label="Antetítulo" value={nosotrosContent.pillars?.eyebrow ?? ''}
-                    onChange={v => setN({ pillars: { ...nosotrosContent.pillars, eyebrow: v } })}
-                    placeholder="Nuestros pilares" />
-                  <div style={{ height: 14 }} />
-                  <Inp label="Título" value={nosotrosContent.pillars?.title ?? ''}
-                    onChange={v => setN({ pillars: { ...nosotrosContent.pillars, title: v } })}
-                    placeholder="Lo que nos define." />
-                  <div style={{ height: 14 }} />
+                  <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
+                    Etiquetas con emoji del cierre de la página. Si no cargás ninguna, la sección no se muestra.
+                  </p>
                   <ObjList label="Pilares" items={nosotrosContent.pillars?.items ?? []}
                     onChange={v => setN({ pillars: { ...nosotrosContent.pillars, items: v } })}
                     fields={[{ key: 'icon', label: 'Emoji' }, { key: 'label', label: 'Nombre' }]}
                     blank={{ icon: '', label: '' }} />
-                  <p style={{ fontSize: 12, color: '#aaa', margin: 0 }}>Si no cargás ninguno, la sección no se muestra.</p>
                 </Section>
               </>
             )}
