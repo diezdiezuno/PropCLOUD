@@ -63,6 +63,7 @@ interface Contact {
 
 interface VCardContact {
   id: string
+  created_by: string | null
   cedula: string | null
   cedula_tipo: string | null
   name: string
@@ -532,7 +533,7 @@ export default function ContactosClient() {
   // Espeja la policy de crm_contacts: admin, o el dueño sobre lo suyo. Las
   // fichas viejas sin dueño quedan solo para el admin. Si esto se desalinea
   // de la RLS, el botón aparece y la base rechaza sin decir por qué.
-  const canEdit = (c: Contact) => isAdmin || (!!c.created_by && c.created_by === userId)
+  const canEdit = (c: { created_by: string | null }) => isAdmin || (!!c.created_by && c.created_by === userId)
 
   // Acciones reutilizables — hover por CSS (clases cl-btn-*), sin estado por fila
   function ContactActions({ c }: { c: Contact }) {
@@ -1061,14 +1062,18 @@ export default function ContactosClient() {
                   </>
                 )}
 
-                {/* Editar */}
-                <div style={{ textAlign: 'center', marginTop: 20 }}>
-                  <button
-                    onClick={() => { if (!vcardData) return; const id = vcardData.id; closeVCard(); setTimeout(() => openDrawer(id), 200) }}
-                    style={{ height: 40, padding: '0 28px', background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 20, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    Editar
-                  </button>
-                </div>
+                {/* Editar — la ficha la abre cualquiera del equipo, así que el
+                    botón se esconde igual que en la lista. Sin esto se llegaba
+                    al formulario de un contacto ajeno por acá. */}
+                {canEdit(vcardData) && (
+                  <div style={{ textAlign: 'center', marginTop: 20 }}>
+                    <button
+                      onClick={() => { if (!vcardData) return; const id = vcardData.id; closeVCard(); setTimeout(() => openDrawer(id), 200) }}
+                      style={{ height: 40, padding: '0 28px', background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 20, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Editar
+                    </button>
+                  </div>
+                )}
             </div>
           ) : null}
           </div>

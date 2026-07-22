@@ -726,7 +726,11 @@ export default function ContactForm({
     let contactId = editId ?? null
     let saveError
     if (editId) {
-      ;({ error: saveError } = await sb.from('crm_contacts').update(payload).eq('id', editId))
+      // La RLS no devuelve error al editar lo ajeno: filtra la fila y responde
+      // 0 sin quejarse. Sin el .select() esto decía "actualizado ✓" y mentía.
+      const { data: upd, error: updErr } = await sb.from('crm_contacts')
+        .update(payload).eq('id', editId).select('id')
+      saveError = updErr ?? (upd?.length ? null : { message: 'no tenés permiso para editar este contacto' })
     } else {
       const { data: newC, error: insertErr } = await sb.from('crm_contacts')
         .insert({ ...payload, tenant_id: tenantId, ...(userId ? { created_by: userId } : {}), active: true })
