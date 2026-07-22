@@ -8,7 +8,7 @@ import ContactForm from '@/components/crm/ContactForm'
 import { getMembership } from '@/lib/membership'
 import { glassScrim } from '@/lib/theme'
 import { Icon } from '@/lib/icons'
-import ContactVCardModal, { type VCardViewType } from '../propiedades/ContactVCardModal'
+import ContactVCardModal, { type VCardViewType, avatarSkin } from '../propiedades/ContactVCardModal'
 import PageHeader from '@/components/admin/PageHeader'
 
 // ── Types ─────────────────────────────────────────────────────
@@ -801,12 +801,10 @@ export default function ContactosClient() {
           {!vcardLoading && vcardData && (() => {
             const ac = nameToColor(vcardData.name + (vcardData.last_name ?? ''))
             return (
-              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 3, width: 108, height: 108, borderRadius: 30, overflow: 'hidden', background: vcardData.photo_url ? '#fff' : ac, border: '4px solid #fff', boxShadow: '0 8px 22px rgba(0,0,0,.20)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 3, width: 108, height: 108, borderRadius: 30, overflow: 'hidden', background: vcardData.photo_url ? '#fff' : avatarSkin(ac).bg, border: '4px solid #fff', boxShadow: '0 8px 22px rgba(0,0,0,.20)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {vcardData.photo_url
                   ? <img src={vcardData.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  // Oscuro, no blanco: ver la nota en ContactVCardModal — con la
-                  // paleta clara el blanco no llega a 3:1.
-                  : <span style={{ fontSize: 38, fontWeight: 800, color: '#0d0f12', letterSpacing: '-1px' }}>{getInitials(vcardData.name, vcardData.last_name)}</span>}
+                  : <span style={{ fontSize: 38, fontWeight: 800, color: avatarSkin(ac).fg, letterSpacing: '-1px' }}>{getInitials(vcardData.name, vcardData.last_name)}</span>}
               </div>
             )
           })()}

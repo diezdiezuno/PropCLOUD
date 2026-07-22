@@ -53,6 +53,23 @@ function nameToColor(name: string): string {
 function getInitials(name: string, lastName: string | null) {
   return ((name?.[0] ?? '') + (lastName?.[0] ?? '')).toUpperCase() || '?'
 }
+// Avatar de la ficha, al mismo estilo que los thumbnails del listado: fondo
+// tenue y las iniciales en el color.
+//
+// Dos diferencias obligadas. El fondo va opaco —el mismo tinte que daría el
+// alfa '22' sobre blanco, ya resuelto— porque este avatar sobresale del cuadro
+// y con alfa se transparentaba el fondo de atrás. Y el texto va oscurecido al
+// 55%: el color pleno sobre su propio tinte queda entre 1.8:1 y 3.8:1, que en
+// chico pasa pero a 38px se lee mal. Oscurecido conserva el tono y llega a
+// 5.3:1 o más en los 12 colores de la paleta.
+export function avatarSkin(hex: string): { bg: string; fg: string } {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16))
+  const sobreBlanco = (c: number) => Math.round(255 + (c - 255) * (34 / 255))
+  return {
+    bg: `rgb(${sobreBlanco(r)}, ${sobreBlanco(g)}, ${sobreBlanco(b)})`,
+    fg: `rgb(${Math.round(r * 0.55)}, ${Math.round(g * 0.55)}, ${Math.round(b * 0.55)})`,
+  }
+}
 function coInitials(name: string): string {
   const words = name.trim().split(/\s+/)
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
@@ -172,16 +189,13 @@ export default function ContactVCardModal({ view, onClose, onEdit, showCrmLink =
           <div style={{
             position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 3,
             width: 108, height: 108, borderRadius: 30, overflow: 'hidden',
-            background: contactData?.photo_url ? '#fff' : avatarColor,
+            background: contactData?.photo_url ? '#fff' : avatarSkin(avatarColor).bg,
             border: '4px solid #fff', boxShadow: '0 8px 22px rgba(0,0,0,.20)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {contactData?.photo_url
               ? <img src={contactData.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              // Oscuro, no blanco: la paleta tiene 6 colores claros (ámbar, lima,
-              // cian…) donde el blanco baja de 3:1 y las iniciales se pierden.
-              // Contra el oscuro los 12 pasan de 4.3:1.
-              : <span style={{ fontSize: 38, fontWeight: 800, color: '#0d0f12', letterSpacing: '-1px' }}>
+              : <span style={{ fontSize: 38, fontWeight: 800, color: avatarSkin(avatarColor).fg, letterSpacing: '-1px' }}>
                   {contactData ? getInitials(contactData.name, contactData.last_name) : coInitials(companyData!.trade_name || companyData!.name)}
                 </span>}
           </div>
