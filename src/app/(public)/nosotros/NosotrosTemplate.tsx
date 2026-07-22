@@ -1,6 +1,7 @@
 'use client'
 
 import type { NosotrosContent } from '@/types'
+import { Editable } from '@/components/public/EdicionEnVivo'
 
 // Valores por defecto deliberadamente genéricos: sirven de andamio para una
 // oficina que todavía no cargó su texto. El copy de cada oficina vive en la
@@ -55,20 +56,20 @@ export default function NosotrosTemplate({ content = {} }: { content?: NosotrosC
             fontWeight: 900, lineHeight: .93,
             letterSpacing: '-.03em', marginBottom: 36,
           }}>
-            {heroTitle}{' '}
+            <Editable ruta="hero.title">{heroTitle}</Editable>{' '}
             <span style={{
               background: 'linear-gradient(90deg,var(--primary,#6b2fa0),#D44E2A,#E8920A)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-            }}>{heroAccent}</span>
+            }}><Editable ruta="hero.accent">{heroAccent}</Editable></span>
           </h1>
 
           <p style={{
             fontSize: 'clamp(16px,1.8vw,20px)', fontWeight: 300,
             color: '#888480', lineHeight: 1.7, marginBottom: 0, maxWidth: 780,
           }}>
-            {heroText}
+            <Editable ruta="hero.text" bloque>{heroText}</Editable>
           </p>
         </div>
 
@@ -98,7 +99,7 @@ export default function NosotrosTemplate({ content = {} }: { content?: NosotrosC
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(32px,5vw,80px)', alignItems: 'start' }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 16, marginTop: 0 }}>
-              {workEyebrow}
+              <Editable ruta="work.eyebrow">{workEyebrow}</Editable>
             </p>
             <h2 style={{
               fontFamily: 'var(--font-heading,serif)',
@@ -106,12 +107,14 @@ export default function NosotrosTemplate({ content = {} }: { content?: NosotrosC
               lineHeight: 1.15, letterSpacing: '-.02em', color: '#111',
               margin: '0 0 24px',
             }}>
-              {workTitle}
+              <Editable ruta="work.title" bloque>{workTitle}</Editable>
             </h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {workParagraphs.map((t, i) => (
-              <p key={i} style={{ fontSize: 15, color: '#555', lineHeight: 1.75, margin: 0 }}>{t}</p>
+              <p key={i} style={{ fontSize: 15, color: '#555', lineHeight: 1.75, margin: 0 }}>
+                <Editable ruta={`work.paragraphs.${i}`} bloque>{t}</Editable>
+              </p>
             ))}
           </div>
         </div>
@@ -124,7 +127,7 @@ export default function NosotrosTemplate({ content = {} }: { content?: NosotrosC
         borderTop: '1px solid #e8e4df',
       }}>
         <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 14, textAlign: 'center', marginTop: 0 }}>
-          {purposeEyebrow}
+          <Editable ruta="purpose.eyebrow">{purposeEyebrow}</Editable>
         </p>
         <h2 style={{
           fontFamily: 'var(--font-heading,serif)',
@@ -132,7 +135,7 @@ export default function NosotrosTemplate({ content = {} }: { content?: NosotrosC
           lineHeight: 1.1, letterSpacing: '-.02em',
           marginBottom: 48, textAlign: 'center', marginTop: 0,
         }}>
-          {purposeTitle}
+          <Editable ruta="purpose.title" bloque>{purposeTitle}</Editable>
         </h2>
 
         <div style={{
@@ -149,7 +152,7 @@ export default function NosotrosTemplate({ content = {} }: { content?: NosotrosC
               marginBottom: 24,
             }}>Misión</div>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,.75)', lineHeight: 1.75, margin: 0 }}>
-              {mission}
+              <Editable ruta="purpose.mission" bloque>{mission}</Editable>
             </p>
           </div>
 
@@ -162,7 +165,7 @@ export default function NosotrosTemplate({ content = {} }: { content?: NosotrosC
               marginBottom: 24,
             }}>Visión</div>
             <p style={{ fontSize: 15, color: '#555', lineHeight: 1.75, margin: 0 }}>
-              {vision}
+              <Editable ruta="purpose.vision" bloque>{vision}</Editable>
             </p>
           </div>
         </div>
@@ -175,7 +178,7 @@ export default function NosotrosTemplate({ content = {} }: { content?: NosotrosC
         borderTop: '1px solid #e8e4df',
       }}>
         <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--primary,#6b2fa0)', marginBottom: 14, textAlign: 'center', marginTop: 0 }}>
-          {pillarsEyebrow}
+          <Editable ruta="pillars.eyebrow">{pillarsEyebrow}</Editable>
         </p>
         <h2 style={{
           fontFamily: 'var(--font-heading,serif)',
@@ -183,7 +186,7 @@ export default function NosotrosTemplate({ content = {} }: { content?: NosotrosC
           lineHeight: 1.1, letterSpacing: '-.02em',
           marginBottom: 48, textAlign: 'center', marginTop: 0,
         }}>
-          {pillarsTitle}
+          <Editable ruta="pillars.title" bloque>{pillarsTitle}</Editable>
         </h2>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>

@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import NosotrosTemplate from './NosotrosTemplate'
+import { EdicionProvider } from '@/components/public/EdicionEnVivo'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
@@ -28,7 +29,14 @@ export default async function NosotrosPage() {
   // explícitamente el HTML plano. Los valores viejos ('sunrise', 'default')
   // caen acá también, así que no hizo falta migrar nada.
   if (settings.nosotros_template !== 'html') {
-    return <NosotrosTemplate content={settings.nosotros_content} />
+    const plantilla = <NosotrosTemplate content={settings.nosotros_content} />
+    // Sin tenant no hay dónde guardar: se sirve la página tal cual.
+    return tenant
+      ? <EdicionProvider tenantId={tenant.id} slug="nosotros" campo="nosotros_content"
+          inicial={settings.nosotros_content as Record<string, unknown> | undefined}>
+          {plantilla}
+        </EdicionProvider>
+      : plantilla
   }
 
   // Only 404 if the page is explicitly hidden — don't 404 just for missing content
