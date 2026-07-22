@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import ReclutamientoClient from './ReclutamientoClient'
-import ReclutamientoClientSunrise from './ReclutamientoClientSunrise'
+import ReclutamientoTemplate from './ReclutamientoTemplate'
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -22,10 +22,10 @@ export default async function ReclutamientoPage() {
   const pageCfg = config?.pages_config?.find(p => p.slug === 'reclutamiento')
   const settings = pageCfg?.settings ?? {}
 
-  const template = settings.reclutamiento_template ?? 'default'
+  const template = settings.reclutamiento_template ?? 'estandar'
 
-  if (template === 'sunrise') {
-    return <ReclutamientoClientSunrise content={settings.reclutamiento_content} />
+  if (template !== 'html') {
+    return <ReclutamientoTemplate content={settings.reclutamiento_content} />
   }
 
   return (

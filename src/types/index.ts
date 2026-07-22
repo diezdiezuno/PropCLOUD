@@ -30,6 +30,8 @@ export interface TenantTheme {
   showRoadLabels?: boolean
 }
 
+export type Plantilla = 'estandar' | 'html' | 'sunrise' | 'default'
+
 export interface PageSettings {
   content_html?: string           // nosotros + custom pages
   submission_email?: string       // listar + reclutamiento: where to receive
@@ -40,10 +42,13 @@ export interface PageSettings {
   reclutamiento_intro?: string
   seo_description?: string        // meta description override for this page
   notification_emails?: string    // comma-separated emails for form notifications
-  reclutamiento_template?: 'default' | 'sunrise'
-  listar_template?: 'default' | 'sunrise'
-  nosotros_template?: 'default' | 'sunrise'
-  contacto_template?: 'default' | 'sunrise'
+  // 'estandar' = la plantilla diseñada, que es la que se usa por defecto.
+  // 'html' = el diseño mínimo. 'sunrise' y 'default' son los nombres viejos de
+  // lo mismo y siguen en la base: se leen, no se escriben.
+  reclutamiento_template?: Plantilla
+  listar_template?: Plantilla
+  nosotros_template?: Plantilla
+  contacto_template?: Plantilla
   // Contenido de la plantilla 'sunrise' de Nosotros. El diseño es compartido;
   // el texto vive acá, por tenant. Sin esto el copy quedaba escrito en el
   // componente y cualquier oficina que eligiera la plantilla publicaba el

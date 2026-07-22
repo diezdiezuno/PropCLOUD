@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import ListarClient from './ListarClient'
-import ListarClientSunrise from './ListarClientSunrise'
+import ListarTemplate from './ListarTemplate'
 import type { Metadata } from 'next'
 import type { PageSettings } from '@/types'
 
@@ -26,8 +26,8 @@ export default async function ListarPage() {
   const pageCfg = config?.pages_config?.find(p => p.slug === 'listar')
   const settings: PageSettings = pageCfg?.settings ?? {}
 
-  if (settings.listar_template === 'sunrise') {
-    return <ListarClientSunrise />
+  if (settings.listar_template !== 'html') {
+    return <ListarTemplate />
   }
 
   return (

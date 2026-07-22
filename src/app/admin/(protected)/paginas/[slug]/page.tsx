@@ -27,6 +27,16 @@ const LISTAR_FIELD_OPTIONS = [
 
 const DEFAULT_LISTAR_FIELDS = ['phone', 'type', 'provincia', 'address', 'finca', 'price', 'description']
 
+type Plantilla = 'estandar' | 'html'
+
+// La plantilla diseñada pasó a ser la estándar. En la base quedaron valores
+// viejos —'sunrise' era la diseñada, 'default' la simple— y se normalizan acá
+// en vez de migrar: el sitio ya los interpreta igual y la próxima vez que se
+// guarde la página quedan escritos con el nombre nuevo.
+function normalizar(v: string | undefined): Plantilla {
+  return v === 'html' ? 'html' : 'estandar'
+}
+
 export default function PageEditorPage() {
   const { slug } = useParams<{ slug: string }>()
   const router = useRouter()
@@ -53,10 +63,10 @@ export default function PageEditorPage() {
   const [contactoContent, setContactoContent] = useState<ContactoContent>({})
   const [reclutamientoContent, setReclutamientoContent] = useState<ReclutamientoContent>({})
   const [notificationEmails, setNotificationEmails] = useState('')
-  const [reclutamientoTemplate, setReclutamientoTemplate] = useState<'default' | 'sunrise'>('default')
-  const [listarTemplate, setListarTemplate] = useState<'default' | 'sunrise'>('default')
-  const [nosotrosTemplate, setNosotrosTemplate] = useState<'default' | 'sunrise'>('default')
-  const [contactoTemplate, setContactoTemplate] = useState<'default' | 'sunrise'>('default')
+  const [reclutamientoTemplate, setReclutamientoTemplate] = useState<Plantilla>('estandar')
+  const [listarTemplate, setListarTemplate] = useState<Plantilla>('estandar')
+  const [nosotrosTemplate, setNosotrosTemplate] = useState<Plantilla>('estandar')
+  const [contactoTemplate, setContactoTemplate] = useState<Plantilla>('estandar')
 
   useEffect(() => {
     const supabase = createClient()
@@ -93,10 +103,10 @@ export default function PageEditorPage() {
       setReclutamientoPositions(s.reclutamiento_positions ?? [])
       setReclutamientoIntro(s.reclutamiento_intro ?? '')
       setNotificationEmails(s.notification_emails ?? '')
-      setReclutamientoTemplate(s.reclutamiento_template ?? 'default')
-      setListarTemplate(s.listar_template ?? 'default')
-      setNosotrosTemplate(s.nosotros_template ?? 'default')
-      setContactoTemplate(s.contacto_template ?? 'default')
+      setReclutamientoTemplate(normalizar(s.reclutamiento_template))
+      setListarTemplate(normalizar(s.listar_template))
+      setNosotrosTemplate(normalizar(s.nosotros_template))
+      setContactoTemplate(normalizar(s.contacto_template))
       setNosotrosContent(s.nosotros_content ?? {})
       setContactoContent(s.contacto_content ?? {})
       setReclutamientoContent(s.reclutamiento_content ?? {})
@@ -133,7 +143,7 @@ export default function PageEditorPage() {
 
     const settings: PageSettings = {}
     // El contenido se guarda aunque la plantilla no esté activa: si solo se
-    // guardara con 'sunrise' seleccionada, cambiar a "Estándar" y guardar
+    // guardara con la plantilla diseñada activa, cambiar a "HTML simple" y guardar
     // borraría todo el texto cargado, sin aviso y sin forma de recuperarlo.
     const keep = (o: object) => Object.keys(o).length > 0
     if (slug !== 'contacto') {
@@ -210,8 +220,8 @@ export default function PageEditorPage() {
                 </p>
                 <div style={{ display: 'flex', gap: 12 }}>
                   {([
-                    { value: 'default', label: 'Estándar', desc: 'Diseño simple con formulario y datos de contacto.' },
-                    { value: 'sunrise', label: 'Sunrise', desc: 'Landing page con hero, tarjetas de contacto y formulario destacado.' },
+                    { value: 'estandar', label: 'Estándar', desc: 'Landing con hero, tarjetas de contacto y formulario destacado.' },
+                    { value: 'html', label: 'HTML simple', desc: 'Diseño mínimo con formulario y datos de contacto.' },
                   ] as const).map(opt => (
                     <label key={opt.value} style={{
                       flex: 1, border: `2px solid ${contactoTemplate === opt.value ? '#111' : '#e0e0e0'}`,
@@ -230,7 +240,7 @@ export default function PageEditorPage() {
                 </div>
               </Section>
             )}
-            {contactoTemplate === 'sunrise' && (
+            {contactoTemplate === 'estandar' && (
               <Section title="Textos de la página">
                 <Inp label="Título" value={contactoContent.hero?.title ?? ''}
                   onChange={v => setC({ hero: { ...contactoContent.hero, title: v } })}
@@ -279,8 +289,8 @@ export default function PageEditorPage() {
                 </p>
                 <div style={{ display: 'flex', gap: 12 }}>
                   {([
-                    { value: 'default', label: 'Estándar', desc: 'Muestra el contenido HTML personalizable.' },
-                    { value: 'sunrise', label: 'Sunrise', desc: 'Landing page con hero, misión, visión y pilares.' },
+                    { value: 'estandar', label: 'Estándar', desc: 'Landing con hero, misión, visión y pilares.' },
+                    { value: 'html', label: 'HTML simple', desc: 'Muestra el contenido HTML personalizable.' },
                   ] as const).map(opt => (
                     <label key={opt.value} style={{
                       flex: 1, border: `2px solid ${nosotrosTemplate === opt.value ? '#111' : '#e0e0e0'}`,
@@ -299,12 +309,12 @@ export default function PageEditorPage() {
                 </div>
               </Section>
             )}
-            {nosotrosTemplate !== 'sunrise' && (
+            {nosotrosTemplate === 'html' && (
               <Section title="Contenido de la página">
                 <HtmlEditor value={contentHtml} onChange={setContentHtml} />
               </Section>
             )}
-            {nosotrosTemplate === 'sunrise' && (
+            {nosotrosTemplate === 'estandar' && (
               <>
                 <Section title="Encabezado">
                   <Inp label="Título" value={nosotrosContent.hero?.title ?? ''}
@@ -382,8 +392,8 @@ export default function PageEditorPage() {
                 </p>
                 <div style={{ display: 'flex', gap: 12 }}>
                   {([
-                    { value: 'default', label: 'Estándar', desc: 'Formulario simple configurable con los campos seleccionados.' },
-                    { value: 'sunrise', label: 'Sunrise', desc: 'Landing page completa con hero, beneficios, proceso y formulario avanzado.' },
+                    { value: 'estandar', label: 'Estándar', desc: 'Landing completa con hero, beneficios, proceso y formulario avanzado.' },
+                    { value: 'html', label: 'HTML simple', desc: 'Formulario simple con los campos seleccionados.' },
                   ] as const).map(opt => (
                     <label key={opt.value} style={{
                       flex: 1, border: `2px solid ${listarTemplate === opt.value ? '#111' : '#e0e0e0'}`,
@@ -448,8 +458,8 @@ export default function PageEditorPage() {
               </p>
               <div style={{ display: 'flex', gap: 12 }}>
                 {([
-                  { value: 'default', label: 'Estándar', desc: 'Formulario simple con las posiciones configuradas.' },
-                  { value: 'sunrise', label: 'Sunrise', desc: 'Landing page completa con hero, beneficios y formulario detallado.' },
+                  { value: 'estandar', label: 'Estándar', desc: 'Landing completa con hero, beneficios y formulario detallado.' },
+                  { value: 'html', label: 'HTML simple', desc: 'Formulario simple con las posiciones configuradas.' },
                 ] as const).map(opt => (
                   <label key={opt.value} style={{
                     flex: 1, border: `2px solid ${reclutamientoTemplate === opt.value ? '#111' : '#e0e0e0'}`,
@@ -516,7 +526,7 @@ export default function PageEditorPage() {
                 hint="Uno o más emails separados por coma. Recibirán un aviso por cada aplicación recibida."
               />
             </Section>
-            {reclutamientoTemplate === 'sunrise' && (
+            {reclutamientoTemplate === 'estandar' && (
               <>
                 <Section title="Encabezado">
                   <Inp label="Título" value={reclutamientoContent.hero?.title ?? ''}

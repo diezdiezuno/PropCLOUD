@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
 import ContactoClient from './ContactoClient'
-import ContactoClientSunrise from './ContactoClientSunrise'
+import ContactoTemplate from './ContactoTemplate'
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -33,8 +33,8 @@ export default async function ContactoPage() {
     twitter:   config?.twitter ?? null,
   }
 
-  if (pageCfg?.settings?.contacto_template === 'sunrise') {
-    return <ContactoClientSunrise content={pageCfg.settings.contacto_content} {...contactProps} />
+  if (pageCfg?.settings?.contacto_template !== 'html') {
+    return <ContactoTemplate content={pageCfg?.settings?.contacto_content} {...contactProps} />
   }
 
   return <ContactoClient {...contactProps} />

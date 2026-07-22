@@ -24,7 +24,7 @@ const D = {
   pillars: [] as { icon: string; label: string }[],
 }
 
-export default function NosotrosClientSunrise({ content = {} }: { content?: NosotrosContent }) {
+export default function NosotrosTemplate({ content = {} }: { content?: NosotrosContent }) {
   const heroTitle  = content.hero?.title  || D.heroTitle
   const heroAccent = content.hero?.accent || D.heroAccent
   const heroText   = content.hero?.text   || D.heroText

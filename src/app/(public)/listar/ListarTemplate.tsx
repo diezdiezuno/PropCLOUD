@@ -53,7 +53,7 @@ const PROVINCIAS = ['San José', 'Alajuela', 'Cartago', 'Heredia', 'Guanacaste',
 
 /* ─── Component ────────────────────────────────────────────── */
 
-export default function ListarClientSunrise() {
+export default function ListarTemplate() {
   // Contact fields
   const [nombre,    setNombre]    = useState('')
   const [email,     setEmail]     = useState('')

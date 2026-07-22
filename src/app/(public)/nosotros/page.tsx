@@ -1,6 +1,6 @@
 import { headers } from 'next/headers'
 import { getTenantByDomain, getTenantConfig } from '@/lib/tenant'
-import NosotrosClientSunrise from './NosotrosClientSunrise'
+import NosotrosTemplate from './NosotrosTemplate'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
@@ -24,8 +24,11 @@ export default async function NosotrosPage() {
   const settings = pageCfg?.settings ?? {}
   const html = settings?.content_html ?? config?.about_html ?? ''
 
-  if (settings.nosotros_template === 'sunrise') {
-    return <NosotrosClientSunrise content={settings.nosotros_content} />
+  // La plantilla diseñada es la estándar: se usa salvo que la oficina pida
+  // explícitamente el HTML plano. Los valores viejos ('sunrise', 'default')
+  // caen acá también, así que no hizo falta migrar nada.
+  if (settings.nosotros_template !== 'html') {
+    return <NosotrosTemplate content={settings.nosotros_content} />
   }
 
   // Only 404 if the page is explicitly hidden — don't 404 just for missing content

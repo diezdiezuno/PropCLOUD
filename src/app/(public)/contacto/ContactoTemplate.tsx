@@ -36,7 +36,7 @@ const SOCIAL = [
   { key: 'twitter',   label: 'X',         color: '#000000', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.261 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg> },
 ] as const
 
-export default function ContactoClientSunrise({ content = {}, whatsapp, email, address, instagram, facebook, linkedin, youtube, tiktok, twitter }: Props) {
+export default function ContactoTemplate({ content = {}, whatsapp, email, address, instagram, facebook, linkedin, youtube, tiktok, twitter }: Props) {
   const heroTitle  = content.hero?.title  || D.heroTitle
   const heroAccent = content.hero?.accent || D.heroAccent
   const heroText   = content.hero?.text   || D.heroText
