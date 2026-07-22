@@ -102,12 +102,23 @@ Migración de datos Noduus→Noduus: `scripts/migrate-proptools-data.mjs` (recre
 - **Invitaciones**: la lectura anónima abierta se reemplazó por RPC `get_invitation(token)` (security definer) que devuelve solo la fila del token exacto. Borrado restringido a `is_tenant_member`. → correr `security-patch-invitations.sql`.
 - **`users.role` era autoasignable**: la policy de UPDATE deja editar la fila propia sin mirar la columna, así que un agente se ponía `admin` y se abría el panel entero (e `invite-agent`, que autoriza con ese campo). Un trigger revierte `role`, `tenant_id` y `auth_id` para quien no sea admin, y otro mantiene `tenant_admins` igual a `users.role` — antes nada llenaba esa tabla salvo el panel de superadmin, y los admins creados desde la app tenían la UI sin los permisos. → `users-role-guard.sql`. *Los triggers exceptúan `auth.uid() is null` (service role, editor SQL) o las migraciones se revierten en silencio.*
 - **CRM**: el agente solo escribe lo suyo → `crm-rls.sql` + `crm-links-rls.sql`. El segundo no es opcional: sin él, un agente se insertaba en `crm_contact_agents` de un contacto ajeno y se ganaba la edición.
+- **Auditoría**: `audit-log.sql` cuelga un trigger de las tablas que importan y guarda quién cambió qué. Se ve en `/admin/auditoria`. Append-only: sin policy de insert, update ni delete. No registra lecturas — ningún trigger las ve.
+- **`contact-docs` se compartía entre oficinas** (ver Storage buckets).
 - **`/api/debug` eliminado** (filtraba tenants y prefijos de keys).
 - **`/api/contact`**: rate-limit por IP + validación/recorte de entradas.
 - Ningún `service_role` en el código (todo `process.env`); `.env*` en `.gitignore`. Las anon keys embebidas en los HTML de tools son públicas por diseño.
 
 ## Storage buckets
-`cv-uploads` (CVs), `agent-photos`, `property-docs` (PDF), `planos-uploads` (anon upload del form listar), `property-photos`.
+`cv-uploads` (CVs), `agent-photos`, `property-docs` (PDF), `planos-uploads` (anon upload del form listar), `property-photos`, `contact-photos`, `tenant-assets`.
+
+`contact-docs` es el único privado: cédulas de contactos (`<contactoId>/…`) y
+personerías o poderes de empresas (`empresas/<empresaId>/…`), en `doc_urls` de
+cada tabla. Acepta PDF e imágenes hasta 20 MB y se lee con URL firmada.
+Aislado por oficina con una policy **restrictive** sobre `storage.objects`
+(`contact-docs-tenant.sql`) que deduce el tenant del registro dueño, no de la
+ruta. Antes cualquier agente de cualquier oficina listaba y descargaba todo.
+Los demás buckets son públicos: no se pueden listar sin sesión, pero quien
+tenga la URL descarga.
 
 ## Agentes (sitio público)
 Puestos: Broker | Team Leader | Asesor Inmobiliario | Administrativo | Asistente (badge negro/morado/azul/ámbar/verde; ese es el orden de sort). Página `/agentes`: server + `AgentGrid.tsx`, foto 3:4.
