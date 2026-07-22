@@ -758,7 +758,10 @@ export default function ContactForm({
       const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
       const path = `${contactId}/${ts}_${safe}`
       const { error: docErr } = await supabase.storage.from('contact-docs').upload(path, file, { contentType: file.type })
-      if (!docErr) allDocUrls.push({ path, name: file.name, size: file.size, uploaded_at: new Date().toISOString() })
+      // Descartar este error dejaba al contacto guardado sin el documento y sin
+      // que nadie se enterara hasta que hacía falta.
+      if (docErr) { setError(`No se pudo subir ${file.name}: ${docErr.message}`); setSaving(false); return }
+      allDocUrls.push({ path, name: file.name, size: file.size, uploaded_at: new Date().toISOString() })
     }
 
     // Persist file urls (siempre — así se reflejan las eliminaciones)

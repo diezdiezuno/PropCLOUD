@@ -30,7 +30,7 @@ function refName(u?: { name: string } | null, c?: { name: string; last_name: str
 }
 interface CompanyFull {
   id: string; name: string; trade_name: string | null; cedula_juridica: string | null
-  email: string | null; phone: string | null; notes: string | null
+  email: string | null; phone: string | null; notes: string | null; doc_urls: DocUrl[] | null
 }
 interface LinkedContact {
   id: string; name: string; last_name: string | null; cedula: string | null; photo_url: string | null
@@ -141,7 +141,7 @@ export default function ContactVCardModal({ view, onClose, onEdit, showCrmLink =
         ))
     } else {
       Promise.all([
-        sb.from('crm_companies').select('id,name,trade_name,cedula_juridica,email,phone,notes').eq('id', view.id).single(),
+        sb.from('crm_companies').select('id,name,trade_name,cedula_juridica,email,phone,notes,doc_urls').eq('id', view.id).single(),
         sb.from('crm_contact_companies').select('crm_contacts(id,name,last_name,cedula,photo_url)').eq('company_id', view.id),
       ]).then(([{ data: co }, { data: links }]) => {
         setCompanyData(co as CompanyFull)
@@ -151,17 +151,19 @@ export default function ContactVCardModal({ view, onClose, onEdit, showCrmLink =
     }
   }, [view.id, view.type])
 
-  // Load signed URLs for docs
+  // Load signed URLs for docs — el bucket es privado, así que la miniatura de
+  // las imágenes necesita una URL firmada. Vale para personas y empresas.
   useEffect(() => {
-    if (!contactData?.doc_urls?.length) { setDocSignedUrls({}); return }
+    const docs = contactData?.doc_urls ?? companyData?.doc_urls
+    if (!docs?.length) { setDocSignedUrls({}); return }
     const sb = createClient()
     Promise.all(
-      contactData.doc_urls.map(async doc => {
+      docs.map(async doc => {
         const { data } = await sb.storage.from('contact-docs').createSignedUrl(doc.path, 3600)
         return [doc.path, data?.signedUrl ?? ''] as [string, string]
       })
     ).then(results => setDocSignedUrls(Object.fromEntries(results)))
-  }, [contactData])
+  }, [contactData, companyData])
 
   // Close on Escape
   useEffect(() => {
@@ -358,41 +360,7 @@ export default function ContactVCardModal({ view, onClose, onEdit, showCrmLink =
                 </>
               )}
 
-              {contactData.doc_urls && contactData.doc_urls.length > 0 && (
-                <>
-                  <div style={{ height: 1, background: '#E2E5EA', margin: '16px 0' }} />
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 10 }}>
-                    Documentos ({contactData.doc_urls.length})
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    {contactData.doc_urls.map(doc => {
-                      const isPdf   = doc.name.toLowerCase().endsWith('.pdf')
-                      const isImage = /\.(jpe?g|png|webp|gif|bmp|svg|heic|heif)$/i.test(doc.name)
-                      const signedUrl = docSignedUrls[doc.path]
-                      return (
-                        <div key={doc.path}
-                          onClick={async () => {
-                            const sb = createClient()
-                            const { data } = await sb.storage.from('contact-docs').createSignedUrl(doc.path, 3600)
-                            if (data?.signedUrl) window.open(data.signedUrl, '_blank')
-                          }}
-                          style={{ border: '1px solid #E2E5EA', borderRadius: 10, cursor: 'pointer', overflow: 'hidden' }}
-                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 10px rgba(0,0,0,.1)'}
-                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'}
-                        >
-                          <div style={{ height: 100, background: isPdf ? '#FEE2E2' : '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                            {isImage && signedUrl
-                              ? <img src={signedUrl} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              : <><Icon name={isPdf ? 'file' : 'image'} size={28} color={isPdf ? '#DC2626' : '#5a6070'} />{isPdf && <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginLeft: 6 }}>PDF</span>}</>
-                            }
-                          </div>
-                          <div style={{ padding: '6px 10px', fontSize: 12, color: '#5a6070', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
+              <DocsGrid docs={contactData.doc_urls} firmadas={docSignedUrls} />
 
               <div style={{ textAlign: 'center', marginTop: 20 }}>
                 <a href={`/admin/contactos?id=${view.id}`} target="_blank"
@@ -486,6 +454,8 @@ export default function ContactVCardModal({ view, onClose, onEdit, showCrmLink =
                 </>
               )}
 
+              <DocsGrid docs={companyData.doc_urls} firmadas={docSignedUrls} />
+
               <div style={{ textAlign: 'center', marginTop: 20 }}>
                 {onEdit ? (
                   <button onClick={onEdit}
@@ -509,6 +479,46 @@ export default function ContactVCardModal({ view, onClose, onEdit, showCrmLink =
 
 function actionBtnStyle(bg: string): React.CSSProperties {
   return { width: 46, height: 46, borderRadius: 14, background: bg, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', boxShadow: `0 4px 12px ${bg}55` }
+}
+
+// Documentos de la ficha: personas y empresas usan el mismo bucket y la misma
+// forma de `doc_urls`, así que también la misma grilla.
+function DocsGrid({ docs, firmadas }: { docs: DocUrl[] | null; firmadas: Record<string, string> }) {
+  if (!docs || docs.length === 0) return null
+  return (
+    <>
+      <div style={{ height: 1, background: '#E2E5EA', margin: '16px 0' }} />
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+        Documentos ({docs.length})
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {docs.map(doc => {
+          const isPdf   = doc.name.toLowerCase().endsWith('.pdf')
+          const isImage = /\.(jpe?g|png|webp|gif|bmp|svg|heic|heif)$/i.test(doc.name)
+          const signedUrl = firmadas[doc.path]
+          return (
+            <div key={doc.path}
+              onClick={async () => {
+                const { data } = await createClient().storage.from('contact-docs').createSignedUrl(doc.path, 3600)
+                if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+              }}
+              style={{ border: '1px solid #E2E5EA', borderRadius: 10, cursor: 'pointer', overflow: 'hidden' }}
+              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 10px rgba(0,0,0,.1)'}
+              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'}
+            >
+              <div style={{ height: 100, background: isPdf ? '#FEE2E2' : '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {isImage && signedUrl
+                  ? <img src={signedUrl} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <><Icon name={isPdf ? 'file' : 'image'} size={28} color={isPdf ? '#DC2626' : '#5a6070'} />{isPdf && <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginLeft: 6 }}>PDF</span>}</>
+                }
+              </div>
+              <div style={{ padding: '6px 10px', fontSize: 12, color: '#5a6070', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</div>
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
 }
 
 function VCardRow({ icon, color, label, children }: { icon: IconName; color: string; bg?: string; label: string; children: React.ReactNode }) {

@@ -12,12 +12,20 @@ import ContactVCardModal from '@/app/admin/(protected)/propiedades/ContactVCardM
 // ── Types ─────────────────────────────────────────────────────
 // Espeja la policy de crm_companies: admin, o el dueño sobre lo suyo. Las
 // empresas viejas sin dueño quedan solo para el admin.
+interface DocUrl { path: string; name: string; size: number; uploaded_at: string }
+
 interface Company {
   id: string
   created_by: string | null
   name: string
   trade_name: string | null
   cedula_juridica: string | null
+  doc_urls?: DocUrl[] | null
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
 interface LinkedContact {
@@ -94,6 +102,12 @@ export default function EmpresasClient() {
   const [ownerId,     setOwnerId]     = useState('')
   const [readOnly,    setReadOnly]    = useState(false)
   const [vcardId,     setVcardId]     = useState<string | null>(null)
+  // Documentos: personerías, poderes. Mismo bucket que los de contactos, bajo
+  // el prefijo `empresas/`.
+  const [existingDocs, setExistingDocs] = useState<DocUrl[]>([])
+  const [docFiles,     setDocFiles]     = useState<File[]>([])
+  const [docDragging,  setDocDragging]  = useState(false)
+  const docInputRef = useRef<HTMLInputElement>(null)
   const [companies,   setCompanies]   = useState<Company[]>([])
   const [contactMap,  setContactMap]  = useState<Record<string, number>>({})
   const [pageLoading, setPageLoading] = useState(true)
@@ -183,7 +197,7 @@ export default function EmpresasClient() {
     const sb = createClient() as any
     let query = sb
       .from('crm_companies')
-      .select('id,created_by,name,trade_name,cedula_juridica')
+      .select('id,created_by,name,trade_name,cedula_juridica,doc_urls')
       .eq('tenant_id', tid)
       .eq('active', !archived)
       .order('name')
@@ -257,7 +271,7 @@ export default function EmpresasClient() {
       router.replace('/admin/empresas')
     } else {
       // Company not in current list — fetch it directly
-      createClient().from('crm_companies').select('id,created_by,name,trade_name,cedula_juridica')
+      createClient().from('crm_companies').select('id,created_by,name,trade_name,cedula_juridica,doc_urls')
         .eq('id', idParam).single()
         .then(({ data }) => {
           if (data) { openDrawer(data as Company); router.replace('/admin/empresas') }
@@ -305,10 +319,43 @@ export default function EmpresasClient() {
     )
     setOwnerId(company ? (company.created_by ?? '') : userId)
     setReadOnly(!!company && !isAdmin && !(company.created_by && company.created_by === userId))
+    setExistingDocs(company?.doc_urls ?? [])
+    setDocFiles([])
     if (company?.id && tenantId) {
       loadLinkedContacts(company.id, tenantId)
     }
     setDrawerOpen(true)
+  }
+
+  // ── Documentos ────────────────────────────────────────────
+  function addDocFiles(files: File[]) {
+    const valid = files.filter(f => {
+      if (f.size > 20 * 1024 * 1024) { showToast(`${f.name} supera 20 MB`, 'error'); return false }
+      return true
+    })
+    setDocFiles(prev => [...prev, ...valid])
+  }
+
+  async function downloadDoc(doc: DocUrl) {
+    const { data, error } = await createClient().storage.from('contact-docs').createSignedUrl(doc.path, 3600)
+    if (error || !data?.signedUrl) { showToast('No se pudo abrir el archivo', 'error'); return }
+    window.open(data.signedUrl, '_blank')
+  }
+
+  // Devuelve null si algo falló. El error de subida no se puede descartar: si
+  // se ignora, la empresa se guarda sin la personería y nadie se entera hasta
+  // que hace falta.
+  async function subirDocs(companyId: string): Promise<DocUrl[] | null> {
+    const todos: DocUrl[] = [...existingDocs]
+    const sb = createClient()
+    for (const file of docFiles) {
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `empresas/${companyId}/${Date.now()}_${safe}`
+      const { error } = await sb.storage.from('contact-docs').upload(path, file, { contentType: file.type })
+      if (error) { showToast(`No se pudo subir ${file.name}: ${error.message}`, 'error'); return null }
+      todos.push({ path, name: file.name, size: file.size, uploaded_at: new Date().toISOString() })
+    }
+    return todos
   }
 
   // ── Duplicate check ───────────────────────────────────────
@@ -441,15 +488,25 @@ export default function EmpresasClient() {
     }
 
     if (editingId) {
-      const { error } = await sb.from('crm_companies')
-        .update(isAdmin ? { ...payload, created_by: ownerId || null } : payload)
-        .eq('id', editingId)
+      const docs = await subirDocs(editingId)
+      if (!docs) { setSaving(false); return }
+
+      // El .select() no es decorativo: un UPDATE que la RLS filtra devuelve 0
+      // filas sin error, y sin esto el toast diría "actualizada ✓" sin haber
+      // escrito nada.
+      const { data: upd, error } = await sb.from('crm_companies')
+        .update(isAdmin ? { ...payload, created_by: ownerId || null, doc_urls: docs } : { ...payload, doc_urls: docs })
+        .eq('id', editingId).select('id')
       setSaving(false)
       if (error) { showToast('Error: ' + error.message, 'error'); return }
+      if (!upd?.length) { showToast('No tenés permiso para editar esta empresa', 'error'); return }
+
+      setExistingDocs(docs)
+      setDocFiles([])
       showToast('Empresa actualizada ✓', 'success')
       // Update local list
       setCompanies(prev => prev.map(co =>
-        co.id === editingId ? { ...co, ...payload, ...(isAdmin ? { created_by: ownerId || null } : {}) } : co
+        co.id === editingId ? { ...co, ...payload, doc_urls: docs, ...(isAdmin ? { created_by: ownerId || null } : {}) } : co
       ))
       setDrawerOpen(false)
       await loadCompanies(tenantId, search, showArchived)
@@ -463,10 +520,21 @@ export default function EmpresasClient() {
       if (error) { showToast('Error: ' + error.message, 'error'); return }
 
       const newId = newCo.id as string
+
+      // Los archivos se guardan bajo el id, que recién existe ahora, así que
+      // van en un segundo paso. Si fallan, la empresa ya quedó creada: se
+      // avisa y los archivos siguen pendientes en el formulario.
+      let docs: DocUrl[] = []
+      if (docFiles.length) {
+        const subidos = await subirDocs(newId)
+        if (subidos) { docs = subidos; setExistingDocs(docs); setDocFiles([]) }
+        await sb.from('crm_companies').update({ doc_urls: docs }).eq('id', newId)
+      }
+
       // Stay in drawer, switch to edit mode for linking
       setEditingId(newId)
       setCompanies(prev =>
-        [...prev, { id: newId, created_by: isAdmin ? (ownerId || userId) : userId, name: payload.name, trade_name: payload.trade_name ?? null, cedula_juridica: payload.cedula_juridica }]
+        [...prev, { id: newId, created_by: isAdmin ? (ownerId || userId) : userId, name: payload.name, trade_name: payload.trade_name ?? null, cedula_juridica: payload.cedula_juridica, doc_urls: docs }]
           .sort((a, b) => a.name.localeCompare(b.name))
       )
       showToast('Empresa creada ✓ — ahora podés vincular contactos', 'success')
@@ -966,6 +1034,58 @@ export default function EmpresasClient() {
                   )}
                 </>
               )}
+
+              {/* ── Documentos ────────────────────────────────────
+                  Personerías, poderes especiales, actas. Al crear todavía no
+                  hay id, así que los archivos se suben cuando se guarda. */}
+              <div style={{ marginTop: 28 }}>
+                <div style={sSecLbl}>Documentos</div>
+
+                {!readOnly && (
+                  <>
+                    <div
+                      onDragOver={e => { e.preventDefault(); setDocDragging(true) }}
+                      onDragLeave={() => setDocDragging(false)}
+                      onDrop={e => { e.preventDefault(); setDocDragging(false); addDocFiles(Array.from(e.dataTransfer.files)) }}
+                      onClick={() => docInputRef.current?.click()}
+                      style={{ border: `2px dashed ${docDragging ? '#1B6EF3' : '#d1d5db'}`, borderRadius: 10, padding: '16px', textAlign: 'center', cursor: 'pointer', background: docDragging ? '#eff6ff' : '#f9fafb', transition: 'all .15s', marginBottom: 8 }}>
+                      <div style={{ fontSize: 20, marginBottom: 4 }}>📎</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#5a6070' }}>Arrastrá archivos o hacé click</div>
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Personería, poder especial, acta — PDF o imagen, máx 20 MB c/u</div>
+                    </div>
+                    <input ref={docInputRef} type="file" multiple accept=".pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                      onChange={e => { if (e.target.files) addDocFiles(Array.from(e.target.files)); e.target.value = '' }}
+                      style={{ display: 'none' }} />
+                  </>
+                )}
+
+                {existingDocs.map((doc, i) => (
+                  <div key={`ex-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: '#f9fafb', border: '1px solid #e2e5ea', borderRadius: 8, marginBottom: 5 }}>
+                    <span style={{ fontSize: 16 }}>{doc.name.toLowerCase().endsWith('.pdf') ? '📄' : '🖼'}</span>
+                    <button onClick={() => downloadDoc(doc)}
+                      style={{ flex: 1, textAlign: 'left', fontSize: 12, color: '#1B6EF3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</button>
+                    <span style={{ fontSize: 11, color: '#9ca3af', flexShrink: 0 }}>{formatFileSize(doc.size)}</span>
+                    {!readOnly && (
+                      <button onClick={() => setExistingDocs(prev => prev.filter((_, idx) => idx !== i))}
+                        style={{ fontSize: 12, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>✕</button>
+                    )}
+                  </div>
+                ))}
+
+                {docFiles.map((file, i) => (
+                  <div key={`new-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, marginBottom: 5 }}>
+                    <span style={{ fontSize: 16 }}>{file.type.includes('pdf') ? '📄' : '🖼'}</span>
+                    <span style={{ flex: 1, fontSize: 12, color: '#0d0f12', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                    <span style={{ fontSize: 11, color: '#1d4ed8', flexShrink: 0 }}>Pendiente</span>
+                    <button onClick={() => setDocFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      style={{ fontSize: 12, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>✕</button>
+                  </div>
+                ))}
+
+                {existingDocs.length === 0 && docFiles.length === 0 && readOnly && (
+                  <div style={{ fontSize: 12.5, color: '#9ca3af' }}>Sin documentos.</div>
+                )}
+              </div>
             </div>
           </div>
 
