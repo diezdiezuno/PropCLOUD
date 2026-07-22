@@ -100,6 +100,8 @@ Migración de datos Noduus→Noduus: `scripts/migrate-proptools-data.mjs` (recre
 
 ## Seguridad (revisión aplicada)
 - **Invitaciones**: la lectura anónima abierta se reemplazó por RPC `get_invitation(token)` (security definer) que devuelve solo la fila del token exacto. Borrado restringido a `is_tenant_member`. → correr `security-patch-invitations.sql`.
+- **`users.role` era autoasignable**: la policy de UPDATE deja editar la fila propia sin mirar la columna, así que un agente se ponía `admin` y se abría el panel entero (e `invite-agent`, que autoriza con ese campo). Un trigger revierte `role`, `tenant_id` y `auth_id` para quien no sea admin, y otro mantiene `tenant_admins` igual a `users.role` — antes nada llenaba esa tabla salvo el panel de superadmin, y los admins creados desde la app tenían la UI sin los permisos. → `users-role-guard.sql`. *Los triggers exceptúan `auth.uid() is null` (service role, editor SQL) o las migraciones se revierten en silencio.*
+- **CRM**: el agente solo escribe lo suyo → `crm-rls.sql` + `crm-links-rls.sql`. El segundo no es opcional: sin él, un agente se insertaba en `crm_contact_agents` de un contacto ajeno y se ganaba la edición.
 - **`/api/debug` eliminado** (filtraba tenants y prefijos de keys).
 - **`/api/contact`**: rate-limit por IP + validación/recorte de entradas.
 - Ningún `service_role` en el código (todo `process.env`); `.env*` en `.gitignore`. Las anon keys embebidas en los HTML de tools son públicas por diseño.
