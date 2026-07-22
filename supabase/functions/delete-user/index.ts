@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     if (!user_id) return json({ error: 'user_id es requerido' }, 400)
 
     const { data: target } = await sbAdmin
-      .from('users').select('id, tenant_id, auth_id').eq('id', user_id).single()
+      .from('users').select('id, tenant_id, auth_id, name, email').eq('id', user_id).single()
     if (!target) return json({ error: 'El agente no existe' }, 404)
     if (target.tenant_id !== profile.tenant_id) {
       return json({ error: 'Ese agente es de otra oficina' }, 403)
@@ -84,6 +84,56 @@ Deno.serve(async (req) => {
     // Sin esto un admin puede borrarse a sí mismo y dejar la oficina sin acceso.
     if (target.auth_id && target.auth_id === caller.id) {
       return json({ error: 'No podés eliminar tu propia cuenta' }, 400)
+    }
+
+    // ── Bitácora + soltar las fichas ─────────────────────────────────────────
+    //
+    // Sin esto, contactos y empresas se quedaban con un `created_by` apuntando
+    // a un uuid que ya no existe: parecían tener dueño y en realidad no lo
+    // tenía nadie. Se anota quién creó qué —el dato de auditoría tiene que
+    // sobrevivir al agente— y recién después se sueltan.
+    //
+    // Las propiedades solo se anotan: `properties.agent_id` es ON DELETE SET
+    // NULL, así que la base las suelta sola al borrar la fila de `users`.
+    const label: Record<string, string> = {
+      crm_contacts: 'name', crm_companies: 'name', properties: 'title',
+    }
+    const bitacora: Record<string, unknown>[] = []
+
+    for (const entidad of ['crm_contacts', 'crm_companies', 'properties']) {
+      const col = entidad === 'properties' ? 'agent_id' : 'created_by'
+      const val = entidad === 'properties' ? target.id : target.auth_id
+      if (!val) continue
+
+      const { data: filas } = await sbAdmin
+        .from(entidad).select(`id, ${label[entidad]}`).eq(col, val)
+
+      for (const f of filas ?? []) {
+        bitacora.push({
+          tenant_id:      target.tenant_id,
+          agent_auth_id:  target.auth_id,
+          agent_users_id: target.id,
+          agent_name:     target.name,
+          agent_email:    target.email,
+          entidad,
+          registro_id:    f.id,
+          registro_label: (f as Record<string, string>)[label[entidad]],
+          archivado_por:  caller.id,
+        })
+      }
+    }
+
+    if (bitacora.length) {
+      const { error: logErr } = await sbAdmin.from('agent_offboarding_log').insert(bitacora)
+      // Si la bitácora falla no se borra nada: perder el rastro de auditoría
+      // es peor que dejar al agente un rato más.
+      if (logErr) return json({ error: `No se pudo registrar la bitácora: ${logErr.message}` }, 400)
+    }
+
+    if (target.auth_id) {
+      for (const entidad of ['crm_contacts', 'crm_companies']) {
+        await sbAdmin.from(entidad).update({ created_by: null }).eq('created_by', target.auth_id)
+      }
     }
 
     const { error: delErr } = await sbAdmin.from('users').delete().eq('id', user_id)
@@ -95,11 +145,11 @@ Deno.serve(async (req) => {
     if (targetAuthId) {
       const { error: authErr } = await sbAdmin.auth.admin.deleteUser(targetAuthId)
       if (authErr) {
-        return json({ ok: true, warning: `Perfil eliminado, pero la cuenta de acceso no: ${authErr.message}` })
+        return json({ ok: true, liberadas: bitacora.length, warning: `Perfil eliminado, pero la cuenta de acceso no: ${authErr.message}` })
       }
     }
 
-    return json({ ok: true })
+    return json({ ok: true, liberadas: bitacora.length })
 
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : 'Error interno' }, 500)
