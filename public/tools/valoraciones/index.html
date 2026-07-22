@@ -491,7 +491,7 @@ let isDirty = false;
 
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) { window.location.href = '/tools/perfil/'; return; }
+  if (!session) { window.location.href = '/admin/login'; return; }
   currentUser = session.user;
 
   const { data: profile } = await sb.from('users')
@@ -518,7 +518,7 @@ async function init() {
   document.getElementById('loadingOverlay').style.display = 'none';
 
   sb.auth.onAuthStateChange((event, session) => {
-    if (!session) window.location.href = '/tools/perfil/';
+    if (!session) window.location.href = '/admin/login';
   });
 }
 

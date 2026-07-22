@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
-type Mode = 'password' | 'magic'
+type Mode = 'password' | 'magic' | 'recovery'
 
 function LoginForm() {
   const [mode, setMode] = useState<Mode>('password')
@@ -34,6 +34,14 @@ function LoginForm() {
         router.push('/admin/dashboard')
         router.refresh()
       }
+    } else if (mode === 'recovery') {
+      // El enlace del correo pasa por /auth/callback, que canjea el codigo y
+      // deja la sesion puesta; ?next lleva a la pantalla de definir la clave.
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/admin/reset-password`,
+      })
+      if (error) setError(error.message)
+      else setSent(true)
     } else {
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -86,7 +94,9 @@ function LoginForm() {
             <div style={{ fontSize: 40, marginBottom: 12 }}>📬</div>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#111' }}>Revisá tu email</div>
             <div style={{ fontSize: 13, color: '#888', marginTop: 8 }}>
-              Enviamos un enlace a <strong>{email}</strong>
+              {mode === 'recovery'
+                ? <>Enviamos un enlace para restablecer tu contraseña a <strong>{email}</strong></>
+                : <>Enviamos un enlace a <strong>{email}</strong></>}
             </div>
             <button onClick={() => setSent(false)} style={{ marginTop: 20, fontSize: 13, color: '#666', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}>
               Usar otro email
@@ -114,8 +124,19 @@ function LoginForm() {
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1, fontFamily: 'inherit',
             }}>
-              {loading ? 'Ingresando…' : mode === 'password' ? 'Ingresar' : 'Enviar enlace de acceso'}
+              {loading ? 'Enviando…'
+                : mode === 'password' ? 'Ingresar'
+                : mode === 'recovery' ? 'Enviar enlace de recuperación'
+                : 'Enviar enlace de acceso'}
             </button>
+
+            <div style={{ textAlign: 'center', marginTop: 14 }}>
+              <button type="button"
+                onClick={() => { setMode(mode === 'recovery' ? 'password' : 'recovery'); setError('') }}
+                style={{ fontSize: 12, color: '#888', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}>
+                {mode === 'recovery' ? 'Volver al inicio de sesión' : '¿Olvidaste tu contraseña?'}
+              </button>
+            </div>
           </form>
         )}
       </div>
