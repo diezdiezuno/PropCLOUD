@@ -359,14 +359,6 @@ export default function PageContentEditor({ slug, embedded = false }: { slug: st
                     blank={{ num: '', label: '' }} />
                 </Section>
 
-                <Section title="Párrafos de «Cómo trabajamos»">
-                  <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
-                    Agregá, quitá o reordená párrafos. El texto de cada uno se edita arriba, en la vista previa.
-                  </p>
-                  <StringList label="Párrafos" multiline items={nosotrosContent.work?.paragraphs ?? []}
-                    onChange={v => setN({ work: { ...nosotrosContent.work, paragraphs: v } })} />
-                </Section>
-
                 <Section title="Pilares">
                   <p style={{ fontSize: 12, color: '#888', marginTop: 0, marginBottom: 14 }}>
                     Etiquetas con emoji del cierre de la página. Si no cargás ninguna, la sección no se muestra.
