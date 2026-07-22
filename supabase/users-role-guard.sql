@@ -26,10 +26,17 @@
 -- la fila entera, y un error rompería el guardado legítimo del nombre.
 -- `tenant_id` y `auth_id` van en la misma bolsa porque cambiarlos es
 -- mudarse de oficina o apropiarse de otra cuenta.
+--
+-- `auth.uid() is null` = service role, editor SQL o migración. Sin esta
+-- salida el trigger también los revertía, en silencio, y ninguna
+-- migración podría volver a ascender a nadie. Es seguro: un anónimo con
+-- la clave pública tampoco pasa, porque la policy de UPDATE de `users`
+-- no le empareja ninguna fila —probado, 0 filas—, así que quien llega
+-- acá sin uid ya es un contexto de confianza que igual se salta la RLS.
 create or replace function users_protege_campos() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if is_tenant_admin(old.tenant_id) then
+  if auth.uid() is null or is_tenant_admin(old.tenant_id) then
     return new;
   end if;
   new.role      := old.role;
