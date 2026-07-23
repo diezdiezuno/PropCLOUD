@@ -674,6 +674,8 @@ function Tab2CaracteristicasAmenidades({ prop, amenities, isAdmin, onSaved }: {
   const [floors,     setFloors]     = useState(prop.floors     ?? '')
   const [yearBuilt,  setYearBuilt]  = useState(prop.year_built ?? '')
   const [halfBaths,  setHalfBaths]  = useState(prop.features?.half_baths ?? '')
+  const [maintFee,   setMaintFee]   = useState(prop.features?.maintenance_fee ?? '')
+  const [maintCurr,  setMaintCurr]  = useState(prop.features?.maintenance_currency ?? 'USD')
   const [selected,   setSelected]   = useState<string[]>(prop.amenities ?? [])
   const [custom,     setCustom]     = useState('')
   const [saving,     setSaving]     = useState(false)
@@ -691,11 +693,12 @@ function Tab2CaracteristicasAmenidades({ prop, amenities, isAdmin, onSaved }: {
 
   async function save(e: React.FormEvent) {
     e.preventDefault(); setSaving(true); setSaveError(null); setSaved(false)
-    // Medios baños no tiene columna propia: vive en features. El precio y el
-    // mantenimiento ya no se tocan acá — se editan en el tab de Contrato.
+    // Medios baños y la cuota de mantenimiento no tienen columna propia: viven
+    // en features. El precio sí es del contrato (base de la comisión).
     const newFeatures = {
       ...(prop.features ?? {}),
       half_baths: halfBaths !== '' ? Number(halfBaths) : null,
+      ...(maintFee ? { maintenance_fee: maintFee, maintenance_currency: maintCurr } : { maintenance_fee: '', maintenance_currency: '' }),
     }
     const { data, error } = await createClient().from('properties').update({
       bedrooms:   bedrooms   !== '' ? Number(bedrooms)  : null,
@@ -727,6 +730,16 @@ function Tab2CaracteristicasAmenidades({ prop, amenities, isAdmin, onSaved }: {
           <NumberField label="Medios baños"    value={halfBaths} onChange={setHalfBaths} placeholder="Ej: 1" />
           <NumberField label="Parqueos"        value={parking}   onChange={setParking}   placeholder="Ej: 1" />
           <NumberField label="Plantas / Pisos" value={floors}    onChange={setFloors}    placeholder="Ej: 2" />
+        </div>
+      </FormSection>
+
+      <FormSection title="Cuota de mantenimiento (opcional)">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 14 }}>
+          <input type="text" inputMode="numeric" value={maintFee} onChange={e => setMaintFee(e.target.value)}
+            placeholder="Ej: 80000" style={inputSt} />
+          <select value={maintCurr} onChange={e => setMaintCurr(e.target.value)} style={inputSt}>
+            {CURRENCIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
         </div>
       </FormSection>
 
@@ -1599,12 +1612,10 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
   // Negocio externo: parte de la comisión que se lleva la otra parte.
   const [splitMode,  setSplitMode]  = useState<'pct' | 'amount'>('pct')
   const [splitValue, setSplitValue] = useState<string | number>('')
-  // Precio y mantenimiento son de la propiedad (antes vivían en Características).
-  // El precio es la base sobre la que se calcula la comisión.
+  // El precio es de la propiedad y la base sobre la que se calcula la comisión.
+  // El mantenimiento se edita en Características.
   const [price,      setPrice]      = useState<string | number>(prop.price ?? '')
   const [currency,   setCurrency]   = useState(prop.currency ?? 'USD')
-  const [maintFee,   setMaintFee]   = useState(prop.features?.maintenance_fee ?? '')
-  const [maintCurr,  setMaintCurr]  = useState(prop.features?.maintenance_currency ?? 'USD')
   const [saving,     setSaving]     = useState(false)
   const [saved,      setSaved]      = useState(false)
   const [saveError,  setSaveError]  = useState<string | null>(null)
@@ -1661,13 +1672,11 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
     e.preventDefault(); setSaving(true); setSaveError(null); setSaved(false)
     const sb = createClient()
 
-    // 1. Precio y mantenimiento van en la propiedad.
-    const newFeatures = {
-      ...(prop.features ?? {}),
-      ...(maintFee ? { maintenance_fee: maintFee, maintenance_currency: maintCurr } : { maintenance_fee: '', maintenance_currency: '' }),
-    }
+    // 1. El precio va en la propiedad. No tocamos features acá: el mantenimiento
+    //    (lo único que vivía en features desde este tab) se movió a Características,
+    //    y reescribir features lo borraría.
     const { data: pData, error: pErr } = await sb.from('properties').update({
-      price: priceNum, currency, features: newFeatures,
+      price: priceNum, currency,
     }).eq('id', prop.id).select('*').single()
     if (pErr) { setSaveError(`Error: ${pErr.message}`); setSaving(false); return }
 
@@ -1743,8 +1752,8 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
         </div>
       </FormSection>
 
-      <FormSection title="Precio y mantenimiento">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 14, marginBottom: 16 }}>
+      <FormSection title="Precio">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 14 }}>
           <div>
             <FieldLabel>Precio</FieldLabel>
             <input type="text" inputMode="numeric" value={price} onChange={e => setPrice(e.target.value)}
@@ -1757,15 +1766,7 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
             </select>
           </div>
         </div>
-        <FieldLabel>Cuota de mantenimiento (opcional)</FieldLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 14 }}>
-          <input type="text" inputMode="numeric" value={maintFee} onChange={e => setMaintFee(e.target.value)}
-            placeholder="Ej: 80000" style={inputSt} />
-          <select value={maintCurr} onChange={e => setMaintCurr(e.target.value)} style={inputSt}>
-            {CURRENCIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-        </div>
-        <p style={{ fontSize: 11, color: '#aaa', margin: '6px 0 0' }}>El precio es el que se muestra en el sitio y la base de la comisión.</p>
+        <p style={{ fontSize: 11, color: '#aaa', margin: '6px 0 0' }}>El precio es el que se muestra en el sitio y la base de la comisión. La cuota de mantenimiento se edita en Características.</p>
       </FormSection>
 
       <FormSection title="Comisión">
