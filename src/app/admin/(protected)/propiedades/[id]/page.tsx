@@ -251,27 +251,36 @@ export default function PropiedadPage() {
         )}
       </div>
 
-      {/* Tab bar — el punto verde marca la etapa que ya tiene datos */}
-      <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #ebebeb', marginBottom: 24, overflowX: 'auto' }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '11px 18px', cursor: 'pointer', whiteSpace: 'nowrap',
-            marginBottom: -2, background: 'none', border: 'none',
-            borderBottomStyle: 'solid',
-            borderBottomWidth: 2,
-            borderBottomColor: activeTab === t.id ? '#111' : 'transparent',
-            color: activeTab === t.id ? '#111' : '#666',
-            fontWeight: activeTab === t.id ? 600 : 400,
-            fontSize: 13, fontFamily: 'inherit', transition: 'color .15s',
-          }}>
-            {t.label}
-            <span title={progress[t.id] ? 'Con datos' : 'Pendiente'} style={{
-              width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-              background: progress[t.id] ? '#10B981' : '#d5d9e0',
-            }} />
-          </button>
-        ))}
+      {/* Tab bar — estilo pestañas de navegador: esquinas superiores
+          redondeadas y la activa "pegada" al contenido. El punto verde marca
+          la etapa que ya tiene datos. */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, borderBottom: '1px solid #dcdfe4', marginBottom: 24, overflowX: 'auto', paddingLeft: 2 }}>
+        {TABS.map(t => {
+          const on = activeTab === t.id
+          return (
+            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '9px 16px', cursor: 'pointer', whiteSpace: 'nowrap',
+              marginBottom: -1, flexShrink: 0,
+              background: on ? '#fff' : '#f1f2f4',
+              border: '1px solid #dcdfe4',
+              // El borde inferior blanco de la activa tapa la línea del
+              // contenedor: eso la "conecta" con el contenido de abajo.
+              borderBottom: on ? '1px solid #fff' : '1px solid #dcdfe4',
+              borderRadius: '9px 9px 0 0',
+              color: on ? '#111' : '#6b7280',
+              fontWeight: on ? 600 : 400,
+              fontSize: 13, fontFamily: 'inherit', transition: 'background .15s, color .15s',
+              position: 'relative', zIndex: on ? 1 : 0,
+            }}>
+              {t.label}
+              <span title={progress[t.id] ? 'Con datos' : 'Pendiente'} style={{
+                width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                background: progress[t.id] ? '#10B981' : '#d5d9e0',
+              }} />
+            </button>
+          )
+        })}
       </div>
 
       {/* Tab content — fieldset disabled desactiva todos los controles de
