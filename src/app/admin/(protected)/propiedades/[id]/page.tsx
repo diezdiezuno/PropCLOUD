@@ -1721,70 +1721,78 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
         setRow(c); setKind(c.kind ?? 'exclusiva')
         setStartDate(c.start_date ?? ''); setEndDate(c.end_date ?? '')
         setNotes(c.notes ?? '')
-        // Cada set se reabre en el modo con que se guardó, con su valor original.
+        // Venta: columnas commission*/split*. Cada set se reabre en su modo.
         const cm: Modo = c.commission_type === 'amount' ? 'amount' : 'pct'
         setCommMode(cm); setCommission((cm === 'amount' ? c.commission_amount : c.commission) ?? '')
         const sm: Modo = c.split_type === 'amount' ? 'amount' : 'pct'
         setSplitMode(sm); setSplitValue(c.split_value ?? '')
-        const cmR: Modo = c.commission_rent_type === 'amount' ? 'amount' : 'pct'
-        setCommModeR(cmR); setCommissionR((cmR === 'amount' ? c.commission_rent_amount : c.commission_rent) ?? '')
-        const smR: Modo = c.split_rent_type === 'amount' ? 'amount' : 'pct'
-        setSplitModeR(smR); setSplitValueR(c.split_rent_value ?? '')
+        // Alquiler: columnas *_rent. Fallback: una propiedad de alquiler-solo
+        // vieja guardó su comisión en las columnas de venta, así que si no hay
+        // datos de alquiler y la transacción es alquiler, se leen de ahí.
+        const legacyRent = prop.transaction === 'rent' && c.commission_rent == null && c.commission_rent_amount == null && c.split_rent_value == null
+        const rType = legacyRent ? c.commission_type : c.commission_rent_type
+        const rAmt  = legacyRent ? c.commission_amount : c.commission_rent_amount
+        const rPct  = legacyRent ? c.commission : c.commission_rent
+        const cmR: Modo = rType === 'amount' ? 'amount' : 'pct'
+        setCommModeR(cmR); setCommissionR((cmR === 'amount' ? rAmt : rPct) ?? '')
+        const rSType = legacyRent ? c.split_type : c.split_rent_type
+        const rSVal  = legacyRent ? c.split_value : c.split_rent_value
+        const smR: Modo = rSType === 'amount' ? 'amount' : 'pct'
+        setSplitModeR(smR); setSplitValueR(rSVal ?? '')
       }
       setLoading(false)
     })()
     return () => { cancelled = true }
   }, [prop.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Negocio principal (columnas commission*/split*): base el precio de venta,
-  // salvo alquiler-solo donde la base es el de alquiler. El de alquiler aparte
-  // (columnas *_rent) solo se usa en 'sale_rent'.
-  const mainDeal = computeDeal(prop.transaction === 'rent' ? rentPrice : price, commMode, commission, splitMode, splitValue)
+  // Negocio de venta (base precio de venta) y de alquiler (base precio de
+  // alquiler). Cada uno a sus columnas; la transacción decide cuáles se guardan.
+  const saleDeal = computeDeal(price, commMode, commission, splitMode, splitValue)
   const rentDeal = computeDeal(rentPrice, commModeR, commissionR, splitModeR, splitValueR)
 
   async function save(e: React.FormEvent) {
     e.preventDefault(); setSaving(true); setSaveError(null); setSaved(false)
     const sb = createClient()
 
-    // 1. El precio va en la propiedad. El precio de alquiler (solo en sale_rent)
-    //    vive en features: se mergea con lo existente para no borrar el
-    //    mantenimiento que se edita en Características.
-    const esVentaAlquiler = prop.transaction === 'sale_rent'
-    const conAlquiler = prop.transaction === 'rent' || esVentaAlquiler
+    // Qué negocios aplican según la transacción.
+    const esSale = prop.transaction === 'sale' || prop.transaction === 'sale_rent'
+    const esRent = prop.transaction === 'rent' || prop.transaction === 'sale_rent'
+
+    // 1. El precio va en la propiedad. El precio de alquiler vive en features
+    //    (se mergea para no borrar el mantenimiento, que se edita en Características).
     const feat: Record<string, string> = { ...(prop.features ?? {}) }
-    if (conAlquiler) {
+    if (esRent) {
       feat.rent_price = String(rentPrice).trim()
       feat.rent_currency = rentCurr
     } else {
       feat.rent_price = ''; feat.rent_currency = ''
     }
-    // El precio de display (lo que muestra el sitio) es el de venta, o el de
-    // alquiler si es alquiler-solo. mainDeal ya tiene esa base.
+    // El precio de display (lo que muestra el sitio) es el de venta, salvo
+    // alquiler-solo, donde es el de alquiler.
+    const displayPrice = prop.transaction === 'rent' ? rentDeal.priceNum : saleDeal.priceNum
+    const displayCurr  = prop.transaction === 'rent' ? rentCurr : currency
     const { data: pData, error: pErr } = await sb.from('properties').update({
-      price: mainDeal.priceNum,
-      currency: prop.transaction === 'rent' ? rentCurr : currency,
-      features: feat,
+      price: displayPrice, currency: displayCurr, features: feat,
     }).eq('id', prop.id).select('*').single()
     if (pErr) { setSaveError(`Error: ${pErr.message}`); setSaving(false); return }
 
-    // 2. El contrato: mismo precio como base, y la comisión pactada.
+    // 2. El contrato: venta en columnas commission*/split*, alquiler en *_rent.
+    //    Cada set se limpia si su negocio no aplica.
     const payload = {
       tenant_id: prop.tenant_id, property_id: prop.id,
       kind, start_date: startDate || null, end_date: endDate || null,
-      price: mainDeal.priceNum, currency: prop.transaction === 'rent' ? rentCurr : currency,
-      // commission se conserva como % (lo leen otros lugares); guardamos también
-      // el monto y qué modo eligió el usuario para reabrirlo igual.
-      commission:        mainDeal.commissionPct ? Math.round(mainDeal.commissionPct * 100) / 100 : null,
+      price: displayPrice, currency: displayCurr,
+      // commission se guarda como % y también el monto y el modo, para reabrir igual.
+      commission:        esSale && saleDeal.commissionPct ? Math.round(saleDeal.commissionPct * 100) / 100 : null,
       commission_type:   commMode,
-      commission_amount: mainDeal.commissionAmt ? Math.round(mainDeal.commissionAmt) : null,
+      commission_amount: esSale && saleDeal.commissionAmt ? Math.round(saleDeal.commissionAmt) : null,
       split_type:        splitMode,
-      split_value:       mainDeal.splitInput || null,
-      // El set de alquiler solo aplica a 'sale_rent'; si no, se limpia.
-      commission_rent:        esVentaAlquiler && rentDeal.commissionPct ? Math.round(rentDeal.commissionPct * 100) / 100 : null,
+      split_value:       esSale ? (saleDeal.splitInput || null) : null,
+      commission_rent:        esRent && rentDeal.commissionPct ? Math.round(rentDeal.commissionPct * 100) / 100 : null,
       commission_rent_type:   commModeR,
-      commission_rent_amount: esVentaAlquiler && rentDeal.commissionAmt ? Math.round(rentDeal.commissionAmt) : null,
+      commission_rent_amount: esRent && rentDeal.commissionAmt ? Math.round(rentDeal.commissionAmt) : null,
       split_rent_type:        splitModeR,
-      split_rent_value:       esVentaAlquiler ? (rentDeal.splitInput || null) : null,
+      split_rent_value:       esRent ? (rentDeal.splitInput || null) : null,
       // El estado ya no se edita a mano (será automático con el sistema de
       // contratos/firma); se conserva el existente o arranca 'vigente'.
       status: row?.status ?? 'vigente', notes: notes.trim() || null,
@@ -1861,8 +1869,8 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
           {trans === 'rent'
             ? <DealRow priceLabel="Precio de alquiler"
                 price={rentPrice} setPrice={setRentPrice} currency={rentCurr} setCurrency={setRentCurr}
-                commMode={commMode} setCommMode={setCommMode} commission={commission} setCommission={setCommission}
-                splitMode={splitMode} setSplitMode={setSplitMode} splitValue={splitValue} setSplitValue={setSplitValue} />
+                commMode={commModeR} setCommMode={setCommModeR} commission={commissionR} setCommission={setCommissionR}
+                splitMode={splitModeR} setSplitMode={setSplitModeR} splitValue={splitValueR} setSplitValue={setSplitValueR} />
             : <DealRow priceLabel="Precio de venta"
                 price={price} setPrice={setPrice} currency={currency} setCurrency={setCurrency}
                 commMode={commMode} setCommMode={setCommMode} commission={commission} setCommission={setCommission}
