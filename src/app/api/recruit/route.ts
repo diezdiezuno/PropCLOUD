@@ -7,8 +7,25 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Formulario público: mismo límite que contact (5 envíos / 10 min por IP)
+// para que no lo usen de spam. En memoria por instancia: suficiente acá.
+const RATE = new Map<string, number[]>()
+const RATE_MAX = 5, RATE_WINDOW = 10 * 60_000
+function rateLimited(ip: string): boolean {
+  const now = Date.now()
+  const hits = (RATE.get(ip) ?? []).filter(t => now - t < RATE_WINDOW)
+  hits.push(now)
+  RATE.set(ip, hits)
+  if (RATE.size > 5000) for (const [k, v] of RATE) if (v.every(t => now - t >= RATE_WINDOW)) RATE.delete(k)
+  return hits.length > RATE_MAX
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
+    if (rateLimited(ip)) {
+      return NextResponse.json({ error: 'Demasiados envíos. Esperá unos minutos.' }, { status: 429 })
+    }
     const domain = request.headers.get('x-tenant-domain') ?? 'localhost'
     const body = await request.json()
     const { nombre, apellido, telefono, email, zona, perfil, ocupacion, motivacion, cv_link, linkedin } = body
