@@ -102,7 +102,9 @@ export default async function PropertyDetailPage({ params }: Props) {
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          // Escapar < evita que un título/descripción con "</script>" rompa
+          // el bloque JSON-LD e inyecte HTML en la página pública (XSS).
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
         />
       )}
       <PropertyDetailClient

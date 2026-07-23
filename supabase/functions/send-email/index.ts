@@ -83,6 +83,14 @@ function render(b: Brand, o: {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
+  // Solo el backend (contact/recruit/invite-agent, que tienen el service role)
+  // puede disparar correos. Sin esto la función es un relay abierto: como se
+  // despliega con --no-verify-jwt y CORS *, cualquiera con la URL mandaría
+  // correos con HTML arbitrario desde el dominio del tenant (SPF/DKIM válidos).
+  if (req.headers.get('Authorization') !== `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`) {
+    return json({ error: 'No autorizado' }, 401)
+  }
+
   const started = Date.now()
   let payload: Record<string, unknown> = {}
 
