@@ -284,7 +284,10 @@ export default function PropiedadPage() {
       </div>
 
       {/* Tab content — fieldset disabled desactiva todos los controles de
-          formulario de una si el usuario no puede editar. */}
+          formulario de una si el usuario no puede editar. La regla oculta,
+          además, el botón Guardar (submit) en solo-lectura: no sirve de nada
+          mostrarlo si la RLS igual rechazaría el update. */}
+      {!canEdit && <style>{'fieldset[disabled] button[type="submit"]{display:none}'}</style>}
       <fieldset disabled={!canEdit} style={{ border: 'none', margin: 0, padding: 0, minInlineSize: 0 }}>
         {activeTab === 1 && <Tab1Captacion prop={prop} propTypes={propTypes} onSaved={setProp} />}
         {activeTab === 2 && <Tab2CaracteristicasAmenidades prop={prop} amenities={amenities} onSaved={setProp} />}
