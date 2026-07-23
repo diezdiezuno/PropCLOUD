@@ -49,6 +49,7 @@ const TABS = [
   { id: 4, label: 'Contrato',                   icon: '📄' },
   { id: 5, label: 'Descripción',                icon: '📝' },
   { id: 6, label: 'Media',                      icon: '📸' },
+  { id: 8, label: 'Archivos',                   icon: '🗂️' },
   { id: 7, label: 'Portales',                   icon: '🌐' },
 ]
 
@@ -66,6 +67,7 @@ interface PropertyFull {
   video_url: string | null; video_urls: string[] | null; tour_url: string | null; images: string[]
   title: string; description_es: string | null; description_en: string | null
   features: Record<string, string> | null
+  doc_urls: { name: string; url: string }[] | null
 }
 interface PropertyType { id: string; label: string; value: string; icon: string | null }
 interface Agent        { id: string; name: string }
@@ -205,6 +207,7 @@ export default function PropiedadPage() {
     5: Boolean(prop.description_es),
     6: (prop.images?.length ?? 0) > 0 || (prop.video_urls?.length ?? 0) > 0 || Boolean(prop.tour_url),
     7: false,
+    8: (prop.doc_urls?.length ?? 0) > 0 || Boolean(prop.features?.informe_registral_url) || Boolean(prop.features?.plano_catastrado_url),
   }
 
   return (
@@ -295,6 +298,7 @@ export default function PropiedadPage() {
         {activeTab === 4 && <TabContrato   prop={prop} onSaved={setProp} />}
         {activeTab === 5 && <Tab5Descripcion prop={prop} onSaved={setProp} />}
         {activeTab === 6 && <Tab6Media     prop={prop} onSaved={setProp} />}
+        {activeTab === 8 && <TabArchivos   prop={prop} onSaved={setProp} />}
         {activeTab === 7 && <TabPortales />}
       </fieldset>
     </div>
@@ -352,8 +356,6 @@ function Tab1Captacion({ prop, propTypes, onSaved }: {
   const [gmapsError,  setGmapsError]  = useState('')
   const [geocoding,   setGeocoding]   = useState(false)
   const [geoLoading,  setGeoLoading]  = useState(false)
-  const [informeFile, setInformeFile] = useState<File | null>(null)
-  const [planoFile,   setPlanoFile]   = useState<File | null>(null)
   const [saving,      setSaving]      = useState(false)
   const [saveError,   setSaveError]   = useState<string | null>(null)
   const [saved,       setSaved]       = useState(false)
@@ -361,8 +363,6 @@ function Tab1Captacion({ prop, propTypes, onSaved }: {
   const mapContainerRef   = useRef<HTMLDivElement>(null)
   const mapRef            = useRef<mapboxgl.Map | null>(null)
   const markerRef         = useRef<mapboxgl.Marker | null>(null)
-  const informeInputRef   = useRef<HTMLInputElement>(null)
-  const planoFileInputRef = useRef<HTMLInputElement>(null)
 
   const cantons   = provincia ? getCantons(provincia) : []
   const districts = (provincia && canton) ? getDistricts(provincia, canton) : []
@@ -514,25 +514,11 @@ function Tab1Captacion({ prop, propTypes, onSaved }: {
   async function save(e: React.FormEvent) {
     e.preventDefault(); setSaving(true); setSaveError(null); setSaved(false)
     const sb = createClient()
-    async function uploadDoc(file: File, label: string) {
-      const ext  = file.name.split('.').pop()
-      const path = `${prop.tenant_id}/${prop.id}-${label}.${ext}`
-      const { error } = await sb.storage.from('property-docs').upload(path, file, { upsert: true })
-      // Devolver null callado dejaba la propiedad guardada sin el documento y
-      // sin decir nada. Así falló siempre: el bucket no tenía policy de
-      // escritura y el bucket quedó vacío sin que nadie se enterara.
-      if (error) { setSaveError(`No se pudo subir ${label}: ${error.message}`); return null }
-      return sb.storage.from('property-docs').getPublicUrl(path).data.publicUrl
-    }
-    const [informeUrl, planoDocUrl] = await Promise.all([
-      informeFile ? uploadDoc(informeFile, 'informe-registral') : Promise.resolve(null),
-      planoFile   ? uploadDoc(planoFile,   'plano-catastrado')  : Promise.resolve(null),
-    ])
+    // El informe registral y el plano catastrado se subieron y se mudaron al
+    // tab Archivos; acá quedan solo los datos registrales y la ubicación.
     const newFeatures = {
       ...(prop.features ?? {}),
-      ...(informeUrl  ? { informe_registral_url: informeUrl }  : {}),
-      ...(planoDocUrl ? { plano_catastrado_url: planoDocUrl }  : {}),
-      ...(gmapsLink   ? { gmaps_link: gmapsLink }              : {}),
+      ...(gmapsLink ? { gmaps_link: gmapsLink } : {}),
     }
     // crm_status/status no se tocan acá: los maneja el selector del header.
     const { data, error } = await sb.from('properties').update({
@@ -590,15 +576,9 @@ function Tab1Captacion({ prop, propTypes, onSaved }: {
           <div><FieldLabel>Número de plano catastrado</FieldLabel><input value={plano} onChange={e => setPlano(e.target.value)} placeholder="Ej: SJ-1234567-2010" style={inputSt} /></div>
         </div>
 
-        {/* Document uploads */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
-          <FileUploadField label="Informe registral (PDF)" file={informeFile} onSelect={setInformeFile} onClear={() => setInformeFile(null)} inputRef={informeInputRef} accept=".pdf"
-            existingUrl={prop.features?.informe_registral_url} />
-          <FileUploadField label="Plano catastrado (PDF / imagen)" file={planoFile} onSelect={setPlanoFile} onClear={() => setPlanoFile(null)} inputRef={planoFileInputRef} accept=".pdf,image/*"
-            existingUrl={prop.features?.plano_catastrado_url} />
-        </div>
-
-        <div style={{ height: 1, background: '#f0f0f0', margin: '0 0 20px' }} />
+        <p style={{ fontSize: 11, color: '#9ca3af', margin: '0 0 20px' }}>
+          El informe registral y el plano catastrado se adjuntan en el tab <strong>Archivos</strong>.
+        </p>
 
         {/* Google Maps link */}
         <div style={{ marginBottom: 16 }}>
@@ -1880,6 +1860,123 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
 
       <SaveBar saving={saving} saved={saved} error={saveError} />
     </form>
+  )
+}
+
+// Tab Archivos — repositorio de documentos de la propiedad. El informe
+// registral y el plano catastrado (antes en Captación) viven en features;
+// el resto en properties.doc_urls. Todo va al bucket privado property-docs y
+// se sube al instante (auto-guarda), como Media.
+function TabArchivos({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: PropertyFull) => void }) {
+  const [informeUrl, setInformeUrl] = useState(prop.features?.informe_registral_url ?? '')
+  const [planoUrl,   setPlanoUrl]   = useState(prop.features?.plano_catastrado_url ?? '')
+  const [docs,       setDocs]       = useState<{ name: string; url: string }[]>(prop.doc_urls ?? [])
+  const [busy,       setBusy]       = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
+  const [okMsg,      setOkMsg]      = useState<string | null>(null)
+  const informeRef = useRef<HTMLInputElement>(null)
+  const planoRef   = useRef<HTMLInputElement>(null)
+  const genRef     = useRef<HTMLInputElement>(null)
+  const flash = (m: string) => { setOkMsg(m); setTimeout(() => setOkMsg(null), 2000) }
+
+  async function subir(file: File, name: string) {
+    const ext = (file.name.split('.').pop() || 'dat').toLowerCase()
+    const path = `${prop.tenant_id}/${prop.id}-${name}.${ext}`
+    const { error } = await createClient().storage.from('property-docs').upload(path, file, { upsert: true })
+    if (error) { setError(`No se pudo subir: ${error.message}`); return null }
+    return createClient().storage.from('property-docs').getPublicUrl(path).data.publicUrl
+  }
+
+  // Informe / plano — la URL vive en features.
+  async function subirFeature(file: File, name: string, key: string, setUrl: (u: string) => void) {
+    setBusy(true); setError(null)
+    const url = await subir(file, name)
+    if (url) {
+      const feat = { ...(prop.features ?? {}), [key]: url }
+      const { data, error } = await createClient().from('properties').update({ features: feat }).eq('id', prop.id).select('*').single()
+      if (error) setError(`Error: ${error.message}`)
+      else { setUrl(url); onSaved(data as PropertyFull); flash('Archivo guardado') }
+    }
+    setBusy(false)
+  }
+  async function quitarFeature(key: string, setUrl: (u: string) => void) {
+    setBusy(true); setError(null)
+    const feat = { ...(prop.features ?? {}), [key]: '' }
+    const { data, error } = await createClient().from('properties').update({ features: feat }).eq('id', prop.id).select('*').single()
+    if (error) setError(`Error: ${error.message}`); else { setUrl(''); onSaved(data as PropertyFull) }
+    setBusy(false)
+  }
+
+  // Archivos generales — properties.doc_urls.
+  async function subirGenerales(files: FileList) {
+    setBusy(true); setError(null)
+    const sb = createClient()
+    const nuevos = [...docs]
+    for (const file of Array.from(files)) {
+      const ext  = (file.name.split('.').pop() || 'dat').toLowerCase()
+      const path = `${prop.tenant_id}/${prop.id}-doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`
+      const { error } = await sb.storage.from('property-docs').upload(path, file)
+      if (error) { setError(`No se pudo subir ${file.name}: ${error.message}`); continue }
+      nuevos.push({ name: file.name, url: sb.storage.from('property-docs').getPublicUrl(path).data.publicUrl })
+    }
+    const { data, error } = await sb.from('properties').update({ doc_urls: nuevos }).eq('id', prop.id).select('*').single()
+    if (error) setError(`Error: ${error.message}`); else { setDocs(nuevos); onSaved(data as PropertyFull); flash('Archivos subidos') }
+    setBusy(false)
+    if (genRef.current) genRef.current.value = ''
+  }
+  async function quitarGeneral(url: string) {
+    setBusy(true); setError(null)
+    const nuevos = docs.filter(d => d.url !== url)
+    const { data, error } = await createClient().from('properties').update({ doc_urls: nuevos }).eq('id', prop.id).select('*').single()
+    if (error) setError(`Error: ${error.message}`); else { setDocs(nuevos); onSaved(data as PropertyFull) }
+    setBusy(false)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <FormSection title="Documentos registrales">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <FileUploadField label="Informe registral (PDF)" file={null}
+            onSelect={f => subirFeature(f, 'informe-registral', 'informe_registral_url', setInformeUrl)}
+            onClear={() => quitarFeature('informe_registral_url', setInformeUrl)}
+            inputRef={informeRef} accept=".pdf" existingUrl={informeUrl || undefined} />
+          <FileUploadField label="Plano catastrado (PDF / imagen)" file={null}
+            onSelect={f => subirFeature(f, 'plano-catastrado', 'plano_catastrado_url', setPlanoUrl)}
+            onClear={() => quitarFeature('plano_catastrado_url', setPlanoUrl)}
+            inputRef={planoRef} accept=".pdf,image/*" existingUrl={planoUrl || undefined} />
+        </div>
+      </FormSection>
+
+      <FormSection title={`Otros archivos (${docs.length})`}>
+        <div onClick={() => genRef.current?.click()}
+          style={{ border: '2px dashed #e0e0e0', borderRadius: 10, padding: '18px 16px', cursor: 'pointer', textAlign: 'center', color: '#888', background: '#fff', transition: 'border-color .15s' }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = '#6b2fa0')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = '#e0e0e0')}>
+          <div style={{ fontSize: 22 }}>📎</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>Clic para adjuntar archivos — PDF, imágenes, documentos</div>
+        </div>
+        <input ref={genRef} type="file" multiple style={{ display: 'none' }}
+          onChange={e => { if (e.target.files?.length) subirGenerales(e.target.files) }} />
+        {docs.length > 0 && (
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {docs.map(d => (
+              <div key={d.url} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: '1px solid #eceef1', borderRadius: 10 }}>
+                <span style={{ fontSize: 18 }}>📄</span>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                <button type="button" onClick={() => abrirDocPrivado(d.url)} style={{ fontSize: 11, color: '#6b2fa0', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}>Abrir</button>
+                <button type="button" onClick={() => quitarGeneral(d.url)} style={{ fontSize: 11, color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Quitar</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </FormSection>
+
+      <div style={{ minHeight: 20 }}>
+        {busy  && <span style={{ fontSize: 13, color: '#888' }}>Subiendo…</span>}
+        {okMsg && <span style={{ fontSize: 13, color: '#10B981', fontWeight: 600 }}>✓ {okMsg}</span>}
+        {error && <span style={{ fontSize: 13, color: '#e53e3e' }}>{error}</span>}
+      </div>
+    </div>
   )
 }
 
