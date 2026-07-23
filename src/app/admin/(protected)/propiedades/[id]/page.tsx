@@ -44,7 +44,7 @@ const AMENITIES_LIST = [
 // contrato). El punto de progreso muestra lo que falta sin frustrar.
 const TABS = [
   { id: 1, label: 'Captación',                  icon: '📋' },
-  { id: 2, label: 'Características y amenidades', icon: '📐' },
+  { id: 2, label: 'Características', icon: '📐' },
   { id: 3, label: 'Estudios',                   icon: '🔎' },
   { id: 4, label: 'Contrato',                   icon: '📄' },
   { id: 5, label: 'Descripción',                icon: '📝' },
@@ -254,7 +254,7 @@ export default function PropiedadPage() {
       {/* Tab bar — estilo pestañas de navegador: esquinas superiores
           redondeadas y la activa "pegada" al contenido. El punto verde marca
           la etapa que ya tiene datos. */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, borderBottom: '1px solid #dcdfe4', marginBottom: 24, overflowX: 'auto', paddingLeft: 2 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, borderBottom: '1px solid #dcdfe4', marginBottom: 24, flexWrap: 'wrap', paddingLeft: 2 }}>
         {TABS.map(t => {
           const on = activeTab === t.id
           return (
