@@ -32,6 +32,7 @@ export default function TenantDetailPage() {
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [addingAdmin, setAddingAdmin] = useState(false)
   const [adminError, setAdminError] = useState('')
+  const [adminNotice, setAdminNotice] = useState<{ msg: string; link?: string } | null>(null)
 
   async function load() {
     const res = await fetch(`/api/superadmin/tenants/${id}`)
@@ -87,13 +88,23 @@ export default function TenantDetailPage() {
 
   async function addAdmin(e: React.FormEvent) {
     e.preventDefault()
-    setAddingAdmin(true); setAdminError('')
+    setAddingAdmin(true); setAdminError(''); setAdminNotice(null)
     const res = await fetch(`/api/superadmin/tenants/${id}/admins`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: newAdminEmail }),
     })
-    if (res.ok) { setNewAdminEmail(''); await load() }
+    if (res.ok) {
+      const out = await res.json()
+      setNewAdminEmail('')
+      if (out.invited) {
+        // Aún no aparece en la lista (no se registró); se avisa la invitación.
+        setAdminNotice(out.adminInvite?.warning
+          ? { msg: `${out.adminInvite.warning}. Pasale este link:`, link: out.adminInvite.link }
+          : { msg: `Invitación enviada a ${out.email}.` })
+      }
+      await load()
+    }
     else { const { error } = await res.json(); setAdminError(error) }
     setAddingAdmin(false)
   }
@@ -269,8 +280,17 @@ export default function TenantDetailPage() {
           </button>
         </form>
         {adminError && <div style={{ fontSize: 13, color: '#f87171', marginTop: 8 }}>{adminError}</div>}
+        {adminNotice && (
+          <div style={{ fontSize: 13, color: '#8fd19e', marginTop: 8 }}>
+            {adminNotice.msg}
+            {adminNotice.link && (
+              <input readOnly value={adminNotice.link} onClick={e => (e.target as HTMLInputElement).select()}
+                style={{ ...inputStyle, fontSize: 12, marginTop: 6 }} />
+            )}
+          </div>
+        )}
         <p style={{ fontSize: 11, color: '#555', marginTop: 8 }}>
-          El usuario debe haber iniciado sesión al menos una vez para que exista en el sistema.
+          Si el email ya tiene cuenta, se agrega directo. Si no, se le envía una invitación para crearla.
         </p>
       </Section>
 
