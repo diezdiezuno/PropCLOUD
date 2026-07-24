@@ -44,10 +44,10 @@ const NAV_GROUPS = [
     label: 'CRM',
     icon:  ICON.crm,
     items: [
-      { href: '/admin/propiedades', icon: ICON.home,     label: 'Propiedades' },
-      { href: '/admin/contactos',  icon: ICON.user,     label: 'Contactos'  },
-      { href: '/admin/empresas',   icon: ICON.building, label: 'Empresas'   },
-      { href: '/admin/leads',      icon: ICON.inbox,    label: 'Leads'      },
+      { key: 'propiedades', href: '/admin/propiedades', icon: ICON.home,     label: 'Propiedades' },
+      { key: 'contactos',   href: '/admin/contactos',  icon: ICON.user,     label: 'Contactos'  },
+      { key: 'empresas',    href: '/admin/empresas',   icon: ICON.building, label: 'Empresas'   },
+      { key: 'leads',       href: '/admin/leads',      icon: ICON.inbox,    label: 'Leads'      },
     ],
   },
 ]
@@ -78,7 +78,7 @@ const SIDEBAR_W_CLOSED = 72
 const TOPBAR_H         = 54
 
 // ── Types ─────────────────────────────────────────────────────
-interface Tenant { id: string; name: string; slug: string; logo_url: string | null; theme: Record<string, string>; proptools_apps?: string[] | null }
+interface Tenant { id: string; name: string; slug: string; logo_url: string | null; theme: Record<string, string>; proptools_apps?: string[] | null; crm_apps?: string[] | null }
 interface Props   { tenant: Tenant; userEmail: string; role?: 'admin' | 'agent'; children: React.ReactNode }
 
 // ── Component ─────────────────────────────────────────────────
@@ -113,7 +113,13 @@ export default function AdminShell({ tenant, userEmail, role = 'admin', children
   const ptGroup = ptItems.length > 0
     ? [{ key: 'proptools', label: 'Herramientas', icon: ICON.wrench, items: ptItems }]
     : []
-  const navGroups = [...NAV_GROUPS, ...ptGroup]
+  // CRM filtrado por tenant. crm_apps null = todo prendido (retrocompatible);
+  // array explícito = allowlist. Se ocultan solo los ítems apagados.
+  const crmApps = tenant.crm_apps
+  const crmGroups = NAV_GROUPS
+    .map(g => ({ ...g, items: g.items.filter(i => crmApps == null || crmApps.includes(i.key)) }))
+    .filter(g => g.items.length > 0)
+  const navGroups = [...crmGroups, ...ptGroup]
   // Administración: link único al hub (solo admin).
   const standalone = role === 'agent' ? [] : [{ href: '/admin/administracion', icon: ICON.admin, label: 'Administración' }]
 

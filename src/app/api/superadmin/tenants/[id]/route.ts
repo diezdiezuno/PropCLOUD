@@ -39,6 +39,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (body.domain)   allowed.domain   = body.domain.toLowerCase().trim()
   if (body.logo_url !== undefined) allowed.logo_url = body.logo_url || null
   if (body.theme)    allowed.theme    = body.theme
+  // Funciones activables. Arrays de claves (o null = todo prendido para crm).
+  const isKeyArray = (v: unknown) => Array.isArray(v) && v.every(x => typeof x === 'string')
+  if (body.proptools_apps !== undefined && isKeyArray(body.proptools_apps)) allowed.proptools_apps = body.proptools_apps
+  if (body.crm_apps !== undefined && (body.crm_apps === null || isKeyArray(body.crm_apps))) allowed.crm_apps = body.crm_apps
 
   const { data, error } = await serviceClient()
     .from('tenants').update(allowed).eq('id', id).select().single()

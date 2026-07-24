@@ -6,7 +6,23 @@ import { useParams, useRouter } from 'next/navigation'
 interface Admin { id: string; user_id: string; email: string; role: string }
 interface Source { id: string; type: string; config: Record<string, string>; is_active: boolean }
 interface TenantTheme { primaryColor: string; accentColor: string; fontHeading: string; fontBody: string; mapStyle: string }
-interface Tenant { id: string; name: string; slug: string; domain: string; logo_url: string | null; theme: TenantTheme }
+interface Tenant { id: string; name: string; slug: string; domain: string; logo_url: string | null; theme: TenantTheme; proptools_apps?: string[] | null; crm_apps?: string[] | null }
+
+// Menús de CRM y herramientas activables por tenant (mismas claves que AdminShell).
+const CRM_CATALOG: { key: string; label: string }[] = [
+  { key: 'propiedades', label: 'Propiedades' },
+  { key: 'contactos',   label: 'Contactos' },
+  { key: 'empresas',    label: 'Empresas' },
+  { key: 'leads',       label: 'Leads' },
+]
+const TOOLS_CATALOG: { key: string; label: string }[] = [
+  { key: 'firmas',       label: 'Firmas' },
+  { key: 'tarjetas',     label: 'Tarjetas' },
+  { key: 'rotulos',      label: 'Rótulos' },
+  { key: 'valoraciones', label: 'Valoraciones' },
+  { key: 'calendario',   label: 'Calendario' },
+  { key: 'equipos',      label: 'Equipos' },
+]
 
 const DEFAULT_THEME: TenantTheme = { primaryColor: '#111111', accentColor: '#f59e0b', fontHeading: 'system-ui, sans-serif', fontBody: 'system-ui, sans-serif', mapStyle: 'mapbox://styles/mapbox/streets-v12' }
 interface DomainVerification { type: string; domain: string; value: string }
@@ -33,6 +49,30 @@ export default function TenantDetailPage() {
   const [addingAdmin, setAddingAdmin] = useState(false)
   const [adminError, setAdminError] = useState('')
   const [adminNotice, setAdminNotice] = useState<{ msg: string; link?: string } | null>(null)
+  const [featSaving, setFeatSaving] = useState('')
+
+  // CRM: null = todo prendido. Tools: allowlist estricta (null/[] = ninguna).
+  const crmOn = (key: string) => !tenant?.crm_apps || tenant.crm_apps.includes(key)
+  const toolOn = (key: string) => (tenant?.proptools_apps ?? []).includes(key)
+
+  async function toggleFeature(kind: 'crm' | 'tools', key: string) {
+    if (!tenant) return
+    const field = kind === 'crm' ? 'crm_apps' : 'proptools_apps'
+    const all = (kind === 'crm' ? CRM_CATALOG : TOOLS_CATALOG).map(c => c.key)
+    // Base actual materializada (crm null → todo prendido).
+    const current = kind === 'crm'
+      ? (tenant.crm_apps ?? all)
+      : (tenant.proptools_apps ?? [])
+    const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key]
+    setFeatSaving(key)
+    const res = await fetch(`/api/superadmin/tenants/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: next }),
+    })
+    if (res.ok) setTenant(t => t ? { ...t, [field]: next } : t)
+    setFeatSaving('')
+  }
 
   async function load() {
     const res = await fetch(`/api/superadmin/tenants/${id}`)
@@ -294,6 +334,23 @@ export default function TenantDetailPage() {
         </p>
       </Section>
 
+      {/* Funciones activables */}
+      <Section title="Funciones">
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 8 }}>Menús de CRM</div>
+        {CRM_CATALOG.map(c => (
+          <FeatureToggle key={c.key} label={c.label} on={crmOn(c.key)}
+            busy={featSaving === c.key} onToggle={() => toggleFeature('crm', c.key)} />
+        ))}
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#888', margin: '18px 0 8px' }}>Herramientas</div>
+        {TOOLS_CATALOG.map(c => (
+          <FeatureToggle key={c.key} label={c.label} on={toolOn(c.key)}
+            busy={featSaving === c.key} onToggle={() => toggleFeature('tools', c.key)} />
+        ))}
+        <p style={{ fontSize: 11, color: '#555', marginTop: 12 }}>
+          Se guarda al instante. Los cambios aparecen en el panel del tenant al recargar.
+        </p>
+      </Section>
+
       {/* Sources */}
       <Section title={`Fuentes de propiedades (${sources.length})`}>
         {sources.length === 0 ? (
@@ -333,6 +390,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <div style={{ background: '#141414', borderRadius: 12, padding: '20px 24px', marginBottom: 16, border: '1px solid #222' }}>
       <div style={{ fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '.08em' }}>{title}</div>
       {children}
+    </div>
+  )
+}
+function FeatureToggle({ label, on, busy, onToggle }: { label: string; on: boolean; busy: boolean; onToggle: () => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #1e1e1e' }}>
+      <span style={{ fontSize: 13, color: on ? '#ddd' : '#666' }}>{label}</span>
+      <button onClick={onToggle} disabled={busy} title={on ? 'Activo' : 'Inactivo'}
+        style={{ width: 40, height: 22, borderRadius: 11, border: 'none', cursor: busy ? 'wait' : 'pointer', padding: 2, background: on ? '#4ade80' : '#333', opacity: busy ? 0.6 : 1, transition: 'background .15s' }}>
+        <span style={{ display: 'block', width: 18, height: 18, borderRadius: '50%', background: '#fff', transform: on ? 'translateX(18px)' : 'translateX(0)', transition: 'transform .15s' }} />
+      </button>
     </div>
   )
 }
