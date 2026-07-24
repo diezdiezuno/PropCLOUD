@@ -176,15 +176,17 @@ export default function PerfilPage() {
   if (!profile) return <div style={{ padding: 60, textAlign: 'center', color: '#e53e3e', fontSize: 13 }}>No se encontró tu perfil.</div>
 
   // Email | WhatsApp | Teléfono / Instagram | Facebook / LinkedIn | TikTok
-  const contactFields: { key: keyof Profile; label: string; span: number }[] = [
-    { key: 'cedula',    label: 'Cédula',    span: 2 },
-    { key: 'email',     label: 'Email',     span: 2 },
-    { key: 'whatsapp',  label: 'WhatsApp',  span: 2 },
-    { key: 'phone',     label: 'Teléfono',  span: 2 },
-    { key: 'instagram', label: 'Instagram', span: 3 },
-    { key: 'facebook',  label: 'Facebook',  span: 3 },
-    { key: 'linkedin',  label: 'LinkedIn',  span: 3 },
-    { key: 'tiktok',    label: 'TikTok',    span: 3 },
+  // Una fila por renglón, en el orden pedido: cédula sola (angosta), luego los
+  // tres contactos juntos, y las redes de a dos.
+  const label: Record<string, string> = {
+    cedula: 'Cédula', email: 'Email', whatsapp: 'WhatsApp', phone: 'Teléfono',
+    instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', tiktok: 'TikTok',
+  }
+  const filas: (keyof Profile)[][] = [
+    ['cedula'],
+    ['email', 'whatsapp', 'phone'],
+    ['instagram', 'facebook'],
+    ['linkedin', 'tiktok'],
   ]
   // Misma transparencia en las 3 tarjetas (token compartido glass()): se ve
   // el degradado/foto detrás.
@@ -218,15 +220,21 @@ export default function PerfilPage() {
           <div style={{ fontSize: 14, color: '#888', marginBottom: 16 }}>
             <Editable value={profile.job_title} placeholder="Puesto" onSave={v => saveField('job_title', v)} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10 }}>
-            {contactFields.map(({ key, label, span }) => (
-              <div key={key} style={{ gridColumn: `span ${span}`, background: 'rgba(255,255,255,.72)', border: '1px solid #ececf0', borderRadius: 10, padding: '9px 13px', minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 600, color: '#9aa1ad', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 3 }}>
-                  {ICONS[key]}{label}
-                </div>
-                <div style={{ fontSize: 13, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  <Editable value={profile[key] as string | null} onSave={v => saveField(key, v)} />
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {filas.map((fila, i) => (
+              // Cédula (fila 0) va en una grilla de 3 aunque tenga un solo campo:
+              // así queda del ancho de un tercio en vez de ocupar todo el renglón.
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: `repeat(${i === 0 ? 3 : fila.length}, minmax(0, 1fr))`, gap: 10 }}>
+                {fila.map(key => (
+                  <div key={key} style={{ background: 'rgba(255,255,255,.72)', border: '1px solid #ececf0', borderRadius: 10, padding: '9px 13px', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 600, color: '#9aa1ad', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 3 }}>
+                      {ICONS[key]}{label[key]}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <Editable value={profile[key] as string | null} onSave={v => saveField(key, v)} />
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
