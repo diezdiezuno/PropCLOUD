@@ -26,8 +26,12 @@ export interface DatosContrato {
     acuerdos: string | null
   }
   oficina: { nombre: string | null }
-  agente:  { nombre: string | null; cedula: string | null; email: string | null; telefono: string | null }
-  duenos:  string | null       // nombres de los propietarios, ya unidos
+  agente:  { nombre: string | null; cedula: string | null; email: string | null; telefono: string | null; whatsapp: string | null }
+  // Datos del/los propietario(s), ya unidos si hay más de uno.
+  duenos:        string | null       // nombres
+  dueno_cedula:  string | null
+  dueno_email:   string | null
+  dueno_whatsapp: string | null
 }
 
 /** Lo que el admin ve como ayuda al escribir la plantilla. */
@@ -39,6 +43,9 @@ export const VARIABLES: { grupo: string; items: { clave: string; label: string }
     { clave: 'propiedad.precio',       label: 'Precio con moneda' },
     { clave: 'propiedad.direccion',    label: 'Dirección exacta' },
     { clave: 'propiedad.ubicacion',    label: 'Distrito, cantón, provincia' },
+    { clave: 'propiedad.distrito',     label: 'Distrito' },
+    { clave: 'propiedad.canton',       label: 'Cantón' },
+    { clave: 'propiedad.provincia',    label: 'Provincia' },
     { clave: 'propiedad.finca',        label: 'Número de finca' },
     { clave: 'propiedad.plano',        label: 'Número de plano' },
     { clave: 'propiedad.area_m2',      label: 'Área construida (m²)' },
@@ -54,12 +61,16 @@ export const VARIABLES: { grupo: string; items: { clave: string; label: string }
     { clave: 'contrato.hoy',               label: 'Fecha de hoy' },
   ]},
   { grupo: 'Personas', items: [
-    { clave: 'duenos',          label: 'Propietario(s)' },
-    { clave: 'agente.nombre',   label: 'Agente' },
-    { clave: 'agente.cedula',   label: 'Cédula del agente' },
-    { clave: 'agente.email',    label: 'Email del agente' },
-    { clave: 'agente.telefono', label: 'Teléfono del agente' },
-    { clave: 'oficina.nombre',  label: 'Nombre de la oficina' },
+    { clave: 'duenos',           label: 'Propietario(s)' },
+    { clave: 'dueno.cedula',     label: 'Cédula del dueño' },
+    { clave: 'dueno.email',      label: 'Email del dueño' },
+    { clave: 'dueno.whatsapp',   label: 'WhatsApp del dueño' },
+    { clave: 'agente.nombre',    label: 'Agente' },
+    { clave: 'agente.cedula',    label: 'Cédula del agente' },
+    { clave: 'agente.email',     label: 'Email del agente' },
+    { clave: 'agente.telefono',  label: 'Teléfono del agente' },
+    { clave: 'agente.whatsapp',  label: 'WhatsApp del agente' },
+    { clave: 'oficina.nombre',   label: 'Nombre de la oficina' },
   ]},
 ]
 
@@ -98,6 +109,9 @@ function valores(d: DatosContrato): Record<string, string | null> {
     'propiedad.precio':       dinero(p.precio, p.moneda),
     'propiedad.direccion':    p.direccion,
     'propiedad.ubicacion':    ubicacion,
+    'propiedad.distrito':     p.distrito,
+    'propiedad.canton':       p.canton,
+    'propiedad.provincia':    p.provincia,
     'propiedad.finca':        p.finca,
     'propiedad.plano':        p.plano,
     'propiedad.area_m2':      p.area_m2 != null ? String(p.area_m2) : null,
@@ -110,10 +124,14 @@ function valores(d: DatosContrato): Record<string, string | null> {
     'contrato.acuerdos':          c.acuerdos,
     'contrato.hoy':               new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }),
     'duenos':          d.duenos,
+    'dueno.cedula':    d.dueno_cedula,
+    'dueno.email':     d.dueno_email,
+    'dueno.whatsapp':  d.dueno_whatsapp,
     'agente.nombre':   d.agente.nombre,
     'agente.cedula':   d.agente.cedula,
     'agente.email':    d.agente.email,
     'agente.telefono': d.agente.telefono,
+    'agente.whatsapp': d.agente.whatsapp,
     'oficina.nombre':  d.oficina.nombre,
   }
 }
