@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { COUNTRIES, isoToFlag, type Country } from '@/data/countries'
+import { parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js'
 
 interface Props {
   phoneValue: string
@@ -49,6 +50,22 @@ export default function PhoneInput({
   function select(c: Country) {
     onCountryChange(c.iso)
     setOpen(false)
+  }
+
+  // El campo guarda el número NACIONAL y el país va aparte, pero nada impedía
+  // escribir "+506 8888-8888" acá adentro: eso se guardaba tal cual y por eso
+  // el listado mostraba unos con código y otros sin él.
+  //
+  // Al salir del campo se normaliza, y solo si el número es válido —así no
+  // pelea con lo que se está tecleando ni rompe un número a medio escribir.
+  // Si pegaron uno internacional de otro país, además se mueve el dropdown.
+  function normalizar() {
+    if (!phoneValue.trim()) return
+    const p = parsePhoneNumberFromString(phoneValue, countryIso as CountryCode)
+    if (!p?.isValid()) return
+    if (p.country && p.country !== countryIso) onCountryChange(p.country)
+    const nacional = p.formatNational()
+    if (nacional !== phoneValue) onPhoneChange(nacional)
   }
 
   // Auto-focus search on open
@@ -108,6 +125,7 @@ export default function PhoneInput({
         placeholder={placeholder}
         value={phoneValue}
         onChange={e => onPhoneChange(e.target.value)}
+        onBlur={normalizar}
         style={{
           flex: 1, height: 38, padding: '0 12px',
           border: '1px solid #e2e5ea', borderLeft: 'none',
