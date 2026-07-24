@@ -58,7 +58,7 @@ export const VARIABLES: { grupo: string; items: { clave: string; label: string }
     { clave: 'contrato.fecha_firma',       label: 'Fecha de firma' },
     { clave: 'contrato.duracion',          label: 'Duración (meses)' },
     { clave: 'contrato.fecha_vencimiento', label: 'Fecha de vencimiento' },
-    { clave: 'contrato.comision',          label: 'Comisión (% y monto)' },
+    { clave: 'contrato.comision',          label: 'Comisión (%)' },
     { clave: 'contrato.acuerdos',          label: 'Acuerdos adicionales' },
     { clave: 'contrato.hoy',               label: 'Fecha de hoy' },
   ]},
@@ -100,9 +100,9 @@ function fecha(iso: string | null | undefined) {
 function valores(d: DatosContrato): Record<string, string | null> {
   const p = d.propiedad, c = d.contrato
   const ubicacion = [p.distrito, p.canton, p.provincia].filter(Boolean).join(', ') || null
-  const comision = c.comision_pct
-    ? `${c.comision_pct}%${c.comision_monto ? ` (${dinero(c.comision_monto, p.moneda)})` : ''}`
-    : dinero(c.comision_monto, p.moneda)
+  // Solo el porcentaje en el contrato (sin el monto entre paréntesis). Si la
+  // comisión se pactó como monto fijo sin %, cae al monto para no quedar vacío.
+  const comision = c.comision_pct ? `${c.comision_pct}%` : dinero(c.comision_monto, p.moneda)
   return {
     'propiedad.titulo':       p.titulo,
     'propiedad.tipo':         p.tipo,
