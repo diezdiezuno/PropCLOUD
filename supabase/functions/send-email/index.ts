@@ -87,9 +87,22 @@ Deno.serve(async (req) => {
   // puede disparar correos. Sin esto la función es un relay abierto: como se
   // despliega con --no-verify-jwt y CORS *, cualquiera con la URL mandaría
   // correos con HTML arbitrario desde el dominio del tenant (SPF/DKIM válidos).
-  if (req.headers.get('Authorization') !== `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`) {
-    return json({ error: 'No autorizado' }, 401)
+  //
+  // No se compara el string exacto contra el service role inyectado: una
+  // rotación de llaves legacy deja a Vercel con la vieja y a la función con la
+  // nueva —ambas válidas— y todo correo desde Vercel caía en 401 callado. Se
+  // valida el privilegio: crear un cliente con el token y tocar la API admin,
+  // que solo un service_role puede. La anon (pública, embebida en las tools) no
+  // pasa, así que la propiedad anti-relay se mantiene.
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+  const expected = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  let authorized = !!token && token === expected
+  if (!authorized && token) {
+    const probe = createClient(Deno.env.get('SUPABASE_URL') ?? '', token)
+    const { error } = await probe.auth.admin.listUsers({ page: 1, perPage: 1 })
+    authorized = !error
   }
+  if (!authorized) return json({ error: 'No autorizado' }, 401)
 
   const started = Date.now()
   let payload: Record<string, unknown> = {}
