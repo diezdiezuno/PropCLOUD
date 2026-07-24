@@ -126,6 +126,7 @@ export default function ContratosAdminPage() {
 
   return (
     <div>
+      <style>{`.md-prev table.grid{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 12px}.md-prev table.grid td{width:50%;padding:3px 10px 3px 0;vertical-align:top}.md-prev h1{font-size:20px;margin:14px 0}.md-prev h2{font-size:16px;margin:14px 0 6px}.md-prev ul,.md-prev ol{padding-left:24px}`}</style>
       <PageHeader title="Contratos"
         subtitle={`${lista.filter(p => p.active).length} tipo${lista.filter(p => p.active).length !== 1 ? 's' : ''} de contrato`}
         right={
@@ -167,7 +168,7 @@ export default function ContratosAdminPage() {
               </div>
 
               {preview ? (
-                <div style={{ border: '1px solid #e2e5ea', borderRadius: 8, padding: '18px 20px', background: '#fff', minHeight: 200, fontFamily: 'Georgia, serif', fontSize: 14, lineHeight: 1.7, color: '#111' }}
+                <div className="md-prev" style={{ border: '1px solid #e2e5ea', borderRadius: 8, padding: '18px 20px', background: '#fff', minHeight: 200, fontFamily: 'Georgia, serif', fontSize: 14, lineHeight: 1.7, color: '#111' }}
                   // La vista previa muestra el formato; los {{marcadores}} se ven
                   // tal cual porque acá todavía no hay una propiedad de dónde sacar
                   // los datos (eso pasa al generar el contrato en la propiedad).

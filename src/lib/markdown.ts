@@ -34,6 +34,21 @@ export function markdownToHtml(src: string): string {
     out.push(`<${tipo}>${items.join('')}</${tipo}>`)
   }
 
+  // Tabla: líneas seguidas del tipo `| a | b |`. Sin fila de encabezado
+  // obligatoria (a diferencia de GitHub) porque acá se usa para alinear datos
+  // en columnas, no para encabezar. Una fila de solo guiones se ignora.
+  const esFilaTabla = (s: string) => /^\s*\|.*\|\s*$/.test(s)
+  function tabla() {
+    const filas: string[] = []
+    while (i < lineas.length && esFilaTabla(lineas[i])) {
+      const celdas = lineas[i].trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim())
+      i++
+      if (celdas.every(c => /^-+$/.test(c))) continue   // separador GitHub: se salta
+      filas.push(`<tr>${celdas.map(c => `<td>${inline(c)}</td>`).join('')}</tr>`)
+    }
+    out.push(`<table class="grid">${filas.join('')}</table>`)
+  }
+
   while (i < lineas.length) {
     const l = lineas[i]
     if (!l.trim()) { i++; continue }                       // línea en blanco: separa bloques
@@ -41,11 +56,12 @@ export function markdownToHtml(src: string): string {
     if (/^##\s+/.test(l))       { out.push(`<h2>${inline(l.replace(/^##\s+/, ''))}</h2>`); i++; continue }
     if (/^#\s+/.test(l))        { out.push(`<h1>${inline(l.replace(/^#\s+/, ''))}</h1>`); i++; continue }
     if (/^\s*---+\s*$/.test(l)) { out.push('<hr>'); i++; continue }
+    if (esFilaTabla(l))         { tabla(); continue }
     if (/^\s*[-*]\s+/.test(l))  { lista('ul', /^\s*[-*]\s+/); continue }
     if (/^\s*\d+\.\s+/.test(l)) { lista('ol', /^\s*\d+\.\s+/); continue }
     // Párrafo: junta líneas seguidas hasta un blanco, con <br> entre ellas.
     const parr: string[] = []
-    while (i < lineas.length && lineas[i].trim() && !/^(#{1,3}\s|\s*[-*]\s|\s*\d+\.\s|\s*---+\s*$)/.test(lineas[i])) {
+    while (i < lineas.length && lineas[i].trim() && !/^(#{1,3}\s|\s*[-*]\s|\s*\d+\.\s|\s*---+\s*$|\s*\|)/.test(lineas[i])) {
       parr.push(inline(lineas[i])); i++
     }
     out.push(`<p>${parr.join('<br>')}</p>`)

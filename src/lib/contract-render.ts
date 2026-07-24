@@ -33,6 +33,8 @@ export interface DatosContrato {
   dueno_cedula:  string | null
   dueno_email:   string | null
   dueno_whatsapp: string | null
+  // Lista por dueño, para el bloque compuesto {{propietarios}}.
+  duenos_detalle: { nombre: string | null; cedula: string | null; email: string | null; whatsapp: string | null }[]
 }
 
 /** Lo que el admin ve como ayuda al escribir la plantilla. */
@@ -63,7 +65,8 @@ export const VARIABLES: { grupo: string; items: { clave: string; label: string }
     { clave: 'contrato.hoy',               label: 'Fecha de hoy' },
   ]},
   { grupo: 'Personas', items: [
-    { clave: 'duenos',           label: 'Propietario(s)' },
+    { clave: 'propietarios',     label: 'Propietarios (bloque con datos)' },
+    { clave: 'duenos',           label: 'Propietario(s) — solo nombres' },
     { clave: 'dueno.cedula',     label: 'Cédula del dueño' },
     { clave: 'dueno.email',      label: 'Email del dueño' },
     { clave: 'dueno.whatsapp',   label: 'WhatsApp del dueño' },
@@ -103,7 +106,20 @@ function valores(d: DatosContrato): Record<string, string | null> {
   // Solo el porcentaje en el contrato (sin el monto entre paréntesis). Si la
   // comisión se pactó como monto fijo sin %, cae al monto para no quedar vacío.
   const comision = c.comision_pct ? `${c.comision_pct}%` : dinero(c.comision_monto, p.moneda)
+
+  // Bloque compuesto: una tabla 2×2 por propietario. Se arma con markdown de
+  // tabla (| a | b |) para que las columnas queden alineadas; el motor de
+  // markdown lo vuelve <table>. FALTA marca el dato que no está.
+  const val = (x: string | null | undefined) => (x && x.trim() ? x.trim() : FALTA)
+  const propietarios = d.duenos_detalle.length
+    ? d.duenos_detalle.map(o =>
+        `| **Propietario:** ${val(o.nombre)} | **Cédula:** ${val(o.cedula)} |\n` +
+        `| **Email:** ${val(o.email)} | **Teléfono:** ${val(o.whatsapp)} |`
+      ).join('\n\n')
+    : null
+
   return {
+    'propietarios':    propietarios,
     'propiedad.titulo':       p.titulo,
     'propiedad.tipo':         p.tipo,
     'propiedad.transaccion':  p.transaccion === 'rent' ? 'alquiler'

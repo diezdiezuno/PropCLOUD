@@ -2205,6 +2205,7 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
     dueno_cedula:   unir(x => x.cedula),
     dueno_email:    unir(x => x.email),
     dueno_whatsapp: unir(x => x.whatsapp),
+    duenos_detalle: filasDueno,
   }
 }
 
