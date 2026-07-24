@@ -2174,12 +2174,14 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
   const filasDueno = ((owners ?? []) as any[]).map(o => {
     const c = o.crm_contacts, e = o.crm_companies
     return c
-      ? { nombre: [c.name, c.last_name].filter(Boolean).join(' '), cedula: c.cedula, email: c.email,
+      ? { tipo: 'persona' as const, nombre: [c.name, c.last_name].filter(Boolean).join(' '), cedula: c.cedula, email: c.email,
           whatsapp: c.phone ? phoneDisplay(c.phone, c.phone_country) : null }
-      : { nombre: e?.name ?? null, cedula: e?.cedula_juridica ?? null, email: e?.email ?? null, whatsapp: null }
+      : { tipo: 'sociedad' as const, nombre: e?.name ?? null, cedula: e?.cedula_juridica ?? null, email: e?.email ?? null, whatsapp: null }
   })
   const unir = (f: (x: typeof filasDueno[number]) => string | null | undefined) =>
     filasDueno.map(f).filter(Boolean).join(', ') || null
+  const personas   = filasDueno.filter(o => o.tipo === 'persona')
+  const sociedades  = filasDueno.filter(o => o.tipo === 'sociedad').map(o => ({ nombre: o.nombre, cedula: o.cedula }))
 
   const a = agente as { name?: string; cedula?: string; email?: string; phone?: string; whatsapp?: string } | null
   const c = con as { start_date?: string; end_date?: string; duration_months?: number; commission?: number; commission_amount?: number; notes?: string } | null
@@ -2205,7 +2207,8 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
     dueno_cedula:   unir(x => x.cedula),
     dueno_email:    unir(x => x.email),
     dueno_whatsapp: unir(x => x.whatsapp),
-    duenos_detalle: filasDueno,
+    duenos_detalle: personas,
+    sociedades,
   }
 }
 
@@ -2227,18 +2230,20 @@ function ContractDocs({ prop }: { prop: PropertyFull }) {
 
   const cargar = useCallback(async () => {
     const sb = createClient()
-    const [{ data: pl }, { data: dc }, { data: tn }] = await Promise.all([
+    const [{ data: pl }, { data: dc }, { data: tn }, { data: cfg }] = await Promise.all([
       sb.from('contract_templates').select('id,nombre,descripcion,cuerpo')
         .eq('tenant_id', prop.tenant_id).eq('active', true).order('position'),
       sb.from('contract_documents').select('id,nombre,cuerpo,autor_nombre,created_at')
         .eq('property_id', prop.id).order('created_at', { ascending: false }),
       sb.from('tenants').select('name,logo_url').eq('id', prop.tenant_id).maybeSingle(),
+      sb.from('tenant_config').select('contract_logo_url').eq('tenant_id', prop.tenant_id).maybeSingle(),
     ])
     setPlantillas((pl ?? []) as Plantilla[])
     setDocs((dc ?? []) as DocGenerado[])
     const t = tn as { name?: string; logo_url?: string } | null
     setOficina(t?.name ?? 'Noduus')
-    setLogoUrl(t?.logo_url ?? null)
+    // El logo del contrato manda; si no se eligió, cae al de nav.
+    setLogoUrl((cfg as { contract_logo_url?: string } | null)?.contract_logo_url ?? t?.logo_url ?? null)
     setLoading(false)
   }, [prop.id, prop.tenant_id])
 

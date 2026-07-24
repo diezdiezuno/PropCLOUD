@@ -33,14 +33,35 @@ export default function ContratosAdminPage() {
   const [saving,   setSaving]   = useState(false)
   const [error,    setError]    = useState<string | null>(null)
   const [preview,  setPreview]  = useState(false)
+  // Logo del contrato: opciones guardadas del tenant + el elegido.
+  const [logos,    setLogos]    = useState<{ label: string; url: string }[]>([])
+  const [logoSel,  setLogoSel]  = useState<string | null>(null)
+  const [subiendoLogo, setSubiendoLogo] = useState(false)
   const cuerpoRef = useRef<HTMLTextAreaElement>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   const cargar = useCallback(async (tid: string) => {
-    const { data, error } = await createClient().from('contract_templates')
-      .select('id,nombre,descripcion,cuerpo,position,active')
-      .eq('tenant_id', tid).order('position')
+    const sb = createClient()
+    const [{ data, error }, { data: tn }, { data: cfg }] = await Promise.all([
+      sb.from('contract_templates').select('id,nombre,descripcion,cuerpo,position,active')
+        .eq('tenant_id', tid).order('position'),
+      sb.from('tenants').select('logo_url').eq('id', tid).maybeSingle(),
+      sb.from('tenant_config').select('footer_logo_url,contract_logo_url').eq('tenant_id', tid).maybeSingle(),
+    ])
     if (error) setError(error.message)
     else setLista((data ?? []) as Plantilla[])
+    // Logos guardados que se ofrecen para la esquina del contrato.
+    const nav = (tn as { logo_url?: string } | null)?.logo_url
+    const foot = (cfg as { footer_logo_url?: string } | null)?.footer_logo_url
+    const elegido = (cfg as { contract_logo_url?: string } | null)?.contract_logo_url ?? null
+    const opts = [
+      ...(nav  ? [{ label: 'Logo principal', url: nav }]  : []),
+      ...(foot ? [{ label: 'Logo de pie',    url: foot }] : []),
+      // Si ya se guardó uno subido (no es el nav ni el footer), se muestra igual.
+      ...(elegido && elegido !== nav && elegido !== foot ? [{ label: 'Subido', url: elegido }] : []),
+    ]
+    setLogos(opts)
+    setLogoSel(elegido ?? nav ?? null)
     setLoading(false)
   }, [])
 
@@ -51,6 +72,30 @@ export default function ContratosAdminPage() {
   function nueva() {
     setEditando({ id: '', nombre: '', descripcion: '', cuerpo: '', position: lista.length, active: true })
     setError(null)
+  }
+
+  // Guarda qué logo va en la esquina del contrato.
+  async function elegirLogo(url: string) {
+    if (!tenantId) return
+    setLogoSel(url)
+    const { error } = await createClient().from('tenant_config')
+      .update({ contract_logo_url: url }).eq('tenant_id', tenantId)
+    if (error) setError(`No se pudo guardar el logo: ${error.message}`)
+  }
+
+  async function subirLogo(file: File) {
+    if (!tenantId) return
+    setSubiendoLogo(true); setError(null)
+    const sb = createClient()
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+    const path = `${tenantId}/contract-logo-${Date.now()}.${ext}`
+    const { error: upErr } = await sb.storage.from('tenant-assets').upload(path, file, { upsert: true, contentType: file.type })
+    if (upErr) { setError(`No se pudo subir: ${upErr.message}`); setSubiendoLogo(false); return }
+    const url = sb.storage.from('tenant-assets').getPublicUrl(path).data.publicUrl
+    setLogos(prev => [...prev.filter(l => l.label !== 'Subido'), { label: 'Subido', url }])
+    await elegirLogo(url)
+    setSubiendoLogo(false)
+    if (logoInputRef.current) logoInputRef.current.value = ''
   }
 
   async function guardar(e: React.FormEvent) {
@@ -135,6 +180,39 @@ export default function ContratosAdminPage() {
             + Nuevo tipo
           </button>
         } />
+
+      {/* Logo de la esquina del contrato: elegir entre los guardados o subir. */}
+      <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 4 }}>Logo del contrato</div>
+        <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 14px' }}>Va en la esquina superior izquierda del PDF. Elegí uno de los guardados o subí uno nuevo.</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'stretch' }}>
+          {logos.map(l => {
+            const sel = logoSel === l.url
+            return (
+              <button key={l.url} type="button" onClick={() => elegirLogo(l.url)} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: 10, cursor: 'pointer',
+                border: `2px solid ${sel ? 'var(--color-primary, #111)' : '#e2e5ea'}`, borderRadius: 10, background: sel ? 'rgba(107,47,160,.04)' : '#fff', fontFamily: 'inherit',
+              }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={l.url} alt={l.label} style={{ height: 40, maxWidth: 140, objectFit: 'contain' }} />
+                <span style={{ fontSize: 11, color: sel ? '#111' : '#9ca3af', fontWeight: sel ? 600 : 400 }}>{l.label}{sel ? ' ✓' : ''}</span>
+              </button>
+            )
+          })}
+          <button type="button" onClick={() => logoInputRef.current?.click()} disabled={subiendoLogo} style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 20px', cursor: subiendoLogo ? 'wait' : 'pointer',
+            border: '2px dashed #d5d9e0', borderRadius: 10, background: '#fafbfc', color: '#6b7280', fontFamily: 'inherit', fontSize: 12,
+          }}>
+            <span style={{ fontSize: 20 }}>＋</span>
+            {subiendoLogo ? 'Subiendo…' : 'Subir logo'}
+          </button>
+        </div>
+        <input ref={logoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) subirLogo(f) }} />
+        {logos.length === 0 && (
+          <p style={{ fontSize: 12, color: '#9ca3af', margin: '10px 0 0' }}>No hay logos guardados todavía. Subí uno acá, o cargá el principal en Administración › General.</p>
+        )}
+      </div>
 
       {error && !editando && <p style={{ fontSize: 13, color: '#e53e3e' }}>{error}</p>}
 

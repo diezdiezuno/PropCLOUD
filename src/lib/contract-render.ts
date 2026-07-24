@@ -33,8 +33,10 @@ export interface DatosContrato {
   dueno_cedula:  string | null
   dueno_email:   string | null
   dueno_whatsapp: string | null
-  // Lista por dueño, para el bloque compuesto {{propietarios}}.
+  // Solo los dueños PERSONA, para los bloques de {{propietarios}}.
   duenos_detalle: { nombre: string | null; cedula: string | null; email: string | null; whatsapp: string | null }[]
+  // Dueños que son sociedad: van como línea de representación legal.
+  sociedades: { nombre: string | null; cedula: string | null }[]
 }
 
 /** Lo que el admin ve como ayuda al escribir la plantilla. */
@@ -66,6 +68,7 @@ export const VARIABLES: { grupo: string; items: { clave: string; label: string }
   ]},
   { grupo: 'Personas', items: [
     { clave: 'propietarios',     label: 'Propietarios (bloque con datos)' },
+    { clave: 'asesor',           label: 'Asesor (bloque con datos)' },
     { clave: 'duenos',           label: 'Propietario(s) — solo nombres' },
     { clave: 'dueno.cedula',     label: 'Cédula del dueño' },
     { clave: 'dueno.email',      label: 'Email del dueño' },
@@ -107,19 +110,31 @@ function valores(d: DatosContrato): Record<string, string | null> {
   // comisión se pactó como monto fijo sin %, cae al monto para no quedar vacío.
   const comision = c.comision_pct ? `${c.comision_pct}%` : dinero(c.comision_monto, p.moneda)
 
-  // Bloque compuesto: una tabla 2×2 por propietario. Se arma con markdown de
+  // Bloques compuestos: una tabla 2×2 por persona. Se arma con markdown de
   // tabla (| a | b |) para que las columnas queden alineadas; el motor de
   // markdown lo vuelve <table>. FALTA marca el dato que no está.
   const val = (x: string | null | undefined) => (x && x.trim() ? x.trim() : FALTA)
-  const propietarios = d.duenos_detalle.length
-    ? d.duenos_detalle.map(o =>
-        `| **Propietario:** ${val(o.nombre)} | **Cédula:** ${val(o.cedula)} |\n` +
-        `| **Email:** ${val(o.email)} | **Teléfono:** ${val(o.whatsapp)} |`
-      ).join('\n\n')
+  const bloque = (rol: string, o: { nombre: string | null; cedula: string | null; email: string | null; whatsapp: string | null }) =>
+    `| **${rol}:** ${val(o.nombre)} | **Cédula:** ${val(o.cedula)} |\n` +
+    `| **Email:** ${val(o.email)} | **Teléfono:** ${val(o.whatsapp)} |`
+
+  // Personas dueñas como bloques, y si hay sociedad(es), una línea abajo con la
+  // representación legal.
+  const bloquesPersona = d.duenos_detalle.map(o => bloque('Propietario', o))
+  const lineaSoc = d.sociedades.length
+    ? 'Como representantes legales de la sociedad ' +
+      d.sociedades.map(s => `**${val(s.nombre)}**, cédula jurídica ${val(s.cedula)}`).join('; ') + '.'
+    : ''
+  const propietarios = [...bloquesPersona, lineaSoc].filter(Boolean).join('\n\n') || null
+
+  const ag = d.agente
+  const asesor = (ag.nombre || ag.cedula || ag.email || ag.whatsapp)
+    ? bloque('Asesor', { nombre: ag.nombre, cedula: ag.cedula, email: ag.email, whatsapp: ag.whatsapp })
     : null
 
   return {
     'propietarios':    propietarios,
+    'asesor':          asesor,
     'propiedad.titulo':       p.titulo,
     'propiedad.tipo':         p.tipo,
     'propiedad.transaccion':  p.transaccion === 'rent' ? 'alquiler'
