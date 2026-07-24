@@ -11,7 +11,7 @@ export default function TenantsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
-  const [form, setForm] = useState({ name: '', slug: '', domain: '' })
+  const [form, setForm] = useState({ name: '', slug: '', domain: '', admin_email: '' })
   const router = useRouter()
 
   async function load() {
@@ -37,7 +37,7 @@ export default function TenantsPage() {
     if (res.ok) {
       const tenant = await res.json()
       setShowCreate(false)
-      setForm({ name: '', slug: '', domain: '' })
+      setForm({ name: '', slug: '', domain: '', admin_email: '' })
       router.push(`/superadmin/tenants/${tenant.id}`)
     } else {
       const { error } = await res.json()
@@ -78,6 +78,10 @@ export default function TenantsPage() {
               <label style={labelStyle}>Dominio</label>
               <input value={form.domain} onChange={f('domain')} placeholder="sunrisecr.com" required style={inputStyle} />
             </div>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={labelStyle}>Email del admin <span style={{ color: '#555', fontWeight: 400 }}>(recibe la invitación para configurar)</span></label>
+            <input type="email" value={form.admin_email} onChange={f('admin_email')} placeholder="admin@sunrisecr.com" style={inputStyle} />
           </div>
           {createError && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{createError}</div>}
           <div style={{ display: 'flex', gap: 10 }}>

@@ -541,14 +541,12 @@ async function register() {
     const { error: signInErr } = await sb.auth.signInWithPassword({ email, password });
     if (signInErr) throw signInErr;
 
-    // El admin resuelve el tenant por dominio. Si la invitacion se abrio desde
-    // otro host, el dashboard de aca la rebotaria con wrong_tenant, asi que se
-    // manda al dominio de su oficina. La sesion no cruza de dominio: alla
-    // entra con la contrasena que acaba de definir.
-    const bare = h => String(h || '').replace(/^www\./, '');
-    _destino = (out.domain && bare(out.domain) !== bare(location.host))
-      ? `https://${out.domain}/admin/login`
-      : '/admin/dashboard';
+    // Se queda en el host donde se registró: el link de invitación siempre sale
+    // del dominio (custom o slug.noduus.com) del propio tenant, así que este
+    // host ya resuelve al tenant correcto y la sesión recién creada vive acá.
+    // Mandarlo al dominio custom rebotaba a login —y a un dominio muerto si el
+    // DNS todavía no estaba puesto.
+    _destino = '/admin/dashboard';
 
     // 5. Mostrar éxito y redirigir
     show('state-success');

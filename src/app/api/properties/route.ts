@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { fetchRemaxCCAProperties } from '@/lib/providers/remax-cca'
-import { domainCandidates } from '@/lib/tenant'
+import { getTenantByDomain } from '@/lib/tenant'
 import type { Property } from '@/types'
 
 const supabase = createClient(
@@ -14,24 +14,10 @@ export async function GET(request: NextRequest) {
     const domain = request.headers.get('x-tenant-domain') ?? 'localhost'
     console.log('[properties] domain:', domain)
 
-    // Exact match first, then fallback to first tenant
-    let { data: tenant, error: e1 } = await supabase
-      .from('tenants')
-      .select('id, slug')
-      .in('domain', domainCandidates(domain))
-      .limit(1)
-      .single()
-
-    if (!tenant) {
-      console.log('[properties] no exact match, trying fallback. error:', e1?.message)
-      const { data: fallback, error: e2 } = await supabase
-        .from('tenants')
-        .select('id, slug')
-        .limit(1)
-        .single()
-      console.log('[properties] fallback result:', fallback, e2?.message)
-      tenant = fallback
-    }
+    // Misma resolución que el resto del sistema: maneja slug.noduus.com,
+    // dominio custom y localhost. No cae al primer tenant en dominios que no
+    // matchean — eso servía las propiedades de otra oficina en silencio.
+    const tenant = await getTenantByDomain(domain)
 
     if (!tenant) {
       console.error('[properties] no tenant found for domain:', domain)

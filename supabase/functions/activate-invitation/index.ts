@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     // dashboard desde otro host la rebota con wrong_tenant.
     const { data: invite } = await sb
       .from('invitations')
-      .select('id, tenant_id, email, job_title, expires_at, tenants(domain)')
+      .select('id, tenant_id, email, job_title, role, expires_at, tenants(domain)')
       .eq('token', token)
       .single()
 
@@ -125,7 +125,9 @@ Deno.serve(async (req) => {
       auth_id:   authId,
       name:      String(name).trim(),
       email:     invite.email,
-      role:      'agent',
+      // El rol lo fija quien invita (agente por defecto, admin al dar de alta
+      // el tenant). Con 'admin', el trigger crea la fila en tenant_admins.
+      role:      invite.role === 'admin' ? 'admin' : 'agent',
       job_title: invite.job_title || null,
       tenant_id: invite.tenant_id,
     }, { onConflict: 'auth_id' })
