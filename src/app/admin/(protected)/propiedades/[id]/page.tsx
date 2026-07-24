@@ -1582,7 +1582,7 @@ const CONTRACT_KINDS = [
   { value: 'venta',     label: 'Venta' },
 ]
 interface Contract {
-  id: string; kind: string | null; start_date: string | null; end_date: string | null
+  id: string; kind: string | null; start_date: string | null; end_date: string | null; duration_months: number | null
   price: number | null; currency: string | null; commission: number | null
   commission_type: string | null; commission_amount: number | null
   split_type: string | null; split_value: number | null
@@ -1593,6 +1593,19 @@ interface Contract {
 }
 
 type Modo = 'pct' | 'amount'
+
+// Suma meses a una fecha 'YYYY-MM-DD' y devuelve otra igual. Si el día no
+// existe en el mes destino (31 de enero + 1 mes) se ajusta al último del mes,
+// que es lo que uno espera de un plazo de contrato.
+function sumarMeses(iso: string, meses: number): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const base = new Date(y, m - 1 + meses, 1)
+  const ultimoDia = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate()
+  const dia = Math.min(d, ultimoDia)
+  const mm = String(base.getMonth() + 1).padStart(2, '0')
+  const dd = String(dia).padStart(2, '0')
+  return `${base.getFullYear()}-${mm}-${dd}`
+}
 
 /* Cálculo de un negocio: comisión (% o monto) y división con el co-broker.
    Se usa en el render (DealRow) y al guardar. */
@@ -1689,8 +1702,10 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
   const [row,        setRow]        = useState<Contract | null>(null)
   const [loading,    setLoading]    = useState(true)
   const [kind,       setKind]       = useState('exclusiva')
-  const [startDate,  setStartDate]  = useState('')
-  const [endDate,    setEndDate]    = useState('')
+  // El vencimiento sale de la fecha de firma + los meses de duración; no se
+  // cargan a mano.
+  const [firmaDate,  setFirmaDate]  = useState('')
+  const [meses,      setMeses]      = useState(12)
   const [notes,      setNotes]      = useState('')
   // Comisión de venta (o del único negocio): % o monto (excluyentes).
   const [commMode,   setCommMode]   = useState<Modo>('pct')
@@ -1723,14 +1738,22 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
     ;(async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (createClient() as any).from('contracts')
-        .select('id,kind,start_date,end_date,price,currency,commission,commission_type,commission_amount,split_type,split_value,commission_rent,commission_rent_type,commission_rent_amount,split_rent_type,split_rent_value,status,notes')
+        .select('id,kind,start_date,end_date,duration_months,price,currency,commission,commission_type,commission_amount,split_type,split_value,commission_rent,commission_rent_type,commission_rent_amount,split_rent_type,split_rent_value,status,notes')
         .eq('property_id', prop.id).eq('active', true)
         .order('created_at', { ascending: false }).limit(1)
       if (cancelled) return
       const c = (data ?? [])[0] as Contract | undefined
       if (c) {
         setRow(c); setKind(c.kind ?? 'exclusiva')
-        setStartDate(c.start_date ?? ''); setEndDate(c.end_date ?? '')
+        // La fecha de firma es el inicio; los meses vienen de la columna, o se
+        // deducen del rango si es un contrato viejo sin ese dato.
+        setFirmaDate(c.start_date ?? '')
+        if (c.duration_months) setMeses(c.duration_months)
+        else if (c.start_date && c.end_date) {
+          const a = new Date(c.start_date + 'T12:00:00'), b = new Date(c.end_date + 'T12:00:00')
+          const m = Math.round((b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()))
+          setMeses(Math.min(12, Math.max(1, m || 12)))
+        }
         setNotes(c.notes ?? '')
         // Venta: columnas commission*/split*. Cada set se reabre en su modo.
         const cm: Modo = c.commission_type === 'amount' ? 'amount' : 'pct'
@@ -1791,7 +1814,10 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
     //    Cada set se limpia si su negocio no aplica.
     const payload = {
       tenant_id: prop.tenant_id, property_id: prop.id,
-      kind, start_date: startDate || null, end_date: endDate || null,
+      kind,
+      start_date: firmaDate || null,
+      end_date: firmaDate ? sumarMeses(firmaDate, meses) : null,
+      duration_months: meses,
       price: displayPrice, currency: displayCurr,
       // commission se guarda como % y también el monto y el modo, para reabrir igual.
       commission:        esSale && saleDeal.commissionPct ? Math.round(saleDeal.commissionPct * 100) / 100 : null,
@@ -1824,7 +1850,9 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
 
   if (loading) return <p style={{ fontSize: 13, color: '#888', padding: '8px 2px' }}>Cargando contrato…</p>
 
-  const dias = endDate ? Math.round((new Date(endDate + 'T12:00:00').getTime() - Date.now()) / 86400000) : null
+  const venceDate = firmaDate ? sumarMeses(firmaDate, meses) : ''
+  const dias = venceDate ? Math.round((new Date(venceDate + 'T12:00:00').getTime() - Date.now()) / 86400000) : null
+  const venceTxt = venceDate ? new Date(venceDate + 'T12:00:00').toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
   const trans = prop.transaction || 'sale'
   const esVA = trans === 'sale_rent'
 
@@ -1871,17 +1899,22 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
             </select>
           </div>
           <div>
-            <FieldLabel>Fecha de inicio</FieldLabel>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputSt} />
+            <FieldLabel>Fecha de firma</FieldLabel>
+            <input type="date" value={firmaDate} onChange={e => setFirmaDate(e.target.value)} style={inputSt} />
           </div>
           <div>
-            <FieldLabel>Fecha de vencimiento</FieldLabel>
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputSt} />
+            <FieldLabel>Duración (meses)</FieldLabel>
+            <select value={meses} onChange={e => setMeses(Number(e.target.value))} style={inputSt}>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                <option key={m} value={m}>{m} {m === 1 ? 'mes' : 'meses'}</option>
+              ))}
+            </select>
           </div>
         </div>
-        {dias !== null && (
-          <p style={{ fontSize: 12, margin: '8px 0 0', fontWeight: 600, color: dias < 0 ? '#DC2626' : dias <= 30 ? '#D97706' : '#059669' }}>
-            {dias < 0 ? `Venció hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence hoy' : `Vence en ${dias} días`}
+        {venceTxt && (
+          <p style={{ fontSize: 12, margin: '8px 0 0', fontWeight: 600, color: dias != null && dias < 0 ? '#DC2626' : dias != null && dias <= 30 ? '#D97706' : '#059669' }}>
+            Vence el {venceTxt}
+            {dias != null && ` · ${dias < 0 ? `hace ${Math.abs(dias)} días` : dias === 0 ? 'hoy' : `en ${dias} días`}`}
           </p>
         )}
         <div style={{ marginTop: 16 }}>
@@ -2130,7 +2163,7 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
       .select('crm_contacts(name,last_name,cedula,email,phone,phone_country), crm_companies(name,cedula_juridica,email)')
       .eq('property_id', prop.id),
     sbAny.from('contracts')
-      .select('start_date,end_date,commission,commission_amount,notes')
+      .select('start_date,end_date,duration_months,commission,commission_amount,notes')
       .eq('property_id', prop.id).eq('active', true)
       .order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ])
@@ -2149,7 +2182,7 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
     filasDueno.map(f).filter(Boolean).join(', ') || null
 
   const a = agente as { name?: string; cedula?: string; email?: string; phone?: string; whatsapp?: string } | null
-  const c = con as { start_date?: string; end_date?: string; commission?: number; commission_amount?: number; notes?: string } | null
+  const c = con as { start_date?: string; end_date?: string; duration_months?: number; commission?: number; commission_amount?: number; notes?: string } | null
 
   return {
     propiedad: {
@@ -2162,6 +2195,7 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
     },
     contrato: {
       fecha_inicio: c?.start_date ?? null, fecha_vencimiento: c?.end_date ?? null,
+      duracion_meses: c?.duration_months ?? null,
       comision_pct: c?.commission ?? null, comision_monto: c?.commission_amount ?? null,
       acuerdos: c?.notes ?? null,
     },

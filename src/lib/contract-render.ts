@@ -22,6 +22,7 @@ export interface DatosContrato {
   }
   contrato: {
     fecha_inicio: string | null; fecha_vencimiento: string | null
+    duracion_meses: number | null
     comision_pct: number | null; comision_monto: number | null
     acuerdos: string | null
   }
@@ -54,7 +55,8 @@ export const VARIABLES: { grupo: string; items: { clave: string; label: string }
     { clave: 'propiedad.banos',        label: 'Baños' },
   ]},
   { grupo: 'Contrato', items: [
-    { clave: 'contrato.fecha_inicio',      label: 'Fecha de inicio' },
+    { clave: 'contrato.fecha_firma',       label: 'Fecha de firma' },
+    { clave: 'contrato.duracion',          label: 'Duración (meses)' },
     { clave: 'contrato.fecha_vencimiento', label: 'Fecha de vencimiento' },
     { clave: 'contrato.comision',          label: 'Comisión (% y monto)' },
     { clave: 'contrato.acuerdos',          label: 'Acuerdos adicionales' },
@@ -118,7 +120,9 @@ function valores(d: DatosContrato): Record<string, string | null> {
     'propiedad.lote_m2':      p.lote_m2 != null ? String(p.lote_m2) : null,
     'propiedad.habitaciones': p.habitaciones != null ? String(p.habitaciones) : null,
     'propiedad.banos':        p.banos != null ? String(p.banos) : null,
-    'contrato.fecha_inicio':      fecha(c.fecha_inicio),
+    'contrato.fecha_inicio':      fecha(c.fecha_inicio),   // alias viejo = fecha de firma
+    'contrato.fecha_firma':       fecha(c.fecha_inicio),
+    'contrato.duracion':          c.duracion_meses ? `${c.duracion_meses} ${c.duracion_meses === 1 ? 'mes' : 'meses'}` : null,
     'contrato.fecha_vencimiento': fecha(c.fecha_vencimiento),
     'contrato.comision':          comision,
     'contrato.acuerdos':          c.acuerdos,
