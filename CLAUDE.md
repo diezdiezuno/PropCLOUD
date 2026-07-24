@@ -176,12 +176,15 @@ Al cerrar uno, borrarlo de acá; esta lista es el estado, no el historial.
   valores de retorno ignorados. Es el patrón que más veces mordió este proyecto.
 
 ### P2
-- **Sistema de contratos automáticos + firma.** El estado del contrato (vigente/
-  vencido/…) se sacó del tab de Contrato porque debe ser automático: el CRM enviará
-  el contrato a firma con lo ya recopilado, y las fechas/vencimientos se derivan solos.
-  Hoy `contracts.status` queda en el valor existente o 'vigente' al guardar. Falta:
-  generar el documento, mandarlo a firma y mover el estado según lo que pase (firmado,
-  vencido, cancelado). El tab ya guarda tipo, fechas, precio, comisión y split.
+- **Firma de contratos.** Ya está el motor: el admin define tipos con texto y
+  `{{variables}}` en Administración › Contratos (`contract_templates`), el agente
+  genera documentos en el tab Contratos de la propiedad (`contract_documents`, texto
+  congelado) y los baja como PDF por la impresión del navegador (`src/lib/contract-pdf.ts`,
+  `contract-render.ts`). Falta la **firma**: hoy el PDF se descarga y se manda a mano.
+  Cuando se integre un proveedor (DocuSign/Dropbox Sign), ese generará el PDF del lado
+  del servidor y moverá `contracts.status` según lo que pase (firmado/vencido/cancelado)
+  —status se sacó de la UI justamente porque debe ser automático.
+  SQL: `contract-templates.sql`, `contract-documents.sql`, `property-notes.sql`.
 - **Flujos sin probar de punta a punta**: formulario de contacto (deja rastro en
   `email_log`, ahí se ve si falla) y listar propiedad con PDF adjunto.
 - **Correos de auth fuera de `email_log`**: los manda Supabase y su único rastro es
