@@ -142,7 +142,12 @@ export default function PropiedadesPage() {
       .order('created_at', { ascending: false })
     if (q) query = query.or(`title.ilike.%${q}%,address.ilike.%${q}%,canton.ilike.%${q}%,provincia.ilike.%${q}%`)
     const { data } = await query
-    setProps((data ?? []) as PropRow[])
+    // Un borrador sin título ni tipo es un "Nueva propiedad" que se abandonó
+    // sin cargar nada: no se lista. Sigue existiendo y el próximo clic en
+    // Nueva propiedad lo reusa, así no se acumulan ni se ven vacíos.
+    const filas = ((data ?? []) as PropRow[])
+      .filter(p => !(p.crm_status === 'draft' && !p.title?.trim() && !p.type?.trim()))
+    setProps(filas)
   }, [])
 
   useEffect(() => {

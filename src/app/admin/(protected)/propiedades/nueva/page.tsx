@@ -31,6 +31,18 @@ export default function NuevaPropiedadPage() {
       const { data: me } = await sb.from('users').select('id')
         .eq('auth_id', m.userId).eq('tenant_id', m.tenantId).maybeSingle()
 
+      // Si ya hay un borrador en blanco mío, se reusa en vez de crear otro.
+      // Antes, cada clic en "Nueva propiedad" que se abandonaba dejaba una
+      // propiedad vacía guardada; así queda una sola, y encima invisible
+      // (el listado oculta los borradores sin nada cargado).
+      const enBlanco = sb.from('properties').select('id')
+        .eq('tenant_id', m.tenantId).eq('crm_status', 'draft').eq('active', true)
+        .eq('title', '').eq('type', '')
+      const { data: previo } = await (me?.id
+        ? enBlanco.eq('agent_id', me.id)
+        : enBlanco.is('agent_id', null)).limit(1).maybeSingle()
+      if (previo) { router.replace(`/admin/propiedades/${previo.id}?tab=1`); return }
+
       const { data, error } = await sb.from('properties').insert({
         tenant_id:   m.tenantId,
         source:      'manual',
