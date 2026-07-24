@@ -26,7 +26,7 @@ export interface DatosContrato {
     acuerdos: string | null
   }
   oficina: { nombre: string | null }
-  agente:  { nombre: string | null; email: string | null; telefono: string | null }
+  agente:  { nombre: string | null; cedula: string | null; email: string | null; telefono: string | null }
   duenos:  string | null       // nombres de los propietarios, ya unidos
 }
 
@@ -56,6 +56,7 @@ export const VARIABLES: { grupo: string; items: { clave: string; label: string }
   { grupo: 'Personas', items: [
     { clave: 'duenos',          label: 'Propietario(s)' },
     { clave: 'agente.nombre',   label: 'Agente' },
+    { clave: 'agente.cedula',   label: 'Cédula del agente' },
     { clave: 'agente.email',    label: 'Email del agente' },
     { clave: 'agente.telefono', label: 'Teléfono del agente' },
     { clave: 'oficina.nombre',  label: 'Nombre de la oficina' },
@@ -110,6 +111,7 @@ function valores(d: DatosContrato): Record<string, string | null> {
     'contrato.hoy':               new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }),
     'duenos':          d.duenos,
     'agente.nombre':   d.agente.nombre,
+    'agente.cedula':   d.agente.cedula,
     'agente.email':    d.agente.email,
     'agente.telefono': d.agente.telefono,
     'oficina.nombre':  d.oficina.nombre,

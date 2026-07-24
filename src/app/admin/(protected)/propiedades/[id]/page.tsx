@@ -2123,7 +2123,7 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
   const [{ data: tenant }, { data: agente }, { data: owners }, { data: con }] = await Promise.all([
     sb.from('tenants').select('name').eq('id', prop.tenant_id).maybeSingle(),
     prop.agent_id
-      ? sb.from('users').select('name,email,phone').eq('id', prop.agent_id).maybeSingle()
+      ? sb.from('users').select('name,cedula,email,phone').eq('id', prop.agent_id).maybeSingle()
       : Promise.resolve({ data: null }),
     sb.from('property_owners')
       .select('crm_contacts(name,last_name), crm_companies(name)')
@@ -2139,7 +2139,7 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
     o.crm_contacts ? [o.crm_contacts.name, o.crm_contacts.last_name].filter(Boolean).join(' ')
       : o.crm_companies?.name).filter(Boolean).join(', ') || null
 
-  const a = agente as { name?: string; email?: string; phone?: string } | null
+  const a = agente as { name?: string; cedula?: string; email?: string; phone?: string } | null
   const c = con as { start_date?: string; end_date?: string; commission?: number; commission_amount?: number; notes?: string } | null
 
   return {
@@ -2157,7 +2157,7 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
       acuerdos: c?.notes ?? null,
     },
     oficina: { nombre: (tenant as { name?: string } | null)?.name ?? 'Noduus' },
-    agente:  { nombre: a?.name ?? null, email: a?.email ?? null, telefono: a?.phone ?? null },
+    agente:  { nombre: a?.name ?? null, cedula: a?.cedula ?? null, email: a?.email ?? null, telefono: a?.phone ?? null },
     duenos,
   }
 }

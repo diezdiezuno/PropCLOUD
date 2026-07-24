@@ -22,6 +22,7 @@ const ic = (d: string, fill = false, color?: string) => (
     style={{ flexShrink: 0, color }}><path d={d} /></svg>
 )
 const ICONS: Record<string, React.ReactNode> = {
+  cedula:    ic('M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm11 4h5M14 12h5M14 15h3M6.5 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-2.5 4a2.5 2.5 0 0 1 5 0'),
   email:     ic('M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2 8 6 8-6'),
   whatsapp:  ic('M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Zm5.1 14.3c-.2.6-1.2 1.2-1.7 1.2-.4.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.5-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1.1-1.4-1.1-2.7s.7-1.9.9-2.2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5-.3.6-.7.9-.5 1.2.7 1.2 1.6 2 2.8 2.6.3.2.5.1.7-.1.2-.2.8-.9 1-1.2.2-.3.4-.2.6-.1.3.1 1.7.8 2 1 .3.2.5.2.5.4 0 .1 0 .7-.3 1.3Z', true, '#25D366'),
   phone:     ic('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3A19.5 19.5 0 0 1 5.2 13 19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.8.7a2 2 0 0 1 1.7 2Z'),
@@ -33,7 +34,7 @@ const ICONS: Record<string, React.ReactNode> = {
 
 interface Profile {
   id: string; tenant_id: string; name: string | null; job_title: string | null
-  email: string | null; phone: string | null; whatsapp: string | null
+  cedula: string | null; email: string | null; phone: string | null; whatsapp: string | null
   instagram: string | null; facebook: string | null; linkedin: string | null
   tiktok: string | null; photo_url: string | null
 }
@@ -176,6 +177,7 @@ export default function PerfilPage() {
 
   // Email | WhatsApp | Teléfono / Instagram | Facebook / LinkedIn | TikTok
   const contactFields: { key: keyof Profile; label: string; span: number }[] = [
+    { key: 'cedula',    label: 'Cédula',    span: 2 },
     { key: 'email',     label: 'Email',     span: 2 },
     { key: 'whatsapp',  label: 'WhatsApp',  span: 2 },
     { key: 'phone',     label: 'Teléfono',  span: 2 },
