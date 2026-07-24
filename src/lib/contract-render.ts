@@ -42,6 +42,7 @@ export interface DatosContrato {
 /** Lo que el admin ve como ayuda al escribir la plantilla. */
 export const VARIABLES: { grupo: string; items: { clave: string; label: string }[] }[] = [
   { grupo: 'Propiedad', items: [
+    { clave: 'propiedad.bloque',       label: 'Propiedad (bloque con datos)' },
     { clave: 'propiedad.titulo',       label: 'Título' },
     { clave: 'propiedad.tipo',         label: 'Tipo (casa, lote…)' },
     { clave: 'propiedad.transaccion',  label: 'Venta / alquiler' },
@@ -132,9 +133,18 @@ function valores(d: DatosContrato): Record<string, string | null> {
     ? bloque('Asesor', { nombre: ag.nombre, cedula: ag.cedula, email: ag.email, whatsapp: ag.whatsapp })
     : null
 
+  // Bloque de la propiedad: dos filas alineadas en tabla (Distrito/Cantón/
+  // Provincia y Matrícula/Plano) y dos líneas completas debajo.
+  const inmueble =
+    `| **Distrito:** ${val(p.distrito)} | **Cantón:** ${val(p.canton)} | **Provincia:** ${val(p.provincia)} |\n` +
+    `| **Matrícula:** ${val(p.finca)} | **Plano:** ${val(p.plano)} | |\n\n` +
+    `**Localizada:** ${val(p.direccion)}\n\n` +
+    `**Precio inicial de venta:** ${dinero(p.precio, p.moneda) ?? FALTA}`
+
   return {
     'propietarios':    propietarios,
     'asesor':          asesor,
+    'propiedad.bloque': inmueble,
     'propiedad.titulo':       p.titulo,
     'propiedad.tipo':         p.tipo,
     'propiedad.transaccion':  p.transaccion === 'rent' ? 'alquiler'

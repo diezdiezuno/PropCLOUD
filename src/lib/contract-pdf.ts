@@ -38,7 +38,7 @@ export function imprimirContrato(opts: { titulo: string; logoUrl?: string | null
       li { margin: 2px 0; }
       hr { border: none; border-top: 1px solid #ccc; margin: 22px 0; }
       table.grid { width: 100%; border-collapse: collapse; margin: 0 0 14px; table-layout: fixed; }
-      table.grid td { width: 50%; padding: 3px 10px 3px 0; vertical-align: top; }
+      table.grid td { padding: 3px 10px 3px 0; vertical-align: top; }
       @media screen { body { max-width: 720px; margin: 30px auto; padding: 0 20px; } }
     </style></head><body>
     <header>${encabezado}</header>

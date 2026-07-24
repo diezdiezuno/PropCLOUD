@@ -171,7 +171,7 @@ export default function ContratosAdminPage() {
 
   return (
     <div>
-      <style>{`.md-prev table.grid{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 12px}.md-prev table.grid td{width:50%;padding:3px 10px 3px 0;vertical-align:top}.md-prev h1{font-size:20px;margin:14px 0}.md-prev h2{font-size:16px;margin:14px 0 6px}.md-prev ul,.md-prev ol{padding-left:24px}`}</style>
+      <style>{`.md-prev table.grid{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 12px}.md-prev table.grid td{padding:3px 10px 3px 0;vertical-align:top}.md-prev h1{font-size:20px;margin:14px 0}.md-prev h2{font-size:16px;margin:14px 0 6px}.md-prev ul,.md-prev ol{padding-left:24px}`}</style>
       <PageHeader title="Contratos"
         subtitle={`${lista.filter(p => p.active).length} tipo${lista.filter(p => p.active).length !== 1 ? 's' : ''} de contrato`}
         right={
