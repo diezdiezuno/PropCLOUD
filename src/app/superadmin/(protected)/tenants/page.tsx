@@ -12,6 +12,7 @@ export default function TenantsPage() {
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
   const [form, setForm] = useState({ name: '', slug: '', domain: '', admin_email: '' })
+  const [inviteFallback, setInviteFallback] = useState<{ id: string; warning: string; link: string } | null>(null)
   const router = useRouter()
 
   async function load() {
@@ -36,6 +37,13 @@ export default function TenantsPage() {
     })
     if (res.ok) {
       const tenant = await res.json()
+      // Si el email de invitación al admin falló, no navegamos en silencio:
+      // mostramos el link de registro para pasarlo a mano.
+      if (tenant.adminInvite?.warning && tenant.adminInvite?.link) {
+        setCreating(false)
+        setInviteFallback({ id: tenant.id, warning: tenant.adminInvite.warning, link: tenant.adminInvite.link })
+        return
+      }
       setShowCreate(false)
       setForm({ name: '', slug: '', domain: '', admin_email: '' })
       router.push(`/superadmin/tenants/${tenant.id}`)
@@ -84,6 +92,17 @@ export default function TenantsPage() {
             <input type="email" value={form.admin_email} onChange={f('admin_email')} placeholder="admin@sunrisecr.com" style={inputStyle} />
           </div>
           {createError && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{createError}</div>}
+          {inviteFallback && (
+            <div style={{ background: '#1f1a0e', border: '1px solid #5a4a1a', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
+              <div style={{ color: '#f5c451', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>El tenant se creó, pero el email de invitación no salió.</div>
+              <div style={{ color: '#b0a070', fontSize: 12, marginBottom: 8 }}>{inviteFallback.warning}. Pasale este link al admin para que cree su cuenta:</div>
+              <input readOnly value={inviteFallback.link} onClick={e => (e.target as HTMLInputElement).select()} style={{ ...inputStyle, fontSize: 12 }} />
+              <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+                <button type="button" onClick={() => navigator.clipboard?.writeText(inviteFallback.link)} style={{ background: '#f5c451', color: '#111', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Copiar link</button>
+                <button type="button" onClick={() => router.push(`/superadmin/tenants/${inviteFallback.id}`)} style={{ background: 'none', border: '1px solid #333', borderRadius: 6, padding: '7px 16px', fontSize: 12, color: '#888', cursor: 'pointer', fontFamily: 'inherit' }}>Continuar →</button>
+              </div>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="submit" disabled={creating} style={{ background: '#fff', color: '#111', border: 'none', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.7 : 1, fontFamily: 'inherit' }}>
               {creating ? 'Creando…' : 'Crear tenant'}
