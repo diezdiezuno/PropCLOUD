@@ -35,8 +35,9 @@ export interface DatosContrato {
   dueno_whatsapp: string | null
   // Solo los dueños PERSONA, para los bloques de {{propietarios}}.
   duenos_detalle: { nombre: string | null; cedula: string | null; email: string | null; whatsapp: string | null }[]
-  // Dueños que son sociedad: van como línea de representación legal.
-  sociedades: { nombre: string | null; cedula: string | null }[]
+  // Dueños que son sociedad: línea de representación legal + sus personas relacionadas.
+  sociedades: { nombre: string | null; cedula: string | null
+    personas: { nombre: string | null; cedula: string | null; email: string | null; whatsapp: string | null }[] }[]
 }
 
 /** Lo que el admin ve como ayuda al escribir la plantilla. */
@@ -119,14 +120,13 @@ function valores(d: DatosContrato): Record<string, string | null> {
     `| **${rol}:** ${val(o.nombre)} | **Cédula:** ${val(o.cedula)} |\n` +
     `| **Email:** ${val(o.email)} | **Teléfono:** ${val(o.whatsapp)} |`
 
-  // Personas dueñas como bloques, y si hay sociedad(es), una línea abajo con la
-  // representación legal.
+  // Personas dueñas como bloques. Cada sociedad dueña: la línea de
+  // representación legal y debajo el bloque de cada persona relacionada.
   const bloquesPersona = d.duenos_detalle.map(o => bloque('Propietario', o))
-  const lineaSoc = d.sociedades.length
-    ? 'Como representantes legales de la sociedad ' +
-      d.sociedades.map(s => `**${val(s.nombre)}**, cédula jurídica ${val(s.cedula)}`).join('; ') + '.'
-    : ''
-  const propietarios = [...bloquesPersona, lineaSoc].filter(Boolean).join('\n\n') || null
+  const bloquesSoc = d.sociedades.map(s =>
+    [`Como representantes legales de la sociedad **${val(s.nombre)}**, cédula jurídica ${val(s.cedula)}:`,
+     ...s.personas.map(o => bloque('Representante', o))].join('\n\n'))
+  const propietarios = [...bloquesPersona, ...bloquesSoc].filter(Boolean).join('\n\n') || null
 
   const ag = d.agente
   const asesor = (ag.nombre || ag.cedula || ag.email || ag.whatsapp)

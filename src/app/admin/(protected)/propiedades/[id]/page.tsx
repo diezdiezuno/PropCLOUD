@@ -2160,7 +2160,7 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
       ? sb.from('users').select('name,cedula,email,phone,whatsapp').eq('id', prop.agent_id).maybeSingle()
       : Promise.resolve({ data: null }),
     sb.from('property_owners')
-      .select('crm_contacts(name,last_name,cedula,email,phone,phone_country), crm_companies(name,cedula_juridica,email)')
+      .select('crm_contacts(name,last_name,cedula,email,phone,phone_country), crm_companies(name,cedula_juridica,email,crm_contact_companies(crm_contacts(name,last_name,cedula,email,phone,phone_country)))')
       .eq('property_id', prop.id),
     sbAny.from('contracts')
       .select('start_date,end_date,duration_months,commission,commission_amount,notes')
@@ -2171,17 +2171,24 @@ async function armarDatosContrato(prop: PropertyFull): Promise<DatosContrato> {
   // Cada dueño puede ser persona o empresa; se arma una lista de campos y
   // luego se unen. Con varios dueños, cada campo queda separado por comas.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const persona = (c: any) => ({
+    nombre: [c.name, c.last_name].filter(Boolean).join(' ') || null,
+    cedula: c.cedula ?? null, email: c.email ?? null,
+    whatsapp: c.phone ? phoneDisplay(c.phone, c.phone_country) : null,
+  })
   const filasDueno = ((owners ?? []) as any[]).map(o => {
     const c = o.crm_contacts, e = o.crm_companies
     return c
-      ? { tipo: 'persona' as const, nombre: [c.name, c.last_name].filter(Boolean).join(' '), cedula: c.cedula, email: c.email,
-          whatsapp: c.phone ? phoneDisplay(c.phone, c.phone_country) : null }
-      : { tipo: 'sociedad' as const, nombre: e?.name ?? null, cedula: e?.cedula_juridica ?? null, email: e?.email ?? null, whatsapp: null }
+      ? { tipo: 'persona' as const, ...persona(c) }
+      : { tipo: 'sociedad' as const, nombre: e?.name ?? null, cedula: e?.cedula_juridica ?? null, email: e?.email ?? null, whatsapp: null,
+          // Personas relacionadas a la sociedad (representantes legales).
+          personas: ((e?.crm_contact_companies ?? []) as any[]).map(l => l.crm_contacts).filter(Boolean).map(persona) }
   })
   const unir = (f: (x: typeof filasDueno[number]) => string | null | undefined) =>
     filasDueno.map(f).filter(Boolean).join(', ') || null
   const personas   = filasDueno.filter(o => o.tipo === 'persona')
-  const sociedades  = filasDueno.filter(o => o.tipo === 'sociedad').map(o => ({ nombre: o.nombre, cedula: o.cedula }))
+  const sociedades  = filasDueno.filter(o => o.tipo === 'sociedad').map(o => ({ nombre: o.nombre, cedula: o.cedula, personas: (o as any).personas ?? [] }))
 
   const a = agente as { name?: string; cedula?: string; email?: string; phone?: string; whatsapp?: string } | null
   const c = con as { start_date?: string; end_date?: string; duration_months?: number; commission?: number; commission_amount?: number; notes?: string } | null
