@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { getMembership } from '@/lib/membership'
 import PageHeader from '@/components/admin/PageHeader'
 import { VARIABLES, variablesDesconocidas } from '@/lib/contract-render'
+import { markdownToHtml } from '@/lib/markdown'
 
 interface Plantilla {
   id: string; nombre: string; descripcion: string | null
@@ -31,6 +32,7 @@ export default function ContratosAdminPage() {
   const [editando, setEditando] = useState<Plantilla | null>(null)
   const [saving,   setSaving]   = useState(false)
   const [error,    setError]    = useState<string | null>(null)
+  const [preview,  setPreview]  = useState(false)
   const cuerpoRef = useRef<HTMLTextAreaElement>(null)
 
   const cargar = useCallback(async (tid: string) => {
@@ -83,20 +85,39 @@ export default function ContratosAdminPage() {
     await cargar(tenantId)
   }
 
-  /** Mete el marcador donde está el cursor, que es lo que uno espera. */
-  function insertar(clave: string) {
+  // Escribe el cuerpo nuevo y deja el cursor donde corresponde.
+  function edita(nuevo: string, caretIni: number, caretFin: number) {
     if (!editando) return
-    const ta = cuerpoRef.current
-    const marca = `{{${clave}}}`
-    if (!ta) { setEditando({ ...editando, cuerpo: editando.cuerpo + marca }); return }
-    const ini = ta.selectionStart ?? editando.cuerpo.length
-    const fin = ta.selectionEnd ?? ini
-    const nuevo = editando.cuerpo.slice(0, ini) + marca + editando.cuerpo.slice(fin)
     setEditando({ ...editando, cuerpo: nuevo })
-    requestAnimationFrame(() => {
-      ta.focus()
-      ta.setSelectionRange(ini + marca.length, ini + marca.length)
-    })
+    const ta = cuerpoRef.current
+    if (ta) requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(caretIni, caretFin) })
+  }
+  const bordes = () => {
+    const ta = cuerpoRef.current
+    const ini = ta?.selectionStart ?? (editando?.cuerpo.length ?? 0)
+    const fin = ta?.selectionEnd ?? ini
+    return { ini, fin }
+  }
+  /** Inserta texto donde está el cursor (marcadores, separador). */
+  function insertar(txt: string) {
+    if (!editando) return
+    const { ini, fin } = bordes()
+    edita(editando.cuerpo.slice(0, ini) + txt + editando.cuerpo.slice(fin), ini + txt.length, ini + txt.length)
+  }
+  /** Envuelve la selección (negrita/cursiva); si no hay, deja un placeholder. */
+  function envolver(marca: string, ph: string) {
+    if (!editando) return
+    const { ini, fin } = bordes()
+    const sel = editando.cuerpo.slice(ini, fin) || ph
+    edita(editando.cuerpo.slice(0, ini) + marca + sel + marca + editando.cuerpo.slice(fin),
+      ini + marca.length, ini + marca.length + sel.length)
+  }
+  /** Antepone un prefijo al inicio de la línea del cursor (título/lista). */
+  function prefijoLinea(pre: string) {
+    if (!editando) return
+    const { ini } = bordes()
+    const inicioLinea = editando.cuerpo.lastIndexOf('\n', ini - 1) + 1
+    edita(editando.cuerpo.slice(0, inicioLinea) + pre + editando.cuerpo.slice(inicioLinea), ini + pre.length, ini + pre.length)
   }
 
   if (loading) return <div style={{ padding: 40, color: '#aaa', fontSize: 14 }}>Cargando…</div>
@@ -137,12 +158,51 @@ export default function ContratosAdminPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 16, alignItems: 'start' }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#5a6070', display: 'block', marginBottom: 5 }}>Texto del contrato</label>
-              <textarea ref={cuerpoRef} value={editando.cuerpo}
-                onChange={e => setEditando({ ...editando, cuerpo: e.target.value })}
-                rows={18}
-                placeholder={'Entre {{oficina.nombre}} y {{duenos}} se acuerda…\n\nLa propiedad ubicada en {{propiedad.ubicacion}}, finca {{propiedad.finca}}, se ofrece por {{propiedad.precio}}.\n\nComisión pactada: {{contrato.comision}}.'}
-                style={{ ...inputSt, height: 'auto', padding: 12, resize: 'vertical', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13, lineHeight: 1.6 }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#5a6070' }}>Texto del contrato</label>
+                <button type="button" onClick={() => setPreview(p => !p)}
+                  style={{ fontSize: 11, color: '#5a6070', background: preview ? '#eef1f4' : '#fff', border: '1px solid #e2e5ea', borderRadius: 7, padding: '4px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  {preview ? 'Editar' : 'Vista previa'}
+                </button>
+              </div>
+
+              {preview ? (
+                <div style={{ border: '1px solid #e2e5ea', borderRadius: 8, padding: '18px 20px', background: '#fff', minHeight: 200, fontFamily: 'Georgia, serif', fontSize: 14, lineHeight: 1.7, color: '#111' }}
+                  // La vista previa muestra el formato; los {{marcadores}} se ven
+                  // tal cual porque acá todavía no hay una propiedad de dónde sacar
+                  // los datos (eso pasa al generar el contrato en la propiedad).
+                  dangerouslySetInnerHTML={{ __html: markdownToHtml(editando.cuerpo || '_Sin contenido._') }} />
+              ) : (
+                <>
+                  {/* Barra de formato: escribe la sintaxis Markdown por vos, para
+                      no tener que memorizarla. */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+                    {([
+                      ['Título',   () => prefijoLinea('# ')],
+                      ['Subtítulo',() => prefijoLinea('## ')],
+                      ['Negrita',  () => envolver('**', 'texto')],
+                      ['Cursiva',  () => envolver('*', 'texto')],
+                      ['• Lista',  () => prefijoLinea('- ')],
+                      ['1. Lista', () => prefijoLinea('1. ')],
+                      ['Separador',() => insertar('\n---\n')],
+                    ] as [string, () => void][]).map(([lbl, fn]) => (
+                      <button key={lbl} type="button" onClick={fn}
+                        style={{ fontSize: 12, padding: '5px 10px', borderRadius: 6, border: '1px solid #e2e5ea', background: '#fff', cursor: 'pointer', fontFamily: 'inherit', color: '#444' }}>
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea ref={cuerpoRef} value={editando.cuerpo}
+                    onChange={e => setEditando({ ...editando, cuerpo: e.target.value })}
+                    rows={18}
+                    placeholder={'# Contrato de captación\n\nEntre **{{oficina.nombre}}** y {{duenos}} se acuerda…\n\nLa propiedad ubicada en {{propiedad.ubicacion}}, finca {{propiedad.finca}}, se ofrece por {{propiedad.precio}}.\n\n## Comisión\n\nComisión pactada: {{contrato.comision}}.'}
+                    style={{ ...inputSt, height: 'auto', padding: 12, resize: 'vertical', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13, lineHeight: 1.6 }} />
+                  <p style={{ fontSize: 11, color: '#9ca3af', margin: '6px 0 0' }}>
+                    Formato con Markdown: <strong>**negrita**</strong>, <em>*cursiva*</em>, <code># Título</code>, <code>- listas</code>. Usá los botones si preferís.
+                  </p>
+                </>
+              )}
+
               {desconocidas.length > 0 && (
                 <p style={{ fontSize: 12, color: '#D97706', margin: '8px 0 0' }}>
                   Estos marcadores no existen y saldrán marcados en el contrato: {desconocidas.map(d => `{{${d}}}`).join(', ')}
@@ -161,7 +221,7 @@ export default function ContratosAdminPage() {
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>{g.grupo}</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                     {g.items.map(i => (
-                      <button key={i.clave} type="button" onClick={() => insertar(i.clave)} title={`{{${i.clave}}}`}
+                      <button key={i.clave} type="button" onClick={() => insertar(`{{${i.clave}}}`)} title={`{{${i.clave}}}`}
                         style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e5ea', background: '#fff', cursor: 'pointer', fontFamily: 'inherit', color: '#5a6070' }}>
                         {i.label}
                       </button>

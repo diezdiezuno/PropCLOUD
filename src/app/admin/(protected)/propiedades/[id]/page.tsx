@@ -2222,6 +2222,7 @@ function ContractDocs({ prop }: { prop: PropertyFull }) {
   const [loading,    setLoading]    = useState(true)
   const [error,      setError]      = useState<string | null>(null)
   const [oficina,    setOficina]    = useState('')
+  const [logoUrl,    setLogoUrl]    = useState<string | null>(null)
 
   const cargar = useCallback(async () => {
     const sb = createClient()
@@ -2230,11 +2231,13 @@ function ContractDocs({ prop }: { prop: PropertyFull }) {
         .eq('tenant_id', prop.tenant_id).eq('active', true).order('position'),
       sb.from('contract_documents').select('id,nombre,cuerpo,autor_nombre,created_at')
         .eq('property_id', prop.id).order('created_at', { ascending: false }),
-      sb.from('tenants').select('name').eq('id', prop.tenant_id).maybeSingle(),
+      sb.from('tenants').select('name,logo_url').eq('id', prop.tenant_id).maybeSingle(),
     ])
     setPlantillas((pl ?? []) as Plantilla[])
     setDocs((dc ?? []) as DocGenerado[])
-    setOficina((tn as { name?: string } | null)?.name ?? 'Noduus')
+    const t = tn as { name?: string; logo_url?: string } | null
+    setOficina(t?.name ?? 'Noduus')
+    setLogoUrl(t?.logo_url ?? null)
     setLoading(false)
   }, [prop.id, prop.tenant_id])
 
@@ -2270,12 +2273,7 @@ function ContractDocs({ prop }: { prop: PropertyFull }) {
   }
 
   function abrirPdf(d: DocGenerado) {
-    imprimirContrato({
-      titulo: d.nombre,
-      oficina,
-      cuerpo: d.cuerpo,
-      fecha: new Date(d.created_at).toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }),
-    })
+    imprimirContrato({ titulo: d.nombre, logoUrl, oficina, cuerpo: d.cuerpo })
   }
 
   const cuando = (iso: string) => new Date(iso).toLocaleString('es-CR', {
