@@ -46,10 +46,11 @@ const TABS = [
   { id: 1, label: 'Captación',                  icon: '📋' },
   { id: 2, label: 'Características', icon: '📐' },
   { id: 3, label: 'Estudios',                   icon: '🔎' },
-  { id: 4, label: 'Contrato',                   icon: '📄' },
+  { id: 4, label: 'Contratos',                  icon: '📄' },
   { id: 5, label: 'Descripción',                icon: '📝' },
   { id: 6, label: 'Media',                      icon: '📸' },
   { id: 8, label: 'Archivos',                   icon: '🗂️' },
+  { id: 9, label: 'Notas',                      icon: '🗒️' },
   { id: 7, label: 'Portales',                   icon: '🌐' },
 ]
 
@@ -123,6 +124,7 @@ export default function PropiedadPage() {
   const [activeTab, setActiveTab] = useState(Number(searchParams.get('tab') ?? '1'))
   const [estudiosCount,  setEstudiosCount]  = useState(0)
   const [contratosCount, setContratosCount] = useState(0)
+  const [notasCount,     setNotasCount]     = useState(0)
   const [isAdmin,   setIsAdmin]   = useState(false)
   const [myUserId,  setMyUserId]  = useState<string | null>(null)
 
@@ -133,7 +135,7 @@ export default function PropiedadPage() {
       const adminRec = { tenant_id: m.tenantId }
       setIsAdmin(m.isAdmin)
       const { data: { user } } = await sb.auth.getUser()
-      const [{ data: p }, { data: types }, { data: sts }, { data: ams }, { data: agentList }, { data: est }, { data: con }, { data: me }] = await Promise.all([
+      const [{ data: p }, { data: types }, { data: sts }, { data: ams }, { data: agentList }, { data: est }, { data: con }, { data: nts }, { data: me }] = await Promise.all([
         sb.from('properties').select('*').eq('id', id).eq('tenant_id', adminRec.tenant_id).single(),
         sb.from('property_types').select('id,label,value,icon').eq('tenant_id', adminRec.tenant_id).order('sort_order'),
         sb.from('property_statuses').select('value,label,web_status').eq('tenant_id', adminRec.tenant_id).order('position'),
@@ -143,6 +145,7 @@ export default function PropiedadPage() {
         sb.from('crm_estudios').select('id').eq('property_id', id),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (sb as any).from('contracts').select('id').eq('property_id', id).eq('active', true),
+        sb.from('property_notes').select('id').eq('property_id', id),
         user
           ? sb.from('users').select('id').eq('auth_id', user.id).eq('tenant_id', adminRec.tenant_id).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -151,6 +154,7 @@ export default function PropiedadPage() {
       if (p) { setProp(p as PropertyFull); setAgentId((p as PropertyFull).agent_id ?? '') }
       setEstudiosCount((est ?? []).length)
       setContratosCount((con ?? []).length)
+      setNotasCount((nts ?? []).length)
       setPropTypes((types ?? []) as PropertyType[])
       if (sts && sts.length) setStatuses(sts as CrmStatus[])
       if (ams && ams.length) setAmenities((ams as { name: string }[]).map(a => a.name))
@@ -208,6 +212,7 @@ export default function PropiedadPage() {
     6: (prop.images?.length ?? 0) > 0 || (prop.video_urls?.length ?? 0) > 0 || Boolean(prop.tour_url),
     7: false,
     8: (prop.doc_urls?.length ?? 0) > 0 || Boolean(prop.features?.informe_registral_url) || Boolean(prop.features?.plano_catastrado_url),
+    9: notasCount > 0,
   }
 
   return (
@@ -299,6 +304,7 @@ export default function PropiedadPage() {
         {activeTab === 5 && <Tab5Descripcion prop={prop} onSaved={setProp} />}
         {activeTab === 6 && <Tab6Media     prop={prop} onSaved={setProp} />}
         {activeTab === 8 && <TabArchivos   prop={prop} onSaved={setProp} />}
+        {activeTab === 9 && <TabNotas      prop={prop} onCount={setNotasCount} />}
         {activeTab === 7 && <TabPortales />}
       </fieldset>
     </div>
@@ -1821,36 +1827,8 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
 
   return (
     <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <FormSection title="Contrato">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 4 }}>
-          <div>
-            <FieldLabel>Tipo de contrato</FieldLabel>
-            <select value={kind} onChange={e => setKind(e.target.value)} style={inputSt}>
-              {CONTRACT_KINDS.map(k => <option key={k.value} value={k.value}>{k.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <FieldLabel>Fecha de inicio</FieldLabel>
-            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputSt} />
-          </div>
-          <div>
-            <FieldLabel>Fecha de vencimiento</FieldLabel>
-            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputSt} />
-          </div>
-        </div>
-        {dias !== null && (
-          <p style={{ fontSize: 12, margin: '8px 0 0', fontWeight: 600, color: dias < 0 ? '#DC2626' : dias <= 30 ? '#D97706' : '#059669' }}>
-            {dias < 0 ? `Venció hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence hoy' : `Vence en ${dias} días`}
-          </p>
-        )}
-        <div style={{ marginTop: 16 }}>
-          <FieldLabel>Notas</FieldLabel>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-            placeholder="Condiciones particulares, acuerdos…"
-            style={{ ...inputSt, resize: 'vertical', fontFamily: 'inherit' }} />
-        </div>
-      </FormSection>
-
+      {/* Precio y comisión van arriba: es lo que se define primero y lo que
+          después alimenta el contrato. */}
       {esVA ? (
         <>
           <FormSection title="Venta — precio, comisión y negocio externo">
@@ -1879,6 +1857,40 @@ function TabContrato({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
                 splitMode={splitMode} setSplitMode={setSplitMode} splitValue={splitValue} setSplitValue={setSplitValue} />}
         </FormSection>
       )}
+
+      <FormSection title="Contrato">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 4 }}>
+          <div>
+            <FieldLabel>Tipo de contrato</FieldLabel>
+            <select value={kind} onChange={e => setKind(e.target.value)} style={inputSt}>
+              {CONTRACT_KINDS.map(k => <option key={k.value} value={k.value}>{k.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Fecha de inicio</FieldLabel>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputSt} />
+          </div>
+          <div>
+            <FieldLabel>Fecha de vencimiento</FieldLabel>
+            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputSt} />
+          </div>
+        </div>
+        {dias !== null && (
+          <p style={{ fontSize: 12, margin: '8px 0 0', fontWeight: 600, color: dias < 0 ? '#DC2626' : dias <= 30 ? '#D97706' : '#059669' }}>
+            {dias < 0 ? `Venció hace ${Math.abs(dias)} días` : dias === 0 ? 'Vence hoy' : `Vence en ${dias} días`}
+          </p>
+        )}
+        <div style={{ marginTop: 16 }}>
+          {/* Antes se llamaba "Notas". Va al contrato como cláusula, así que
+              lleva el nombre de lo que es; las notas internas viven en su
+              propio tab y no salen impresas. */}
+          <FieldLabel>Acuerdos adicionales</FieldLabel>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+            placeholder="Condiciones particulares pactadas: exclusividad, plazos, gastos…"
+            style={{ ...inputSt, resize: 'vertical', fontFamily: 'inherit' }} />
+          <p style={{ fontSize: 11, color: '#aaa', margin: '6px 0 0' }}>Este texto se incluye en el contrato.</p>
+        </div>
+      </FormSection>
 
       <SaveBar saving={saving} saved={saved} error={saveError} />
     </form>
@@ -1999,6 +2011,97 @@ function TabArchivos({ prop, onSaved }: { prop: PropertyFull; onSaved: (p: Prope
         {okMsg && <span style={{ fontSize: 13, color: '#10B981', fontWeight: 600 }}>✓ {okMsg}</span>}
         {error && <span style={{ fontSize: 13, color: '#e53e3e' }}>{error}</span>}
       </div>
+    </div>
+  )
+}
+
+// Tab Notas — bitácora de la propiedad. Cada nota queda con fecha, hora y
+// autor, y no se edita ni se borra: si algo quedó mal se agrega otra. Así el
+// historial sirve como registro y no como borrador.
+interface Nota {
+  id: string; texto: string; autor_nombre: string | null; created_at: string
+}
+
+function TabNotas({ prop, onCount }: { prop: PropertyFull; onCount: (n: number) => void }) {
+  const [notas,   setNotas]   = useState<Nota[]>([])
+  const [texto,   setTexto]   = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving,  setSaving]  = useState(false)
+  const [error,   setError]   = useState<string | null>(null)
+
+  const cargar = useCallback(async () => {
+    const { data, error } = await createClient().from('property_notes')
+      .select('id,texto,autor_nombre,created_at')
+      .eq('property_id', prop.id).order('created_at', { ascending: false })
+    if (error) setError(`No se pudieron cargar las notas: ${error.message}`)
+    else { setNotas((data ?? []) as Nota[]); onCount((data ?? []).length) }
+    setLoading(false)
+  }, [prop.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { cargar() }, [cargar])
+
+  async function agregar(e: React.FormEvent) {
+    e.preventDefault()
+    const t = texto.trim()
+    if (!t) return
+    setSaving(true); setError(null)
+    const sb = createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    // El nombre se copia acá: si el agente se va, la nota sigue diciendo
+    // quién la escribió.
+    const { data: yo } = await sb.from('users').select('name')
+      .eq('auth_id', user?.id ?? '').eq('tenant_id', prop.tenant_id).maybeSingle()
+    const { error } = await sb.from('property_notes').insert({
+      tenant_id: prop.tenant_id, property_id: prop.id, texto: t,
+      autor_id: user?.id ?? null,
+      autor_nombre: (yo as { name: string } | null)?.name ?? user?.email ?? null,
+    })
+    if (error) { setError(`No se pudo guardar: ${error.message}`); setSaving(false); return }
+    setTexto(''); setSaving(false)
+    await cargar()
+  }
+
+  const cuando = (iso: string) => new Date(iso).toLocaleString('es-CR', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <FormSection title="Agregar nota">
+        <form onSubmit={agregar}>
+          <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={4}
+            placeholder="Qué pasó, qué se acordó, qué falta…"
+            style={{ ...inputSt, resize: 'vertical', fontFamily: 'inherit' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+            <button type="submit" disabled={saving || !texto.trim()}
+              style={{ background: 'var(--color-primary, #111)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', cursor: saving || !texto.trim() ? 'not-allowed' : 'pointer', opacity: saving || !texto.trim() ? 0.5 : 1 }}>
+              {saving ? 'Guardando…' : 'Agregar nota'}
+            </button>
+            <span style={{ fontSize: 11, color: '#aaa' }}>Queda con tu nombre y la fecha. No se puede editar ni borrar.</span>
+          </div>
+          {error && <p style={{ fontSize: 12, color: '#e53e3e', margin: '10px 0 0' }}>{error}</p>}
+        </form>
+      </FormSection>
+
+      <FormSection title={`Historial (${notas.length})`}>
+        {loading
+          ? <p style={{ fontSize: 13, color: '#888', margin: 0 }}>Cargando…</p>
+          : notas.length === 0
+            ? <p style={{ fontSize: 13, color: '#bbb', margin: 0 }}>Sin notas todavía.</p>
+            : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {notas.map(n => (
+                  <div key={n.id} style={{ border: '1px solid #eceef1', borderRadius: 10, padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#111' }}>{n.autor_nombre ?? 'Sistema'}</span>
+                      <span style={{ fontSize: 11, color: '#9ca3af' }}>{cuando(n.created_at)}</span>
+                    </div>
+                    <div style={{ fontSize: 13, color: '#333', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{n.texto}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+      </FormSection>
     </div>
   )
 }
