@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# respaldos de scripts de datos
+respaldo-telefonos-*.json
