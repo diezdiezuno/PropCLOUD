@@ -72,6 +72,9 @@ export default function AdministracionPage() {
         <Card href="/admin/reclutamiento" icon="🤝" title="Reclutamiento">
           <p style={desc}>Aplicaciones de agentes y notas.</p>
         </Card>
+        <Card href="/admin/contratos" icon="📄" title="Contratos">
+          <p style={desc}>Los tipos de contrato y el texto fijo de cada uno.</p>
+        </Card>
         <Card href="/admin/bitacora" icon="🗂️" title="Bitácora">
           <p style={desc}>Qué fichas creó cada agente que ya salió de la oficina.</p>
         </Card>

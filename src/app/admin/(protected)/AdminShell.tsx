@@ -57,7 +57,7 @@ const ADMIN_HUB_ROUTES = [
   '/admin/general', '/admin/mapa', '/admin/visualizacion', '/admin/paginas',
   '/admin/fuentes', '/admin/agentes', '/admin/seo', '/admin/crm-config',
   '/admin/metricas', '/admin/reclutamiento', '/admin/tools/admin',
-  '/admin/bitacora', '/admin/auditoria',
+  '/admin/bitacora', '/admin/auditoria', '/admin/contratos',
 ]
 
 // Catálogo de herramientas — el tenant solo ve las que tiene en tenants.proptools_apps
